@@ -1,0 +1,41 @@
+{% extends 'menti/base.html' %}
+
+
+{% block content %}
+
+
+
+      <div class="row">
+
+        <div class="col-md-10">
+          <div class="content-section">
+            <h3>Mentor Corner</h3>
+            <p class='text-muted'>Choose Mentors Suggested below
+              <ul class="list-group">
+
+               {% for user in users %}
+
+                  <div class="content-section">
+      <div class="media">
+         <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
+         <div class="media-body">
+            <h2 class="account-heading">{{ user.username }}</h2>
+            <p class="text-secondary">{{ user.email }}</p>
+              <p class="text-secondary">{{ user.profile.education }}</p>
+              <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">Send Request</a>
+              <a class="btn btn-info btn-sm" href="{% url 'profile-detail' pk=user.pk %}">View profile</a>
+         </div>
+      </div>
+
+   </div>
+
+              {% endfor%}
+
+
+              </ul>
+            </p>
+          </div>
+        </div>
+      </div>
+
+{% endblock %}

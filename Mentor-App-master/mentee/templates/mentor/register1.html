@@ -1,0 +1,32 @@
+{% extends 'mentor/base1.html' %}
+{% load crispy_forms_tags %}
+
+
+{% block content %}
+
+<div class="row">
+        <div class="col-md-8">
+ <div class="content-section">
+        <form method="POST">
+            {% csrf_token %}
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Join Today To Be A mentor</legend>
+                {{ form1|crispy }}
+                {{ form2|crispy }}
+            </fieldset>
+            <div class="form-group">
+                <button class="btn btn-outline-info" type="submit">Sign Up</button>
+            </div>
+        </form>
+        <div class="border-top pt-3">
+            <small class="text-muted">
+                Already Have An Account? <a class="ml-2" href="{% url 'login1' %}">Sign In</a>
+            </small>
+        </div>
+    </div>
+        </div>
+</div>
+
+
+
+{% endblock %}

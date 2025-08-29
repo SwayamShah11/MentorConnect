@@ -1,0 +1,44 @@
+{% extends 'mentor/base1.html' %}
+
+
+{% block content %}
+
+
+
+   <main role="main" class="container">
+      <div class="row">
+        <div class="col-md-8">
+
+
+            <div class="content-section">
+      <div class="media">
+         <img class="rounded-circle account-img" src="{{ msg.sender.profile.image.url }}">
+         <div class="media-body">
+            <h2 class="account-heading">{{ msg.sender }}</h2>
+            <p class="text-secondary">{{ msg.sender.email }}</p>
+              <p class="text-secondary">{{ msg.sender.profile.education }}</p>
+             <p class="text-secondary">{{ msg.sender.profile.registration }}</p>
+              <a class="btn btn-primary btn-sm" href="{% url 'start-chat1' pk=msg.sender.pk %}">Send Message</a>
+
+
+
+
+
+
+         </div>
+      </div>
+
+   </div>
+
+
+
+
+
+
+              </ul>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+{% endblock %}
