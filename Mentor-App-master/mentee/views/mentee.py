@@ -4,9 +4,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm
+from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, ProjectForm
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply
+from ..models import Profile, Msg, Conversation, Reply, Project
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -30,7 +30,15 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from ..forms import SendForm
 from django.db.models import Count, Q
 from ..render import Render
-
+from ..models import InternshipPBL
+from ..forms import InternshipPBLForm
+from django.http import HttpResponse, Http404
+from django.conf import settings
+import os
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from PIL import Image
+import pypandoc
 
 def home(request):
     """Home landing page"""
@@ -131,8 +139,8 @@ def user_login(request):
         if user:
             if user.is_active:
                 login(request, user)
-                messages.success(request, f'Welcome To your Account')
-                return HttpResponseRedirect(reverse('account'))
+                messages.success(request, f'Welcome to your Account')
+                return HttpResponseRedirect(reverse('mentee-home'))
 
             else:
                 return HttpResponse("Your account was inactive.")
@@ -144,35 +152,29 @@ def user_login(request):
         return render(request, 'menti/login.html', {})
 
 
+def custom_logout(request):
+    logout(request)
+    return redirect('login')
+
+
+@login_required
+def mentee_home(request):
+    profile = Profile.objects.get(user=request.user)
+    return render(request, "menti/mentee_home.html", {"profile": profile})
+
+
 @login_required
 def profile(request):
-    """View, Update Your Profile"""
-
-    if not request.user.is_mentee:
-        return redirect('home')
-
+    profile = request.user.profile
     if request.method == 'POST':
-
-        u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
-
-        if u_form.is_valid() and p_form.is_valid():
-            u_form.save()
-            p_form.save()
-            messages.success(request, f'Your account has been Updated!')
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
             return redirect('profile')
-
     else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
+        form = ProfileUpdateForm(instance=profile)
 
-    context = {
-
-        'u_form': u_form,
-        'p_form': p_form
-    }
-
-    return render(request, 'menti/profile.html', context)
+    return render(request, 'menti/profile.html', {'form': form})
 
 
 class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -192,6 +194,179 @@ class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_success_url(self):
         return reverse('list')
+
+
+@login_required
+def internship_pbl_list(request):
+    internships = InternshipPBL.objects.filter(user=request.user)  # show only user’s data
+
+    if request.method == "POST":
+        form = InternshipPBLForm(request.POST, request.FILES)
+        if form.is_valid():
+            internship = form.save(commit=False)
+            internship.user = request.user   # 🔥 link logged-in user
+            # Auto-calc safeguard if JS fails
+            if internship.start_date and internship.end_date:
+                internship.no_of_days = (internship.end_date - internship.start_date).days + 1
+            internship.save()
+            return redirect("internship-pbl-list")
+        else:
+            print(form.errors)  # debug in console
+    else:
+        form = InternshipPBLForm()
+
+    return render(request, "menti/internship_pbl_list.html", {
+        "internships": internships,
+        "form": form
+    })
+
+
+#download internship certificate
+@login_required
+def download_certificate(request, pk):
+    try:
+        internship = InternshipPBL.objects.get(pk=pk)
+        if not internship.certificate:
+            raise Http404("No certificate found")
+
+        file_path = internship.certificate.path
+        file_ext = os.path.splitext(file_path)[1].lower()
+
+        # Case 1: Already PDF
+        if file_ext == ".pdf":
+            file_name = f"certificate_{internship.user.username}.pdf"
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type="application/pdf")
+                response['Content-Disposition'] = f'attachment; filename="certificate_{file_name}_{internship.user.username}"'
+                return response
+
+        # Case 2: Image (jpg/png) → Convert to PDF
+        elif file_ext in [".jpg", ".jpeg", ".png"]:
+            image = Image.open(file_path)
+            pdf_path = os.path.join(settings.MEDIA_ROOT, f"temp_{internship.pk}.pdf")
+            image.convert('RGB').save(pdf_path)
+
+            with open(pdf_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type="application/pdf")
+                response['Content-Disposition'] = f'attachment; filename="certificate_{internship.user.username}.pdf"'
+            os.remove(pdf_path)
+            return response
+
+        # Case 3: DOCX/TXT → Convert to PDF using pypandoc
+        elif file_ext in [".docx", ".txt"]:
+            pdf_path = os.path.join(settings.MEDIA_ROOT, f"temp_{internship.pk}.pdf")
+            pypandoc.convert_file(file_path, 'pdf', outputfile=pdf_path)
+
+            with open(pdf_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type="application/pdf")
+                response['Content-Disposition'] = f'attachment; filename="certificate_{internship.user.username}.pdf"'
+            os.remove(pdf_path)
+            return response
+
+        else:
+            raise Http404("Unsupported file type for conversion")
+
+    except InternshipPBL.DoesNotExist:
+        raise Http404("Record not found")
+
+
+@login_required
+def delete_internship(request, pk):
+    internship = get_object_or_404(InternshipPBL, pk=pk, user=request.user)
+
+    # Delete certificate file from storage
+    if internship.certificate:
+        file_path = internship.certificate.path
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    # Delete record from DB
+    internship.delete()
+    messages.success(request, "Record deleted successfully.")
+    return redirect("internship-pbl-list")
+
+
+@login_required
+def projects_view(request):
+    projects = Project.objects.filter(user=request.user).order_by("-uploaded_at")
+
+    # If editing (project_id passed in query params)
+    project_id = request.GET.get("edit")
+    project_to_edit = None
+    if project_id:
+        project_to_edit = get_object_or_404(Project, id=project_id, user=request.user)
+
+    if request.method == "POST":
+        if "delete" in request.POST:  # delete project
+            project = get_object_or_404(Project, id=request.POST.get("delete"), user=request.user)
+            project.delete()
+            return redirect("projects-list")
+
+        elif project_id:  # update project
+            form = ProjectForm(request.POST, request.FILES, instance=project_to_edit)
+            if form.is_valid():
+                form.save()
+                return redirect("projects-list")
+        else:  # add new project
+            form = ProjectForm(request.POST, request.FILES)
+            if form.is_valid():
+                project = form.save(commit=False)
+                project.user = request.user
+                project.save()
+                return redirect("projects-list")
+    else:
+        if project_to_edit:
+            form = ProjectForm(instance=project_to_edit)  # prefill form for editing
+        else:
+            form = ProjectForm()
+
+    return render(
+        request,
+        "menti/projects_list.html",
+        {
+            "projects": projects,
+            "form": form,
+            "editing": bool(project_to_edit),
+            "project_id": project_to_edit.id if project_to_edit else None,
+        },
+    )
+
+
+# # Update project
+# @login_required
+# def add_project(request):
+#     if request.method == "POST":
+#         form = ProjectForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             form.save()
+#             return redirect("projects-list")
+#     else:
+#         form = ProjectForm()
+#     return render(request, "menti/projects_list.html", {"form": form, "editing": False})
+#
+#
+# @login_required
+# def update_project(request, project_id):
+#     project = get_object_or_404(Project, id=project_id)
+#     if request.method == "POST":
+#         form = ProjectForm(request.POST, request.FILES, instance=project)
+#         if form.is_valid():
+#             form.save()
+#             return redirect("projects_list")
+#     else:
+#         form = ProjectForm(instance=project)
+#     return render(
+#         request,
+#         "mentee/projects.html",
+#         {"form": form, "editing": True, "project_id": project.id},
+#     )
+#
+# # Delete project
+# @login_required
+# def delete_project(request, pk):
+#     project = get_object_or_404(Project, pk=pk)
+#     project.delete()
+#     return redirect('projects-list')
 
 
 class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):

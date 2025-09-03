@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo
+from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -7,7 +7,13 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User
 
 
-
+@admin.register(InternshipPBL)
+class InternshipPBLAdmin(admin.ModelAdmin):
+    list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days")
+    search_fields = ("title", "company_name", "user__username")  # 🔍 search filter
+    list_filter = ("user", "academic_year", "semester", "type")  # ✅ dropdown filters
+    ordering = ("-start_date",)  # ⬅️ latest internships first
+    readonly_fields = ("no_of_days",)  # prevent editing
 
 
 
@@ -43,9 +49,6 @@ class MsgAdmin(admin.ModelAdmin):
 
 
 class MentorAdmin(admin.ModelAdmin):
-
-
-
     search_fields = ("interests",)
 
 

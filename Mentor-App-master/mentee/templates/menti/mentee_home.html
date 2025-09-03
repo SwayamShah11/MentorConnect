@@ -1,0 +1,58 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    body {
+        /* Gradient background */
+        background: linear-gradient(135deg, #89f7fe, #66a6ff);
+        min-height: 100vh;
+    }
+
+    .profile-card {
+        background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+        backdrop-filter: blur(8px); /* Frosted glass effect */
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-5px); /* Lift effect on hover */
+    }
+</style>
+<div class="container d-flex justify-content-center align-items-center mt-5">
+
+    <div class="card profile-card p-4" style="max-width: 450px; width: 100%;">
+
+        <!-- Profile Image -->
+        <div class="text-center">
+            <img src="{{ profile.image.url }}"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width: 160px; height: 160px; object-fit: cover;">
+        </div>
+
+        <!-- User Info -->
+        <div class="card-body text-center">
+            <h3 class="fw-bold text-dark mb-1">
+                {{ profile.student_name }}
+            </h3>
+            <p class="text-muted mb-3">{{ profile.about_me }}</p>
+
+            <div class="text-start text-center px-4">
+                <p><strong>Year:</strong> {{ profile.year }}</p>
+                <p><strong>Branch:</strong> {{ profile.branch }}</p>
+            </div>
+        </div>
+
+        <!-- Next Button -->
+        <div class="text-center mt-3">
+            <a href="{% url 'profile' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm">
+                Next <i class="bi bi-arrow-right-circle-fill"></i>
+            </a>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,44 +1,181 @@
 {% extends 'menti/base.html' %}
-{% load crispy_forms_tags %}
-
-
+{% load widget_tweaks %}
+{% load static %}
 {% block content %}
-
-
-
-  <div class="row">
-        <div class="col-md-8">
-
-   <div class="content-section">
-      <div class="media">
-         <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
-         <div class="media-body">
-            <h2 class="account-heading">{{ user.username }}</h2>
-            <p class="text-secondary">{{ user.email }}</p>
-
-         </div>
-      </div>
-
-      <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <fieldset class="form-group">
-                <legend class="border-bottom mb-4">Profile Info</legend>
-                {{ u_form|crispy }}
-                {{ p_form|crispy }}
-            </fieldset>
-            <div class="form-group">
-                <button class="btn btn-outline-info" type="submit">Update</button>
-            </div>
-        </form>
-
-
-
-
-
-   </div>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar bg-steel text-white p-3">
+        <!-- User Info -->
+        <div class="text-center mb-3">
+            <img src="{{ user.profile.image.url }}"
+                 alt="Profile Pic"
+                 class="rounded-circle border shadow-sm mb-2"
+                 style="width:80px; height:80px; object-fit:cover;">
         </div>
-  </div>
+        <h5 class="fw-bold">{{ user.profile.student_name|default:user.get_full_name }}</h5>
+        <small><b>ID: {{ user.profile.moodle_id }}</b></small><br>
+        <small><b>{{ user.profile.branch }} - {{ user.profile.year }}</b></small>
+
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a href="{% url 'mentee-home' %}" class="nav-link text-white">Home</a></li>
+            <li class="nav-item"><a href="{% url 'profile' %}" class="nav-link text-white">Profile</a></li>
+
+            <!-- Activities dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#activitiesMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="activitiesMenu">
+                <span>Activities</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="activitiesMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'internship-pbl-list' %}" class="nav-link text-white">Internship/PBL</a></li>
+                  <li><a href="{% url 'projects-list' %}" class="nav-link text-white">Projects</a></li>
+                  <li><a href="{% url 'sports-and-cultural' %}" class="nav-link text-white">Sports and Cultural</a></li>
+                  <li><a href="#" class="nav-link text-white">Other Achievements</a></li>
+                </ul>
+              </div>
+            </li>
 
 
+            <!-- Certifications dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#certMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="certMenu">
+                <span>Certifications</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="certMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="#" class="nav-link text-white">Certifications/Courses</a></li>
+                  <li><a href="#" class="nav-link text-white">Paper Publications</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <!-- Assessment dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#assessmentMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="assessmentMenu">
+                <span>Assessment</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="assessmentMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="#" class="nav-link text-white">Self Assessment</a></li>
+                  <li><a href="#" class="nav-link text-white">Long Term Goals</a></li>
+                  <li><a href="#" class="nav-link text-white">Educational Details</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item"><a href="{% url 'account' %}" class="nav-link text-white">Mentor</a></li>
+            <li class="nav-item"><a href="{% url 'module-message' %}" class="nav-link text-white">Messages</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-white">Semester Results</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-white">Student Interests</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-white">Your Uploaded Documents</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-white">Credits</a></li>
+            <li class="nav-item"><a href="{% url 'logout' %}" class="nav-link text-white">Logout</a></li>
+        </ul>
+
+        <hr>
+        <button class="btn btn-light btn-sm w-100">Generate Resume</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content flex-grow-1 p-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="card shadow-lg rounded-3">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">Update Profile</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <!-- Your form fields exactly as you had them -->
+                                {{ form.as_p }}
+                                <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                                    <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">Save Changes</button>
+                                    <a href="{% url 'internship-pbl-list' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm w-100 w-md-50">
+                                    Next <i class="bi bi-arrow-right-circle-fill"></i>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+/* Sidebar styling */
+.sidebar {
+    width: 250px;
+    height: calc(100vh - 56px);   /* Full height minus navbar */
+    position: fixed;
+    top: 56px;                    /* Push below navbar */
+    left: 0;
+    overflow-y: auto;             /* Scrollable */
+<!--    background-color: #343a40;    /* Dark sidebar (Bootstrap dark) */-->
+    scrollbar-width: thin;        /* Firefox */
+    scrollbar-color: #6c757d #212529; /* Custom scrollbar colors */
+}
+
+/* Custom scrollbar for WebKit (Chrome, Edge, Safari) */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #6c757d;
+    border-radius: 3px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background-color: #212529;
+}
+
+/* Sidebar nav links */
+.sidebar .nav-link {
+    font-size: 14px;
+    padding: 6px 12px;
+    color: #f8f9fa;               /* White text */
+}
+.sidebar .nav-link:hover {
+    background-color: #495057;
+    border-radius: 4px;
+}
+
+/* Collapsible submenu links */
+.sidebar .collapse .nav-link {
+    font-size: 13px;
+    padding-left: 20px;
+}
+
+/* Content area */
+.content {
+    margin-left: 250px;           /* Same as sidebar width */
+    margin-top: 56px;             /* Push below navbar */
+    padding: 1rem;
+}
+
+/* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+</style>
 
 {% endblock %}

@@ -138,6 +138,11 @@ def user_login(request):
         return render(request, 'mentor/login1.html', {})
 
 
+def custom_logout(request):
+    logout(request)
+    return redirect('login1')
+
+
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """controls message view"""
 

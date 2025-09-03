@@ -39,9 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'crispy_bootstrap5',
-    'mentee',
+    'widget_tweaks',
     'django.contrib.humanize',
-
+    'mentee.apps.MenteeConfig'
 ]
 
 MIDDLEWARE = [

@@ -1,3 +1,5 @@
+from random import choices
+
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -44,21 +46,76 @@ class Mentor(models.Model):
     def __str__(self):
         return self.user.username
 
-
 class Profile(models.Model):
-    """Profile Model"""
+    """Extended Profile Model"""
+
+    SEMESTER_CHOICES = [
+        ('I', 'I'),
+        ('II', 'II'),
+        ('III', 'III'),
+        ('IV', 'IV'),
+        ('V', 'V'),
+        ('VI', 'VI'),
+        ('VII', 'VII'),
+        ('VIII', 'VIII'),
+    ]
+
+    YEAR_CHOICES = [
+        ('FE', 'FE'),  # First Year
+        ('SE', 'SE'),  # Second Year
+        ('TE', 'TE'),  # Third Year
+        ('BE', 'BE'),  # Final Year
+    ]
+
+    BRANCH_CHOICES = [
+        ('IT', 'Information Technology'),
+        ('CSE', 'Computer Science'),
+        ('AIML', 'Computer Science - Artificial Intelligence & Machine Learning'),
+        ('DS', 'Computer Science - Data Science'),
+        ('EXTC', 'Electronics & Telecommunication'),
+        ('EEE', 'Electrical & Electronics'),
+        ('ME', 'Mechanical Engineering'),
+        ('CE', 'Civil Engineering'),
+    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(default='default.jpg', upload_to='profile_pics')
-    education = models.CharField(default='degree', max_length=100)
-    registration = models.CharField(default='BBIT/2014/62324', max_length=100)
+
+    # --- Personal Details ---
+    moodle_id = models.CharField(max_length=20, blank=True, null=True)
+    student_name = models.CharField(max_length=200, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, blank=True, null=True)
+    branch = models.CharField(max_length=100, choices=BRANCH_CHOICES, blank=True, null=True)
+    career_domain = models.CharField(max_length=200, blank=True)
+
+    address = models.TextField(blank=True, null=True)
+    contact_number = models.CharField(max_length=15, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    dob = models.DateField(blank=True, null=True)
+    hobby = models.TextField(blank=True, null=True)
+    about_me = models.TextField(blank=True, null=True)
+
+    # --- Family Details ---
+    mother_name = models.CharField(max_length=100, blank=True, null=True)
+    mother_occupation = models.CharField(max_length=100, blank=True, null=True)
+    mother_contact = models.CharField(max_length=15, blank=True, null=True)
+
+    father_name = models.CharField(max_length=100, blank=True, null=True)
+    father_occupation = models.CharField(max_length=100, blank=True, null=True)
+    father_contact = models.CharField(max_length=15, blank=True, null=True)
+
+    sibling1_name = models.CharField(max_length=100, blank=True, null=True)
+    sibling2_name = models.CharField(max_length=100, blank=True, null=True)
+
 
     def __str__(self):
-        return f'{self.user.username} '
+        if self.user:
+            return f"{self.user.username}'s Profile"
+        return "Profile (no user)"
 
     def save(self, **kwargs):
         super().save()
-
         img = Image.open(self.image.path)
 
         if img.height > 300 or img.width > 300:
@@ -66,14 +123,99 @@ class Profile(models.Model):
             img.thumbnail(output_size)
             img.save(self.image.path)
 
-    @receiver(post_save, sender=User)
-    def create_user_profile(sender, instance, created, **kwargs):
-        if created:
-            Profile.objects.create(user=instance)
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance, moodle_id=instance.username)  # 👈 auto set moodle_id
 
-    @receiver(post_save, sender=User)
-    def save_user_profile(sender, instance, **kwargs):
-        instance.profile.save()
+@receiver(post_save, sender=User)
+def save_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+
+class InternshipPBL(models.Model):
+    SEMESTER = [
+        ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
+        ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
+    ]
+
+    TYPE_CHOICES = [
+        ("Internship in Industry", "Internship in Industry"),
+        ("Internship through APSIT SKILLS Platform", "Internship through APSIT SKILLS Platform"),
+        ("Internship through AICTE Virtual Internship Platform", "Internship through AICTE Virtual Internship Platform"),
+        ("PBL", "PBL"),
+        ("Other", "Other"),
+    ]
+
+    AY = [
+        ('2017-18', '2017-18'),
+        ('2018-19', '2018-19'),
+        ('2019-20', '2019-20'),
+        ('2020-21', '2020-21'),
+        ('2021-22', '2021-22'),
+        ('2022-23', '2022-23'),
+        ('2023-24', '2023-24'),
+        ('2024-25', '2024-25'),
+        ('2025-26', '2025-26'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    title = models.CharField(max_length=200, blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    type = models.CharField(max_length=200, choices=TYPE_CHOICES, blank=True, null=True)
+    company_name = models.CharField(max_length=100, blank=True, null=True)
+    details = models.TextField(max_length=500, blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    no_of_days = models.IntegerField(blank=True, null=True)
+    certificate = models.FileField(upload_to="certificates/", blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.start_date and self.end_date:
+            delta = (self.end_date - self.start_date).days + 1
+            self.no_of_days = delta if delta > 0 else None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} ({self.academic_year})"
+
+
+class Project(models.Model):
+    SEMESTER_CHOICES = [
+        ("I", "I"), ("II", "II"), ("III", "III"), ("IV", "IV"),
+        ("V", "V"), ("VI", "VI"), ("VII", "VII"), ("VIII", "VIII"),
+    ]
+    TYPE_CHOICES = [
+        ("Mini Project", "Mini Project"),
+        ("Major Project", "Major Project"),
+        ("Research", "Research"),
+        ("Other", "Other"),
+    ]
+    AY = [
+        ('2017-18', '2017-18'),
+        ('2018-19', '2018-19'),
+        ('2019-20', '2019-20'),
+        ('2020-21', '2020-21'),
+        ('2021-22', '2021-22'),
+        ('2022-23', '2022-23'),
+        ('2023-24', '2023-24'),
+        ('2024-25', '2024-25'),
+        ('2025-26', '2025-26'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    title = models.CharField(max_length=200, blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, blank=True, null=True)
+    project_type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
+    details = models.TextField(max_length=1000, blank=True, null=True)
+    guide_name = models.CharField(max_length=100, blank=True, null=True)
+    link = models.URLField(blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
 
 
 class Reply(models.Model):

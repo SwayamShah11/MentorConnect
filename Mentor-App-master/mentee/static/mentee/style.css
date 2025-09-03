@@ -1,0 +1,149 @@
+/* ------------------------------
+   GLOBAL BODY & BACKGROUND
+------------------------------- */
+body {
+  min-height: 100vh;
+  margin-top: 5rem;
+  color: #212529; /* default dark text */
+  background: linear-gradient(135deg, #89f7fe, #66a6ff);
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background-attachment: fixed;
+}
+
+/* ------------------------------
+   TYPOGRAPHY
+------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  color: #222; /* dark headings */
+}
+
+a {
+  color: #4a64c6;
+  text-decoration: none;
+}
+a:hover {
+  color: #2c3e91;
+  text-decoration: underline;
+}
+
+/* ------------------------------
+   NAVBAR
+------------------------------- */
+.bg-steel {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.site-header .navbar-nav .nav-link {
+  color: #e9ecf8;
+  transition: color 0.3s ease;
+}
+
+.site-header .navbar-nav .nav-link:hover {
+  color: #ffffff;
+}
+
+.site-header .navbar-nav .nav-link.active {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ------------------------------
+   CARDS / CONTENT SECTIONS
+------------------------------- */
+.content-section,
+.profile-card {
+  background: #ffffff; /* solid white card */
+  color: #212529;      /* dark text inside */
+  padding: 25px;
+  border: none;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease;
+}
+.content-section:hover,
+.profile-card:hover {
+  transform: translateY(-4px);
+}
+
+.article-title {
+  color: #222;
+  font-weight: bold;
+}
+a.article-title:hover {
+  color: #4a64c6;
+  text-decoration: none;
+}
+
+.article-content {
+  white-space: pre-line;
+  color: #333;
+}
+
+/* ------------------------------
+   IMAGES / METADATA
+------------------------------- */
+.article-img {
+  height: 65px;
+  width: 65px;
+  margin-right: 16px;
+  border-radius: 50%;
+  border: 2px solid #4a64c6;
+}
+
+.article-metadata {
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.9rem;
+  color: #666;
+}
+.article-metadata a:hover {
+  color: #4a64c6;
+  text-decoration: none;
+}
+
+.article-svg {
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+  fill: #4a64c6;
+}
+
+/* ------------------------------
+   ACCOUNT PROFILE
+------------------------------- */
+.account-img {
+  height: 125px;
+  width: 125px;
+  margin-right: 20px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  border: 3px solid #4a64c6;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.account-heading {
+  font-size: 2.5rem;
+  color: #222;
+}
+
+/* ------------------------------
+   BUTTONS
+------------------------------- */
+.btn-custom,
+.btn-warning {
+  background: linear-gradient(to right, #4a64c6, #5b86e5);
+  color: #ffffff !important;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-custom:hover,
+.btn-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 18px rgba(74, 100, 198, 0.4);
+}
