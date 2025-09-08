@@ -5,7 +5,7 @@ body {
   min-height: 100vh;
   margin-top: 5rem;
   color: #212529; /* default dark text */
-  background: linear-gradient(135deg, #89f7fe, #66a6ff);
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   background-attachment: fixed;
 }
@@ -53,8 +53,8 @@ a:hover {
 ------------------------------- */
 .content-section,
 .profile-card {
-  background: #ffffff; /* solid white card */
-  color: #212529;      /* dark text inside */
+  background: #121212;
+  color: #ffffff;      /* white text inside */
   padding: 25px;
   border: none;
   border-radius: 15px;
@@ -147,3 +147,134 @@ a.article-title:hover {
   transform: translateY(-2px);
   box-shadow: 0px 8px 18px rgba(74, 100, 198, 0.4);
 }
+
+
+/* Sidebar styling */
+        .sidebar {
+            width: 250px;
+            height: calc(100vh - 56px);   /* Full height minus navbar */
+            position: fixed;
+            top: 56px;                    /* Push below navbar */
+            left: -250px;
+            overflow-y: auto;             /* Scrollable */
+            transition: left 0.3s ease-in-out;
+            z-index: 1050; /* stays above content */
+            scrollbar-width: thin;        /* Firefox */
+            scrollbar-color: #6c757d #212529; /* Custom scrollbar colors */
+            <!--    background-color: #343a40;    /* Dark sidebar (Bootstrap dark) */-->
+        }
+
+        /* Custom scrollbar for WebKit (Chrome, Edge, Safari) */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: #6c757d;
+            border-radius: 3px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background-color: #212529;
+        }
+
+        /* Sidebar nav links */
+        .sidebar .nav-link {
+            font-size: 14px;
+            padding: 6px 12px;
+            color: #f8f9fa;               /* White text */
+        }
+        .sidebar .nav-link:hover {
+            background-color: #495057;
+            border-radius: 4px;
+        }
+
+        /* Collapsible submenu links */
+        .sidebar .collapse .nav-link {
+            font-size: 13px;
+            padding-left: 20px;
+        }
+
+        .sidebar.active {
+          left: 0;
+        }
+
+        /* Content area */
+        .content {
+            margin-left: 0;           /* Same as sidebar width */
+            margin-top: 56px;             /* Push below navbar */
+            padding: 1rem;
+            transition: margin-left 0.3s ease-in-out;
+        }
+        .content.shifted{
+            margin-left: 250px;
+        }
+
+        .card, .card-body{
+          background: #121212;
+          position: relative;
+          overflow: hidden;
+          border-radius: 15px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Dark floating header inside the card */
+        .header-dark {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          z-index: 10;
+          background: rgba(0,0,0,0.9) !important; /* beat Bootstrap */
+          color: #fff !important;
+          backdrop-filter: blur(4px);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+          padding: 1rem;
+        }
+
+        /* Make sure header text/icons are white */
+        .header-dark h4,
+        .header-dark i { color: #fff !important; }
+
+        /* Push body content down so it's not hidden under header */
+        .card-body {
+          color: #121212;
+          padding-top: 80px; /* adjust equal to header height */
+          position: relative;
+          z-index: 1;
+        }
+
+        /* Header toggle button (replace btn-light) */
+        .header-btn {
+          background: rgba(255,255,255,0.12) !important;
+          color: #fff !important;
+          border: 1px solid rgba(255,255,255,0.2) !important;
+          transition: background .2s, transform .2s;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.22) !important; transform: scale(1.05); }
+        .header-btn i { color: #fff !important; }
+
+        /* Labels */
+        .form-label {
+          font-weight: 600;
+          color: #fff;
+        }
+
+        /* Inputs */
+        .form-control, .form-select {
+          border-radius: 10px;
+          border: 1px solid #ddd;
+          padding: 10px 14px;
+          transition: all 0.2s ease-in-out;
+        }
+
+        .form-control:focus, .form-select:focus {
+          border-color: #4facfe;
+          box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25);
+        }
+
+        /* Buttons */
+        .btn {
+          border-radius: 12px;
+          font-weight: 500;
+          transition: transform 0.2s;
+        }
+        .btn:hover {
+          transform: translateY(-2px);
+        }

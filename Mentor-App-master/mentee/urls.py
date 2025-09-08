@@ -2,12 +2,8 @@ from .views import mentee, mentor
 from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
 
-
-
-
 """Mentor and Mentee URLs"""
 urlpatterns = [
-
     path('', mentee.home, name="home"),
 
     #mentee url
@@ -16,9 +12,31 @@ urlpatterns = [
     path('register/', mentee.register, name="register"),
     path('profile/', mentee.profile, name="profile"),
     path('internship-pbl-list/', mentee.internship_pbl_list, name="internship-pbl-list"),
+    path("internships/<int:pk>/edit/", mentee.internship_pbl_list, name="edit_internship"),
     path("delete/<int:pk>/", mentee.delete_internship, name="delete_internship"),
     path("projects-list/", mentee.projects_view, name="projects-list"),
-    path("sports-and-cultural/", mentee.projects_view, name="sports-and-cultural"),
+    path("sports-and-cultural/", mentee.sports_cultural_list, name="sports-and-cultural"),
+    path("sports-and-cultural/edit/<int:pk>/", mentee.edit_sports_cultural, name="edit_sports_cultural"),
+    path("sports-and-cultural/delete/<int:pk>/", mentee.delete_sports_cultural, name="delete_sports_cultural"),
+    path("other-events/", mentee.other_event_list, name="other-events"),
+    path("other-events/<int:pk>/", mentee.other_event_list, name="other-events"),
+    path("other-events/delete/<int:pk>/", mentee.delete_other_event, name="delete_other_event"),
+    path("certifications/", mentee.certification_list, name="certifications"),
+    path("certifications/<int:pk>/edit/", mentee.certification_list, name="edit_certification"),
+    path("certifications/<int:pk>/delete/", mentee.delete_certification, name="delete_certification"),
+    path("publications/", mentee.publications_list, name="publications"),
+    path("publications/<int:pk>/edit/", mentee.publications_list, name="edit_publication"),
+    path("publications/<int:pk>/delete/", mentee.delete_publication, name="delete_publication"),
+    path("self-assessment/", mentee.self_assessment, name="self_assessment"),
+    path("self-assessment/<int:pk>/edit/", mentee.self_assessment, name="edit_assessment"),
+    path("self-assessment/<int:pk>/delete/", mentee.delete_assessment, name="delete_assessment"),
+    path("long-term-goals/", mentee.long_term_goals, name="long_term_goals"),
+    path("long-term-goals/edit/<int:edit_id>/", mentee.long_term_goals, name="edit_subject"),
+    path("delete-subject/<int:pk>/", mentee.delete_subject, name="delete_subject"),
+    path("educational-details/", mentee.educational_details, name="educational-details"),
+    path("semester-results/", mentee.semester_results, name="semester_results"),
+    path("semester-results/edit/<int:pk>/", mentee.edit_semester, name="edit_semester"),
+    path("semester-results/delete/<int:pk>/", mentee.delete_semester, name="delete_semester"),
     path('message-module/', mentee.MessageView.as_view(), name="module-message"),
     #path('message-module/', mentee.messege_view, name="module-message"),
     path('message/', mentee.MessageCreateView.as_view(), name="Message"),
@@ -47,9 +65,6 @@ urlpatterns = [
     path('pdf/', mentee.Pdf.as_view(), name="pdf"),
 
 
-
-
-
     #mentor urls
     path('account1/', mentor.AccountView.as_view(), name="account1"),
     path('register1/', mentor.register1, name="register1"),
@@ -76,10 +91,6 @@ urlpatterns = [
     path('chat-delete/<int:pk>', mentor.ConversationDeleteView.as_view(), name='chat-delete'),
     path('conversation-delete/<int:pk>', mentor.Conversation2DeleteView.as_view(), name='conversation-delete'),
     path('pdf1/', mentor.Pdf.as_view(), name="pdf1"),
-
-
-
-
 ]
 
 

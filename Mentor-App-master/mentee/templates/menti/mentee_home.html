@@ -5,12 +5,13 @@
 <style>
     body {
         /* Gradient background */
-        background: linear-gradient(135deg, #89f7fe, #66a6ff);
+        color: #212529;
         min-height: 100vh;
     }
 
     .profile-card {
-        background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+        background: #121212;
+        color: #ffffff;
         backdrop-filter: blur(8px); /* Frosted glass effect */
         border-radius: 20px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -19,6 +20,9 @@
 
     .profile-card:hover {
         transform: translateY(-5px); /* Lift effect on hover */
+    }
+    p.text-muted {
+        color: #fff !important;
     }
 </style>
 <div class="container d-flex justify-content-center align-items-center mt-5">
@@ -34,7 +38,7 @@
 
         <!-- User Info -->
         <div class="card-body text-center">
-            <h3 class="fw-bold text-dark mb-1">
+            <h3 class="fw-bold mb-1">
                 {{ profile.student_name }}
             </h3>
             <p class="text-muted mb-3">{{ profile.about_me }}</p>

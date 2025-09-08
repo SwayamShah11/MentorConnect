@@ -1,0 +1,159 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="d-flex">
+    <!-- Main Content -->
+    <div class="content flex-grow-1 p-4">
+        <div class="container">
+
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-3">
+                <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
+                    <i id="sidebarIcon" class="bi bi-list"></i>
+                </a>
+                <h2 class="mb-0">Semester Results</h2>
+            </div>
+
+            <!-- Table -->
+            <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">Semester</th>
+                        <th class="text-center">Pointer</th>
+                        <th class="text-center">No. of KT's</th>
+                        <th class="text-center">Marksheet</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in semesters %}
+                        <tr>
+                            <td class="text-center">{{ item.semester }}</td>
+                            <td class="text-center">{{ item.pointer }}</td>
+                            <td class="text-center">{{ item.no_of_kt }}</td>
+                            <td class="text-center">
+                                {% if item.marksheet %}
+                                    <a href="{{ item.marksheet.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
+                                    <a href="{% url 'edit_semester' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
+                                    <a href="{{ item.marksheet.url }}" class="btn btn-success btn-sm mt-1" download><i class="bi bi-box-arrow-down"></i></a>
+                                    <a href="{% url 'delete_semester' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
+                                {% else %}
+                                    <span class="text-muted">Not Uploaded</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center">No records yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Add / Edit Form -->
+            <div class="row justify-content-center">
+                <div class="col-md-10"><br>
+                    <button class="btn btn-danger mb-3" id="showFormBtn">
+                        Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
+                    </button>
+
+                    <div class="card shadow-lg rounded-3 {% if editing %}border-primary{% endif %}">
+                        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+                            <h4 class="mb-0 fw-semibold">{% if editing %} Edit Semester Result {% else %} Add Semester Result {% endif %}</h4>
+                        </div><br><br>
+                        <div class="card-body">
+                            <div id="semesterForm" class="{% if editing %}show{% endif %}">
+                                <form method="post" enctype="multipart/form-data"
+                                      action="{% if editing %}{% url 'edit_semester' edit_id %}{% else %}{% url 'semester_results' %}{% endif %}">
+                                    {% csrf_token %}
+                                    <div class="row g-3">
+                                        <small class="text-muted" style="color:#ff0000 !important;">
+                                            Note: '*' asterisk denotes that the fields are required.
+                                        </small>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.semester|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Pointer <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.pointer|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">No. of KT's <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.no_of_kt|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Upload Marksheet <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.marksheet|add_class:"form-control" }}
+                                            {% if form.marksheet.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.marksheet.errors %}
+                                                        <small>{{ error }}</small><br>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                                        <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">
+                                            {% if editing %}Update{% else %}Submit{% endif %}
+                                        </button>
+                                        {% if editing %}
+                                            <a href="{% url 'semester_results' %}" class="btn btn-secondary btn-lg w-100 w-md-50">Cancel</a>
+                                        {% endif %}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prev / Next Buttons -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                <a href="{% url 'module-message' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle-fill"></i> Prev
+                </a>
+                <a href="{% url 'semester_results' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById("showFormBtn").addEventListener("click", function(){
+    var formDiv = document.getElementById("semesterForm");
+    var icon = document.getElementById("toggleIcon");
+    var btn = document.getElementById("showFormBtn");
+
+    formDiv.classList.toggle("show");
+
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg");
+        btn.childNodes[0].nodeValue = "Remove ";
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg");
+        btn.childNodes[0].nodeValue = "Add ";
+    }
+});
+</script>
+
+<style>
+#semesterForm {
+  max-height: 0;
+  overflow:hidden;
+  transition: max-height 0.4s ease;
+}
+#semesterForm.show {
+  max-height: 800px;
+}
+p.text-muted {
+    color: #ff0000 !important;
+}
+</style>
+{% endblock %}

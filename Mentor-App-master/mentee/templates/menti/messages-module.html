@@ -1,30 +1,31 @@
 {% extends 'menti/base.html' %}
-
-
+{% load static %}
+{% load widget_tweaks %}
 {% block content %}
-
-
    <main role="main" class="container">
-      <div class="row">
-
-        <div class="col-md-4">
-          <div class="content-section">
-            <h3>Message Corner</h3>
-            <p class='text-muted'>Message Corner
-              <ul class="list-group">
-                <li class="list-group-item list-group-item-light"><a href="{% url 'Message'%}">Create New Message</a></li>
-                <li class="list-group-item list-group-item-light"><a href="{% url 'list' %}">Sent Messages ({{ count4 }})</a></li>
-                <li class="list-group-item list-group-item-light"><a href="{% url 'inbox1'%}">Unapproved Requests ({{ count }}) </a></li>
-                <li class="list-group-item list-group-item-light"><a href="{% url 'approved'%}">Approved Requests ({{ count1 }})</a></li>
-              <li class="list-group-item list-group-item-light"><a href="{% url 'conv' %}">Conversations ({{ count3 }})</a></li>
-
-
-
-
-              </ul>
-            </p>
+       <div class="d-flex">
+          <div class="row">
+            <div class="col-12">
+              <div class="content flex-grow-1 p-4">
+                <div class="container">
+                  <div class="content-section">
+                    <h3>
+                        <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2"><i id="sidebarIcon" class="bi bi-list"></i></a>|
+                        Message Corner
+                    </h3>
+                    <p class='text-muted'>Message Corner</p>
+                      <ul class="list-group">
+                        <li class="list-group-item list-group-item-light"><a href="{% url 'Message'%}">Create New Message</a></li>
+                        <li class="list-group-item list-group-item-light"><a href="{% url 'list' %}">Sent Messages ({{ count4 }})</a></li>
+                        <li class="list-group-item list-group-item-light"><a href="{% url 'inbox1'%}">Unapproved Requests ({{ count }}) </a></li>
+                        <li class="list-group-item list-group-item-light"><a href="{% url 'approved'%}">Approved Requests ({{ count1 }})</a></li>
+                        <li class="list-group-item list-group-item-light"><a href="{% url 'conv' %}">Conversations ({{ count3 }})</a></li>
+                      </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </main>
+       </div>
+   </main>
 {% endblock %}

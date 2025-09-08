@@ -4,9 +4,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, ProjectForm
+from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, Project
+from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -30,8 +30,6 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from ..forms import SendForm
 from django.db.models import Count, Q
 from ..render import Render
-from ..models import InternshipPBL
-from ..forms import InternshipPBLForm
 from django.http import HttpResponse, Http404
 from django.conf import settings
 import os
@@ -197,28 +195,44 @@ class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
 
 @login_required
-def internship_pbl_list(request):
-    internships = InternshipPBL.objects.filter(user=request.user)  # show only user’s data
+def internship_pbl_list(request, pk=None):
+    internships = InternshipPBL.objects.filter(user=request.user).order_by("-start_date")
+    internship = None
+    editing = False
+
+    if pk:  # Editing case
+        internship = get_object_or_404(InternshipPBL, pk=pk, user=request.user)
+        editing = True
 
     if request.method == "POST":
-        form = InternshipPBLForm(request.POST, request.FILES)
+        form = InternshipPBLForm(request.POST, request.FILES, instance=internship)
         if form.is_valid():
             internship = form.save(commit=False)
-            internship.user = request.user   # 🔥 link logged-in user
-            # Auto-calc safeguard if JS fails
+            internship.user = request.user
+
             if internship.start_date and internship.end_date:
                 internship.no_of_days = (internship.end_date - internship.start_date).days + 1
+
             internship.save()
+
+            if editing:
+                messages.success(request, "Internship record updated successfully.")
+            else:
+                messages.success(request, "Internship record added successfully.")
+
             return redirect("internship-pbl-list")
         else:
-            print(form.errors)  # debug in console
+            print(form.errors)
     else:
-        form = InternshipPBLForm()
+        form = InternshipPBLForm(instance=internship)
 
     return render(request, "menti/internship_pbl_list.html", {
         "internships": internships,
-        "form": form
+        "form": form,
+        "editing": editing,
+        "edit_id": internship.pk if internship else None
     })
+
 
 
 #download internship certificate
@@ -332,41 +346,379 @@ def projects_view(request):
     )
 
 
-# # Update project
-# @login_required
-# def add_project(request):
-#     if request.method == "POST":
-#         form = ProjectForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             form.save()
-#             return redirect("projects-list")
-#     else:
-#         form = ProjectForm()
-#     return render(request, "menti/projects_list.html", {"form": form, "editing": False})
-#
-#
-# @login_required
-# def update_project(request, project_id):
-#     project = get_object_or_404(Project, id=project_id)
-#     if request.method == "POST":
-#         form = ProjectForm(request.POST, request.FILES, instance=project)
-#         if form.is_valid():
-#             form.save()
-#             return redirect("projects_list")
-#     else:
-#         form = ProjectForm(instance=project)
-#     return render(
-#         request,
-#         "mentee/projects.html",
-#         {"form": form, "editing": True, "project_id": project.id},
-#     )
-#
-# # Delete project
-# @login_required
-# def delete_project(request, pk):
-#     project = get_object_or_404(Project, pk=pk)
-#     project.delete()
-#     return redirect('projects-list')
+@login_required
+def sports_cultural_list(request):
+    events = SportsCulturalEvent.objects.filter(user=request.user).order_by("-uploaded_at")
+
+    editing = False
+    edit_id = None
+
+    if request.method == "POST":
+        form = SportsCulturalForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.user = request.user
+            event.save()
+            messages.success(request, "Event added successfully.")
+            return redirect("sports-and-cultural")
+    else:
+        form = SportsCulturalForm()
+
+    return render(request, "menti/sports_and_cultural.html", {
+        "events": events,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id,
+    })
+
+
+@login_required
+def edit_sports_cultural(request, pk):
+    event = get_object_or_404(SportsCulturalEvent, pk=pk, user=request.user)
+    editing = True
+    edit_id = pk
+
+    if request.method == "POST":
+        form = SportsCulturalForm(request.POST, request.FILES, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Event updated successfully.")
+            return redirect("sports-and-cultural")
+    else:
+        form = SportsCulturalForm(instance=event)
+
+    events = SportsCulturalEvent.objects.filter(user=request.user).order_by("-uploaded_at")
+
+    return render(request, "menti/sports_and_cultural.html", {
+        "events": events,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id,
+    })
+
+
+@login_required
+def delete_sports_cultural(request, pk):
+    event = get_object_or_404(SportsCulturalEvent, pk=pk, user=request.user)
+
+    if event.certificate:
+        event.certificate.delete(save=False)
+
+    event.delete()
+    messages.success(request, "Event deleted successfully.")
+    return redirect("sports-and-cultural")
+
+
+@login_required
+def other_event_list(request, pk=None):
+    events = OtherEvent.objects.filter(user=request.user).order_by("-uploaded_at")
+    editing = False
+    edit_id = None
+
+    if pk:  # Editing mode
+        event = get_object_or_404(OtherEvent, pk=pk, user=request.user)
+        form = OtherEventForm(instance=event)
+        editing = True
+        edit_id = pk
+    else:
+        form = OtherEventForm()
+
+    if request.method == "POST":
+        if pk:  # Update existing record
+            form = OtherEventForm(request.POST, request.FILES, instance=event)
+        else:   # Add new record
+            form = OtherEventForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            new_event = form.save(commit=False)
+            new_event.user = request.user
+            new_event.save()
+            return redirect("other-events")
+
+    return render(request, "menti/other_events.html", {
+        "events": events,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id
+    })
+
+
+@login_required
+def delete_other_event(request, pk):
+    event = get_object_or_404(OtherEvent, pk=pk, user=request.user)
+
+    if event.certificate:
+        file_path = event.certificate.path
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    event.delete()
+    messages.success(request, "Event deleted successfully.")
+    return redirect("other-events")
+
+
+@login_required
+def certification_list(request, pk=None):
+    certifications = CertificationCourse.objects.filter(user=request.user).order_by("-uploaded_at")
+    editing = False
+    edit_id = None
+
+    if pk:
+        cert = get_object_or_404(CertificationCourse, pk=pk, user=request.user)
+        form = CertificationCourseForm(instance=cert)
+        editing = True
+        edit_id = pk
+    else:
+        form = CertificationCourseForm()
+
+    if request.method == "POST":
+        if pk:
+            form = CertificationCourseForm(request.POST, request.FILES, instance=cert)
+        else:
+            form = CertificationCourseForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            new_cert = form.save(commit=False)
+            new_cert.user = request.user
+            new_cert.save()
+            return redirect("certifications")
+
+    return render(request, "menti/certifications.html", {
+        "certifications": certifications,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id,
+    })
+
+
+@login_required
+def delete_certification(request, pk):
+    cert = get_object_or_404(CertificationCourse, pk=pk, user=request.user)
+
+    if cert.certificate:
+        file_path = cert.certificate.path
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    cert.delete()
+    messages.success(request, "Certification deleted successfully.")
+    return redirect("certifications")
+
+
+@login_required
+def publications_list(request, pk=None):
+    publications = PaperPublication.objects.filter(user=request.user).order_by("-uploaded_at")
+    editing = False
+    edit_id = None
+
+    if pk:
+        pub = get_object_or_404(PaperPublication, pk=pk, user=request.user)
+        form = PaperPublicationForm(instance=pub)
+        editing = True
+        edit_id = pk
+    else:
+        form = PaperPublicationForm()
+
+    if request.method == "POST":
+        if pk:
+            form = PaperPublicationForm(request.POST, request.FILES, instance=pub)
+        else:
+            form = PaperPublicationForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            new_pub = form.save(commit=False)
+            new_pub.user = request.user
+            new_pub.save()
+            return redirect("publications")
+
+    return render(request, "menti/publications.html", {
+        "publications": publications,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id,
+    })
+
+
+@login_required
+def delete_publication(request, pk):
+    pub = get_object_or_404(PaperPublication, pk=pk, user=request.user)
+    pub.delete()
+    return redirect("publications")
+
+
+@login_required
+def self_assessment(request, pk=None):
+    assessments = SelfAssessment.objects.filter(user=request.user).order_by("-created_at")
+    editing = False
+    edit_id = None
+
+    if pk:
+        assessment = get_object_or_404(SelfAssessment, pk=pk, user=request.user)
+        form = SelfAssessmentForm(instance=assessment)
+        editing = True
+        edit_id = pk
+    else:
+        form = SelfAssessmentForm()
+
+    if request.method == "POST":
+        if pk:
+            form = SelfAssessmentForm(request.POST, instance=assessment)
+        else:
+            form = SelfAssessmentForm(request.POST)
+
+        if form.is_valid():
+            new_assessment = form.save(commit=False)
+            new_assessment.user = request.user
+            new_assessment.save()
+            return redirect("self_assessment")
+
+    return render(request, "menti/self_assessment.html", {
+        "assessments": assessments,
+        "form": form,
+        "editing": editing,
+        "edit_id": edit_id,
+    })
+
+
+@login_required
+def delete_assessment(request, pk):
+    assessment = get_object_or_404(SelfAssessment, pk=pk, user=request.user)
+    assessment.delete()
+    return redirect("self_assessment")
+
+
+@login_required
+def long_term_goals(request, edit_id=None):
+    goals = LongTermGoal.objects.filter(user=request.user)
+    subjects = SubjectOfInterest.objects.filter(user=request.user)
+
+    # --- Long term goal form ---
+    if request.method == "POST" and "save_goal" in request.POST:
+        goal_form = LongTermGoalForm(request.POST)
+        if goal_form.is_valid():
+            goal = goal_form.save(commit=False)
+            goal.user = request.user
+            goal.save()
+            return redirect("long_term_goals")
+    else:
+        goal_form = LongTermGoalForm()
+
+    # --- Subject form (Add/Edit) ---
+    subject_instance = None
+    if edit_id:
+        subject_instance = get_object_or_404(SubjectOfInterest, pk=edit_id, user=request.user)
+
+    if request.method == "POST" and "save_subject" in request.POST:
+        subject_form = SubjectOfInterestForm(request.POST, instance=subject_instance)
+        if subject_form.is_valid():
+            subject = subject_form.save(commit=False)
+            subject.user = request.user
+            subject.save()
+            return redirect("long_term_goals")
+    else:
+        subject_form = SubjectOfInterestForm(instance=subject_instance)
+
+    return render(request, "menti/long_term_goals.html", {
+        "goal_form": goal_form,
+        "goal": goals,
+        "subject_form": subject_form,
+        "subjects": subjects,
+        "edit_id": edit_id,  # pass edit id to template
+    })
+
+
+@login_required
+def delete_subject(request, pk):
+    subject = get_object_or_404(SubjectOfInterest, pk=pk, user=request.user)
+    subject.delete()
+    return redirect("long_term_goals")
+
+
+@login_required
+def educational_details(request):
+    details = EducationalDetail.objects.filter(user=request.user)
+
+    editing = None
+    if "edit" in request.GET:
+        editing = get_object_or_404(EducationalDetail, id=request.GET.get("edit"), user=request.user)
+
+    if request.method == "POST":
+        # Delete action
+        if "delete" in request.POST:
+            detail = get_object_or_404(EducationalDetail, id=request.POST.get("delete"), user=request.user)
+            detail.delete()
+            messages.success(request, "Educational detail deleted successfully.")
+            return redirect("educational-details")
+
+        # Add / Update form
+        form = EducationalDetailForm(request.POST, instance=editing)
+        if form.is_valid():
+            edu = form.save(commit=False)
+            edu.user = request.user   # ✅ ensure user is attached
+            edu.save()
+            messages.success(request, "Educational detail saved successfully.")
+            return redirect("educational-details")
+        else:
+            print("Form errors:", form.errors)  # ✅ Debug line
+    else:
+        form = EducationalDetailForm(instance=editing)
+
+    context = {
+        "details": details,
+        "form": form,
+        "editing": editing,
+    }
+    return render(request, "menti/educational_details.html", context)
+
+
+@login_required
+def semester_results(request):
+    semesters = SemesterResult.objects.filter(user=request.user)
+
+    # Normal add
+    if request.method == "POST" and "edit_id" not in request.POST:
+        form = SemesterResultForm(request.POST, request.FILES)
+        if form.is_valid():
+            sem = form.save(commit=False)
+            sem.user = request.user
+            sem.save()
+            return redirect("semester_results")
+    else:
+        form = SemesterResultForm()
+
+    return render(request, "menti/semester_results.html", {
+        "form": form,
+        "semesters": semesters,
+        "editing": False,
+    })
+
+
+@login_required
+def edit_semester(request, pk):
+    semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        form = SemesterResultForm(request.POST, request.FILES, instance=semester)
+        if form.is_valid():
+            form.save()
+            return redirect("semester_results")
+    else:
+        form = SemesterResultForm(instance=semester)
+
+    semesters = SemesterResult.objects.filter(user=request.user)
+    return render(request, "menti/semester_results.html", {
+        "form": form,
+        "semesters": semesters,
+        "editing": True,
+        "edit_id": semester.pk,
+    })
+
+
+@login_required
+def delete_semester(request, pk):
+    semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
+    semester.delete()
+    return redirect("semester_results")
 
 
 class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):

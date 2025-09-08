@@ -1,41 +1,38 @@
 {% extends 'menti/base.html' %}
-
-
+{% load static %}
+{% load widget_tweaks %}
 {% block content %}
-
-
-
+<div class="d-flex">
+    <div class="content flex-grow-1 p-4">
       <div class="row">
-
         <div class="col-md-10">
           <div class="content-section">
-            <h3>Mentor Corner</h3>
-            <p class='text-muted'>Choose Mentors Suggested below
+            <div class="d-flex align-items-center mb-3">
+                <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
+                    <i id="sidebarIcon" class="bi bi-list"></i>
+                </a>
+                <h2 class="mb-0">Mentor-Mentee Interaction</h2>
+            </div>
+            <p class='text-muted'>Choose from the Mentors suggested below
               <ul class="list-group">
-
                {% for user in users %}
-
                   <div class="content-section">
-      <div class="media">
-         <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
-         <div class="media-body">
-            <h2 class="account-heading">{{ user.username }}</h2>
-            <p class="text-secondary">{{ user.email }}</p>
-              <p class="text-secondary">{{ user.profile.education }}</p>
-              <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">Send Request</a>
-              <a class="btn btn-info btn-sm" href="{% url 'profile-detail' pk=user.pk %}">View profile</a>
-         </div>
-      </div>
-
-   </div>
-
+                      <div class="media">
+                         <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
+                         <div class="media-body">
+                            <h2 class="account-heading">{{ user.username }}</h2>
+                            <p class="text-secondary">{{ user.email }}</p>
+                              <p class="text-secondary">{{ user.profile.education }}</p>
+                              <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">Send Request</a>
+                              <a class="btn btn-info btn-sm" href="{% url 'profile-detail' pk=user.pk %}">View profile</a>
+                         </div>
+                      </div>
+                   </div>
               {% endfor%}
-
-
               </ul>
-            </p>
           </div>
         </div>
       </div>
-
+    </div>
+</div>
 {% endblock %}

@@ -2,9 +2,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg
+from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
+from .validators import PDFValidationMixin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
 
@@ -119,25 +120,18 @@ class ProfileUpdateForm(forms.ModelForm):
         return contact
 
 
-class InternshipPBLForm(forms.ModelForm):
+class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
     class Meta:
         model = InternshipPBL
         fields = ["title", "academic_year", "semester", "type",
                   "company_name", "details", "start_date", "end_date",
                   "no_of_days", "certificate"]
         widgets = {
+            "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
         }
-
-    def clean_certificate(self):
-        certificate = self.cleaned_data.get("certificate", False)
-        if certificate and certificate.size > 1024 * 1024:  # 1 MB
-            raise forms.ValidationError("Certificate size must be less than 200KB")
-        if certificate and not certificate.name.endswith(".pdf"):
-            raise forms.ValidationError("Only PDF files are allowed")
-        return certificate
 
 
 class ProjectForm(forms.ModelForm):
@@ -145,7 +139,134 @@ class ProjectForm(forms.ModelForm):
         model = Project
         fields = ["title", "academic_year", "semester", "project_type", "details", "guide_name", "link"]
         widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Project Title"}),
+            "guide_name": forms.TextInput(attrs={"placeholder": "Guide Name"}),
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
+            "link": forms.URLInput(attrs={"placeholder": "Enter project link (e.g. GitHub, Google Drive, etc.)"}),
+        }
+
+
+class SportsCulturalForm(PDFValidationMixin, forms.ModelForm):
+    class Meta:
+        model = SportsCulturalEvent
+        fields = [
+            "name_of_event", "academic_year", "semester", "type",
+            "venue", "level", "prize_won", "certificate"
+        ]
+        widgets = {
+            "name_of_event": forms.TextInput(attrs={"placeholder": "Name of Event"}),
+            "venue": forms.TextInput(attrs={"placeholder": "Venue"}),
+        }
+
+
+class OtherEventForm(PDFValidationMixin, forms.ModelForm):
+    class Meta:
+        model = OtherEvent
+        fields = [
+            "name_of_event", "academic_year", "semester", "level",
+            "details", "prize_won", "amount_won", "team_members", "certificate"
+        ]
+        widgets = {
+            "name_of_event": forms.TextInput(attrs={"placeholder": "Name of Event"}),
+            "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
+            "amount_won": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
+            "team_members": forms.Textarea(attrs={"placeholder": "Name of all members (separated by commas). In case of individual participation write only your name."}),
+        }
+
+
+class CertificationCourseForm(PDFValidationMixin, forms.ModelForm):
+    class Meta:
+        model = CertificationCourse
+        fields = [
+            "title", "certifying_authority", "valid_upto",
+            "academic_year", "semester", "start_date", "end_date",
+            "no_of_days", "domain", "level", "amount_reimbursed", "certificate"
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Course Title"}),
+            "certifying_authority": forms.TextInput(attrs={"placeholder": "eg. NPTEL, Cisco, Redhat, etc."}),
+            "valid_upto": forms.TextInput(attrs={"placeholder": "eg. 2025, lifetime"}),
+            "start_date": forms.DateInput(attrs={"type": "date"}),
+            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
+            "domain": forms.TextInput(attrs={"placeholder": "Domain"}),
+            "level": forms.TextInput(attrs={"placeholder": "eg. global, entry, foundation, expert, etc."}),
+            "amount_reimbursed": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
+        }
+
+
+class PaperPublicationForm(PDFValidationMixin, forms.ModelForm):
+    class Meta:
+        model = PaperPublication
+        fields = ["title", "academic_year", "semester", "type", "details", "level", "amount_reimbursed", "authors", "certificate"]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Paper Title"}),
+            "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Details (max 500 words)"}),
+            "amount_reimbursed": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
+            "authors": forms.Textarea(attrs={"placeholder": "Name of all authors (separated by commas)."}),
+        }
+
+
+class SelfAssessmentForm(forms.ModelForm):
+    goals = forms.MultipleChoiceField(
+        choices=SelfAssessment.GOAL_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=True
+    )
+
+    class Meta:
+        model = SelfAssessment
+        fields = ["semester", "goals", "reason"]
+        widgets = {
+            "semester": forms.Select(attrs={"class": "form-control"}),
+            "reason": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Reason"}),
+        }
+
+
+class LongTermGoalForm(forms.ModelForm):
+    plan = forms.ChoiceField(
+        choices=LongTermGoal.PLAN_CHOICES,
+        widget=forms.RadioSelect,
+        required=True
+    )
+
+    class Meta:
+        model = LongTermGoal
+        fields = ['plan', 'reason']
+        widgets = {
+            'reason': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Reason', 'rows': 2}),
+        }
+
+
+class SubjectOfInterestForm(forms.ModelForm):
+    class Meta:
+        model = SubjectOfInterest
+        fields = ['subject']
+        widgets = {
+            'subject': forms.TextInput(attrs={'placeholder': 'Enter subject'}),
+        }
+
+
+class EducationalDetailForm(forms.ModelForm):
+    class Meta:
+        model = EducationalDetail
+        fields = ["examination", "percentage", "university_board", "year_of_passing"]
+        widgets = {
+            "examination": forms.Select(attrs={"class": "form-select"}),
+            "percentage": forms.TextInput(attrs={"placeholder": "eg. 90", "class": "form-control"}),
+            "university_board": forms.TextInput(attrs={"placeholder": "University/board", "class": "form-control"}),
+            "year_of_passing": forms.TextInput(attrs={"placeholder": "eg 2014", "class": "form-control"}),
+        }
+
+
+class SemesterResultForm(forms.ModelForm):
+    class Meta:
+        model = SemesterResult
+        fields = ["semester", "pointer", "no_of_kt", "marksheet"]
+        widgets = {
+            "semester": forms.Select(attrs={"class": "form-control"}),
+            "pointer": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 9.05"}),
+            "no_of_kt": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 2 (If none enter 0)"}),
         }
 
 

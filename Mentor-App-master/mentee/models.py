@@ -1,5 +1,3 @@
-from random import choices
-
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -45,6 +43,23 @@ class Mentor(models.Model):
 
     def __str__(self):
         return self.user.username
+
+AY = [
+        ('2017-18', '2017-18'),
+        ('2018-19', '2018-19'),
+        ('2019-20', '2019-20'),
+        ('2020-21', '2020-21'),
+        ('2021-22', '2021-22'),
+        ('2022-23', '2022-23'),
+        ('2023-24', '2023-24'),
+        ('2024-25', '2024-25'),
+        ('2025-26', '2025-26'),
+    ]
+
+SEMESTER = [
+        ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
+        ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
+    ]
 
 class Profile(models.Model):
     """Extended Profile Model"""
@@ -134,29 +149,12 @@ def save_profile(sender, instance, **kwargs):
 
 
 class InternshipPBL(models.Model):
-    SEMESTER = [
-        ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
-        ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
-    ]
-
     TYPE_CHOICES = [
         ("Internship in Industry", "Internship in Industry"),
         ("Internship through APSIT SKILLS Platform", "Internship through APSIT SKILLS Platform"),
         ("Internship through AICTE Virtual Internship Platform", "Internship through AICTE Virtual Internship Platform"),
         ("PBL", "PBL"),
         ("Other", "Other"),
-    ]
-
-    AY = [
-        ('2017-18', '2017-18'),
-        ('2018-19', '2018-19'),
-        ('2019-20', '2019-20'),
-        ('2020-21', '2020-21'),
-        ('2021-22', '2021-22'),
-        ('2022-23', '2022-23'),
-        ('2023-24', '2023-24'),
-        ('2024-25', '2024-25'),
-        ('2025-26', '2025-26'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
@@ -169,7 +167,7 @@ class InternshipPBL(models.Model):
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     no_of_days = models.IntegerField(blank=True, null=True)
-    certificate = models.FileField(upload_to="certificates/", blank=True, null=True)
+    certificate = models.FileField(upload_to="certificates/internships/", blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if self.start_date and self.end_date:
@@ -182,32 +180,17 @@ class InternshipPBL(models.Model):
 
 
 class Project(models.Model):
-    SEMESTER_CHOICES = [
-        ("I", "I"), ("II", "II"), ("III", "III"), ("IV", "IV"),
-        ("V", "V"), ("VI", "VI"), ("VII", "VII"), ("VIII", "VIII"),
-    ]
     TYPE_CHOICES = [
         ("Mini Project", "Mini Project"),
         ("Major Project", "Major Project"),
         ("Research", "Research"),
         ("Other", "Other"),
     ]
-    AY = [
-        ('2017-18', '2017-18'),
-        ('2018-19', '2018-19'),
-        ('2019-20', '2019-20'),
-        ('2020-21', '2020-21'),
-        ('2021-22', '2021-22'),
-        ('2022-23', '2022-23'),
-        ('2023-24', '2023-24'),
-        ('2024-25', '2024-25'),
-        ('2025-26', '2025-26'),
-    ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
     project_type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
     details = models.TextField(max_length=1000, blank=True, null=True)
     guide_name = models.CharField(max_length=100, blank=True, null=True)
@@ -216,6 +199,212 @@ class Project(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class SportsCulturalEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ("Indoor", "Indoor"),
+        ("Outdoor", "Outdoor"),
+    ]
+    LEVEL_CHOICES = [
+        ("Inter-College", "Inter-College"),
+        ("Intra-College", "Intra-College"),
+        ("District", "District"),
+        ("State", "State"),
+        ("National", "National"),
+        ("International", "International"),
+        ("Other", "Other"),
+    ]
+    PRIZE_CHOICES = [
+        ("Participation", "Participation"),
+        ("1st", "1st"),
+        ("2nd", "2nd"),
+        ("3rd", "3rd"),
+        ("4th", "4th"),
+        ("5th", "5th"),
+        ("Other", "Other"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    name_of_event = models.CharField(max_length=200, blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, blank=True, null=True)
+    venue = models.CharField(max_length=500, blank=True, null=True)
+    level = models.CharField(max_length=50, choices=LEVEL_CHOICES, blank=True, null=True)
+    prize_won = models.CharField(max_length=20, choices=PRIZE_CHOICES, blank=True, null=True)
+    certificate = models.FileField(upload_to="sports_cultural_certificates/", null=True, blank=True)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name_of_event} ({self.academic_year})"
+
+
+class OtherEvent(models.Model):
+    LEVEL_CHOICES = [
+        ("College", "College"),
+        ("University", "University"),
+        ("District", "District"),
+        ("State", "State"),
+        ("National", "National"),
+        ("International", "International"),
+        ("Other", "Other"),
+    ]
+    PRIZE_CHOICES = [
+        ("Participation", "Participation"),
+        ("1st", "1st"),
+        ("2nd", "2nd"),
+        ("3rd", "3rd"),
+        ("4th", "4th"),
+        ("5th", "5th"),
+        ("Other", "Other"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    name_of_event = models.CharField(max_length=200, blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    level = models.CharField(max_length=50, choices=LEVEL_CHOICES, blank=True, null=True)
+    details = models.TextField(max_length=1000, blank=True, null=True)
+    prize_won = models.CharField(max_length=20, choices=PRIZE_CHOICES, blank=True, null=True)
+    amount_won = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    team_members = models.TextField(max_length=500, blank=True, null=True)
+    certificate = models.FileField(upload_to="other_event_certificates/", null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name_of_event} ({self.academic_year})"
+
+
+class CertificationCourse(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    certifying_authority = models.CharField(max_length=100, blank=True, null=True)
+    valid_upto = models.CharField(max_length=50, null=True, blank=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    no_of_days = models.PositiveIntegerField(blank=True, null=True)
+    domain = models.CharField(max_length=150, blank=True, null=True)
+    level = models.CharField(max_length=20, blank=True, null=True)
+    amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    certificate = models.FileField(upload_to="certificates/courses/", blank=True, null=True)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class PaperPublication(models.Model):
+    TYPE_CHOICES = [
+        ("Other", "Other"),
+        ("Conference", "Conference"),
+        ("Journal", "Journal"),
+        ("Article", "Article"),
+        ("Blog", "Blog"),
+    ]
+
+    LEVEL_CHOICES = [
+        ("International", "International"),
+        ("National", "National"),
+        ("State", "State"),
+        ("Other", "Other"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
+    details = models.TextField(max_length=500, blank=True, null=True)
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, blank=True, null=True)
+    amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    authors = models.TextField(max_length=255, help_text="Comma separated list of authors", blank=True, null=True)
+    certificate = models.FileField(upload_to="publications/", blank=True, null=True)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class SelfAssessment(models.Model):
+    GOAL_CHOICES = [
+        ("To clear A.T.K.T.", "To clear A.T.K.T."),
+        ("Competitive Exams", "Competitive Exams"),
+        ("Extra Curricular/Co- curricular Activities", "Extra Curricular/Co- curricular Activities"),
+        ("Attendance", "Attendance"),
+        ("Certification Courses", "Certification Courses"),
+        ("Undertaking Projects", "Undertaking Projects"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    goals = models.JSONField(default=list)  # stores multiple goals
+    reason = models.TextField(max_length=500, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.semester}"
+
+
+class LongTermGoal(models.Model):
+    PLAN_CHOICES = [
+        ('Work', 'Work'),
+        ('Post Graduation', 'Post Graduation'),
+        ('Entrepreneurship', 'Entrepreneurship'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, blank=True, null=True)
+    reason = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_plan_display()}"
+
+
+class SubjectOfInterest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject}"
+
+
+class EducationalDetail(models.Model):
+    EXAM_CHOICES = [
+        ("SSC", "SSC"),
+        ("HSC", "HSC"),
+        ("Diploma", "Diploma"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    examination = models.CharField(max_length=50, choices=EXAM_CHOICES, blank=True, null=True)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    university_board = models.CharField(max_length=200, blank=True, null=True)
+    year_of_passing = models.IntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.examination} - {self.user.username}"
+
+
+class SemesterResult(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE,blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    pointer = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True)  # Example: 9.25
+    no_of_kt = models.PositiveIntegerField(default=0, blank=True, null=True)
+    marksheet = models.FileField(upload_to="marksheets/", blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Sem {self.semester}"
 
 
 class Reply(models.Model):
