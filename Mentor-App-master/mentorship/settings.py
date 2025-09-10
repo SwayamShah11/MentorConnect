@@ -146,3 +146,11 @@ MEDIA_URL = '/media/'
 SESSION_INACTIVITY_TIMEOUT_IN_SECONDS = 100
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apsit112204@gmail.com'  # your sender email
+EMAIL_HOST_PASSWORD = 'cehi hhns xqym zyzc'   # use an app password, not your Gmail password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

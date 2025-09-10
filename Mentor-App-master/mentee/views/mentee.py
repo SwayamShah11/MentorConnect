@@ -2,17 +2,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 # from ..models import Status
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from django.contrib import messages
-
-from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm
+from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult
+from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, Mentor, Mentee
 from django.contrib.auth import get_user_model
+import logging
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
-from django.http import HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.urls import reverse
 
 from django.views.generic import (View, TemplateView,
@@ -37,6 +38,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from PIL import Image
 import pypandoc
+from django.core.mail import EmailMultiAlternatives
+import uuid
+from django.template.loader import render_to_string
 
 def home(request):
     """Home landing page"""
@@ -60,22 +64,66 @@ def home(request):
 
 
 class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
-
     def test_func(self):
+        # Only mentees can access this view
         return self.request.user.is_mentee
 
-    """
-    List all of the Users that we want.
-    """
+    def get(self, request, *args, **kwargs):
+        users = User.objects.filter(is_mentor=True)
+        mentee = getattr(request.user, 'mentee', None)
+        meetings = Meeting.objects.filter(mentee=mentee) if mentee else Meeting.objects.none()
 
-    def get(self, request):
-        users = User.objects.all().filter(is_mentor=True)
+        meeting_dict = {}
+        now = timezone.localtime(timezone.now())
+
+        for meeting in meetings:
+            # Store meeting for each mentor
+            meeting_dict[meeting.mentor.user.id] = meeting
+
+        user_meeting_data = []
+
+        for user in users:
+            meeting = meeting_dict.get(user.id)
+            can_join = False
+            can_feedback = False
+            feedback_exists = False
+            if meeting:
+                # Use model properties for start/end
+                start = meeting.meeting_datetime
+                end = meeting.meeting_end_datetime
+
+                can_join = start <= now <= end
+                feedback_exists = hasattr(meeting, "feedback_obj")
+                can_feedback = now > end and not feedback_exists
+
+                # 🛠️ Debug log in console
+                logger.info(
+                    f"[DEBUG] Mentor={meeting.mentor.user.username} | "
+                    f"Now={now}, Start={start}, End={end}, "
+                    f"can_join={can_join}, can_feedback={can_feedback}"
+                )
+
+                # Optional: show debug info in template
+                meeting.debug_info = {
+                    "now": now,
+                    "start": start,
+                    "end": end,
+                    "can_join": can_join,
+                    "can_feedback": can_feedback,
+                }
+
+            user_meeting_data.append({
+                "user": user,
+                "meeting": meeting,
+                "can_join": can_join,
+                "can_feedback": can_feedback,
+                "feedback_exists": hasattr(meeting, "feedback_obj"),
+            })
 
         context = {
-            'users': users,
-
+            'user_meeting_data': user_meeting_data,
+            'now': now,
         }
-
         return render(request, "menti/account.html", context)
 
 
@@ -1080,3 +1128,81 @@ def con1(request, pk):
     }
 
     return render(request, 'menti/conversation4.html', context)
+
+
+@login_required
+def schedule_meeting_view(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    mentor = get_object_or_404(Mentor, user=user)
+    mentee = get_object_or_404(Mentee, user=request.user)
+
+    # Check if meeting already exists between this mentee and mentor
+    existing_meeting = Meeting.objects.filter(mentor=mentor, mentee=mentee).first()
+
+    if request.method == 'POST':
+        form = MeetingForm(request.POST, instance=existing_meeting)  # reuse existing meeting if any
+        if form.is_valid():
+            meeting = form.save(commit=False)
+            meeting.mentor = mentor
+            meeting.mentee = mentee
+            meeting.duration_minutes = 2
+
+            # Only assign video_room_name if it's not already set
+            if not meeting.video_room_name:
+                meeting.video_room_name = str(uuid.uuid4())
+
+            meeting.save()
+
+            # Generate meeting room link
+            jitsi_link = f"https://meet.jit.si/{meeting.video_room_name}"
+
+
+            # Email context
+            context = {
+                'mentor_name': mentor.user.first_name or mentor.user.username,
+                'mentee_name': mentee.user.first_name or mentee.user.username,
+                'mentee_email': mentee.user.email,
+                'meeting_date': meeting.appointment_date.strftime('%Y-%m-%d'),
+                'meeting_time': meeting.time_slot.strftime('%H:%M'),
+                'jitsi_link': jitsi_link,
+            }
+
+            subject = f"New Meeting Scheduled with {context['mentee_name']}"
+            from_email = settings.EMAIL_HOST_USER
+            to_email = [mentor.user.email]
+
+            html_content = render_to_string('menti/meeting_invite.html', context)
+
+            email = EmailMultiAlternatives(subject, '', from_email, to_email)
+            email.attach_alternative(html_content, "text/html")
+            email.extra_headers = {'Reply-To': mentee.user.email}
+
+            email.send()
+
+            messages.success(request, "Meeting scheduled and email sent to the mentor.")
+            return redirect('account')
+    else:
+        form = MeetingForm(instance=existing_meeting)
+
+    return render(request, 'menti/schedule_meeting.html', {'mentor': mentor, 'form': form})
+
+
+@login_required
+def meeting_room_view(request, room_name):
+    meeting = get_object_or_404(Meeting, video_room_name=room_name)
+
+    # Access control (optional)
+    if request.user != meeting.mentor.user and request.user != meeting.mentee.user:
+        return HttpResponseForbidden("Not authorized to join this meeting.")
+
+    jitsi_link = f"https://meet.jit.si/{meeting.video_room_name}"  # ✅ Jitsi Link
+    return render(request, 'menti/meeting_room.html', {
+        'meeting': meeting,
+        'jitsi_link': jitsi_link,
+    })
+
+
+@login_required
+def meetings_view(request):
+    # your logic here
+    return render(request, 'menti/meetings.html')

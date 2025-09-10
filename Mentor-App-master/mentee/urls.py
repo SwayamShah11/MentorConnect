@@ -63,6 +63,10 @@ urlpatterns = [
     path('reply-indiv/<int:pk>', mentee.Reply1CreateView.as_view(), name='reply3'),
     path('conv3/<int:pk>', mentee.con1, name='conv3-reply'),
     path('pdf/', mentee.Pdf.as_view(), name="pdf"),
+    path('schedule-meeting/<int:pk>/', mentee.schedule_meeting_view, name='schedule-meeting'),
+    path('meetings/', mentee.meetings_view, name='vc'),
+    path('meeting-room/<str:room_name>/', mentee.meeting_room_view, name='meeting_room'),
+    path('meeting/<str:room_name>/', mentee.meeting_room_view, name='meeting-room'),
 
 
     #mentor urls
@@ -91,6 +95,8 @@ urlpatterns = [
     path('chat-delete/<int:pk>', mentor.ConversationDeleteView.as_view(), name='chat-delete'),
     path('conversation-delete/<int:pk>', mentor.Conversation2DeleteView.as_view(), name='conversation-delete'),
     path('pdf1/', mentor.Pdf.as_view(), name="pdf1"),
+    path('vc1/', mentor.MentorMeetingListView.as_view(), name='vc1'),
+    path('vcc/<int:pk>', mentor.MentorMeetingListView.as_view(), name="video-call1"),
 ]
 
 

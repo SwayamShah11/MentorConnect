@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult
+from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -334,7 +334,16 @@ class SendForm(ModelForm):
         fields = ['msg_content']
 
 
-
+#zaruuu
+class MeetingForm(forms.ModelForm):
+    class Meta:
+        model = Meeting
+        fields = ['appointment_date', 'time_slot']
+        widgets = {
+            'appointment_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'time_slot': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 60}),
+        }
 
 
 

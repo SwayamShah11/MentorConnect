@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail
+from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -84,9 +84,6 @@ class MentorAdmin(admin.ModelAdmin):
     search_fields = ("interests",)
 
 
-
-
-
 class UserAdmin(admin.ModelAdmin):
 
     list_display = ("username", "email", "is_mentor", "is_mentee",)
@@ -131,10 +128,50 @@ class CustomUserCreationForm(UserCreationForm):
         exclude =('password', )
 
 class CustomUserAdmin(UserAdmin):
-
     form = CustomUserCreationForm
 
 admin.site.register(User, CustomUserAdmin)
 
-
 admin.site.unregister(Group)
+
+
+#zaruuu
+from .models import MentorAdmin
+@admin.register(MentorAdmin)
+class MentoAdmin(admin.ModelAdmin):
+    list_display = ['user', 'specialization', 'availability_start', 'availability_end']
+    search_fields = ['user_username', 'user_first_name']
+    list_filter = ['specialization']
+
+
+@admin.register(MenteeAdmin)
+class MenteeAdmin(admin.ModelAdmin):
+    list_display = ['user']
+    search_fields = ['user_username', 'user_first_name']
+
+
+@admin.register(Meeting)
+class MeetingAdmin(admin.ModelAdmin):
+    list_display = [
+        'mentor_name', 'mentee_name',
+        'appointment_date', 'time_slot',
+        'duration_minutes', 'status', 'created_at'
+    ]
+
+    search_fields = [
+        'mentor__user__username', 'mentee__user__username',
+        'mentor__user__first_name', 'mentee__user__first_name',
+        'mentor__user__last_name', 'mentee__user__last_name',
+    ]
+
+    list_filter = ['appointment_date', 'status', 'mentor__user__username', 'mentee__user__username']
+
+    ordering = ['-appointment_date', '-time_slot']
+
+    def mentor_name(self, obj):
+        return obj.mentor.user.get_full_name() or obj.mentor.user.username
+    mentor_name.short_description = 'Mentor'
+
+    def mentee_name(self, obj):
+        return obj.mentee.user.get_full_name() or obj.mentee.user.username
+    mentee_name.short_description = 'Mentee'

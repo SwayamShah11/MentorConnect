@@ -5,9 +5,10 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from PIL import Image
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.urls import reverse
 from django.utils.timezone import now
+import uuid
 
 
 class User(AbstractUser):
@@ -485,3 +486,67 @@ class Msg(models.Model):
 
     class Meta:
         ordering = ['-sent_at']
+
+#zaruuu
+class MentorAdmin(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    specialization = models.CharField(max_length=255, blank=True, null=True)
+    availability_start = models.TimeField()
+    availability_end = models.TimeField()
+
+    def _str_(self):
+        return self.user.username
+
+
+class MenteeAdmin(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    def _str_(self):
+        return self.user.username
+
+
+class Meeting(models.Model):
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name='meetings')
+    mentee = models.ForeignKey(Mentee, on_delete=models.CASCADE, related_name='meetings')
+
+    appointment_date = models.DateField()
+    time_slot = models.TimeField()
+    duration_minutes = models.PositiveIntegerField(default=2)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    video_room_name = models.CharField(max_length=255, unique=True, blank=True, null=True, default=uuid.uuid4)
+    STATUS_CHOICES = (
+        ('scheduled', 'Scheduled'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+
+
+
+    def save(self, *args, **kwargs):
+        if not self.video_room_name:
+            self.video_room_name = str(uuid.uuid4())  # auto-generate unique room
+        super().save(*args, **kwargs)
+
+    def _str_(self):
+        return f"{self.mentee.user.username} & {self.mentor.user.username} on {self.appointment_date} at {self.time_slot}"
+
+    @property
+    def meeting_datetime(self):
+        """Returns timezone-aware datetime of meeting start"""
+        dt = datetime.combine(self.appointment_date, self.time_slot)
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, timezone.get_current_timezone())
+        return dt
+
+    @property
+    def meeting_end_datetime(self):
+        """Returns timezone-aware datetime of meeting end"""
+        return self.meeting_datetime + timedelta(minutes=self.duration_minutes)
+
+    @property
+    def can_join(self):
+        """Meeting can be joined only during scheduled window"""
+        now = timezone.localtime(timezone.now())
+        return self.meeting_datetime <= now <= self.meeting_end_datetime

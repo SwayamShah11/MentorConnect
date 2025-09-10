@@ -1,0 +1,80 @@
+{% extends 'mentor/base1.html' %}
+{% load humanize %}
+
+{% block content %}
+<h1>Here are Your Meetings</h1><br>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="content-section">
+            <h2>Meetings</h2>
+
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Sr. No.</th>
+                            <th>Mentee</th>
+                            <th>Appointment Date</th>
+                            <th>Time</th>
+                            <th>Join Meet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    {% if meetings %}
+        {% for meeting in meetings %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ meeting.mentee.user.get_full_name|default:meeting.mentee.user.username }}</td>
+            <td>{{ meeting.appointment_date }}</td>
+            <td>{{ meeting.time_slot }}</td>
+            <td>
+            {% if now >= meeting.meeting_datetime and now <= meeting.meeting_end_datetime %}
+                <a class="btn btn-primary btn-sm" href="https://meet.jit.si/{{ meeting.video_room_name }}" target="_blank">
+                    Join Meeting
+                </a>
+            {% else %}
+                <button class="btn btn-secondary btn-sm" disabled>
+                    Join Meeting (Unavailable)
+                </button>
+            {% endif %}
+            </td>
+
+        </tr>
+        {% endfor %}
+    {% else %}
+        <tr>
+            <td colspan="5">There are no scheduled meetings.</td>
+        </tr>
+    {% endif %}
+</tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="btn btn-outline-info mb-4" href="?page=1">First</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <a class="btn btn-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="btn btn-outline-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.next_page_number }}">Next</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

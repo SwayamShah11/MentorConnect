@@ -17,9 +17,10 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply
+from ..models import Profile, Msg, Conversation, Reply, Meeting
 from django.db.models import Count, Q
-
+from datetime import datetime, timedelta
+from django.utils import timezone
 from django.urls import reverse_lazy
 from ..forms import ReplyForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -462,3 +463,35 @@ class Conversation2DeleteView(DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('conv1')
+
+
+class MentorMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Meeting
+    template_name = 'mentor/vc.html'  # You’ll create this template
+    context_object_name = 'meetings'
+    paginate_by = 5
+
+    def test_func(self):
+        return self.request.user.is_mentor  # Ensure only mentors can access
+
+    def get_queryset(self):
+        queryset = Meeting.objects.filter(
+            mentor__user=self.request.user
+        ).order_by('-appointment_date', '-time_slot')
+
+        for meeting in queryset:
+            combined_datetime = datetime.combine(meeting.appointment_date, meeting.time_slot)
+            if timezone.is_naive(combined_datetime):
+                combined_datetime = timezone.make_aware(combined_datetime, timezone.get_current_timezone())
+
+            # Instead of assigning to meeting.meeting_datetime (which is a read-only property),
+            # Assign to a custom attribute for temporary use in the view or template
+            meeting._meeting_datetime = combined_datetime
+            meeting._meeting_end_datetime = combined_datetime + timedelta(hours=1)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['now'] = timezone.localtime(timezone.now())
+        return context

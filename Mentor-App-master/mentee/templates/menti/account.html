@@ -1,4 +1,5 @@
 {% extends 'menti/base.html' %}
+{% load tz %}
 {% load static %}
 {% load widget_tweaks %}
 {% block content %}
@@ -15,8 +16,9 @@
             </div>
             <p class='text-muted'>Choose from the Mentors suggested below
               <ul class="list-group">
-               {% for user in users %}
-                  <div class="content-section">
+               {% for item in user_meeting_data %}
+                {% with user=item.user meeting=item.meeting can_join=item.can_join %}
+                  <div class="content-section" style="background: #fff;">
                       <div class="media">
                          <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
                          <div class="media-body">
@@ -25,10 +27,33 @@
                               <p class="text-secondary">{{ user.profile.education }}</p>
                               <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">Send Request</a>
                               <a class="btn btn-info btn-sm" href="{% url 'profile-detail' pk=user.pk %}">View profile</a>
-                         </div>
-                      </div>
-                   </div>
-              {% endfor%}
+                              <a class="btn btn-primary btn-sm" href="{% url 'schedule-meeting' pk=user.pk %}">Schedule Meeting</a><br><br>
+                              <!-- Meeting Info -->
+                              {% if meeting %}
+                                <p class="text-muted mt-1">
+                                  Scheduled on: {{ meeting.appointment_date }} at {{ meeting.time_slot }}
+                                </p>
+
+                                <!-- Join Button -->
+                                {% if can_join %}
+                                  <a class="btn btn-success btn-sm" href="https://meet.jit.si/{{ meeting.video_room_name }}" target="_blank">
+                                    Join Meeting
+                                  </a>
+                                {% else %}
+                                  <button class="btn btn-secondary btn-sm" disabled>
+                                    Join Meeting (Unavailable)
+                                  </button>
+                                {% endif %}
+                              {% else %}
+                                <p class="text-warning mt-2">No meeting scheduled with this mentor.</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                      {% endwith %}
+                    {% empty %}
+                      <p>No mentors available at the moment.</p>
+                    {% endfor %}
               </ul>
           </div>
         </div>
