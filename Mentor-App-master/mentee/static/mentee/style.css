@@ -5,7 +5,7 @@ body {
   min-height: 100vh;
   margin-top: 5rem;
   color: #212529; /* default dark text */
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  background: linear-gradient(135deg, #b8b8b8, #8d8d8d);
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   background-attachment: fixed;
 }

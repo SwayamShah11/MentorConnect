@@ -408,6 +408,82 @@ class SemesterResult(models.Model):
         return f"{self.user.username} - Sem {self.semester}"
 
 
+class StudentInterest(models.Model):
+    INTEREST_CHOICES = [
+        # Post BE Exam
+        ('gre', 'GRE'),
+        ('gate', 'GATE'),
+        ('coach', 'GATE/GRE Coaching from College'),
+        ('ent', 'Entrepreneur'),
+        ('hs', 'Higher Studies'),
+        ('place', 'On-campus placements'),
+
+        # Honors/Minors
+        ('cyber', 'Cyber Security'),
+        ('robotics', 'Robotics'),
+        ('struct', 'Professional Practices in Structural Engineering'),
+        ('aiml', 'Artificial Intelligence and Machine Learning'),
+        ('iot', 'Internet of Things'),
+
+        # Sports
+        ('athletics', 'Athletics'),
+        ('badminton', 'Badminton'),
+        ('table-tennis', 'Table Tennis'),
+        ('carrom', 'Carrom'),
+        ('chess', 'Chess'),
+        ('kabaddi', 'Kabaddi'),
+        ('cricket', 'Cricket'),
+        ('football', 'Football'),
+        ('tug-of-war', 'Tug of War'),
+        ('dodgeball', 'Dodgeball'),
+        ('volleyball', 'Volleyball'),
+        ('throwball', 'Throwball'),
+        ('dancing', 'Dancing'),
+        ('singing', 'Singing'),
+
+        # Volunteering
+        ('volunteer', 'Volunteering'),
+        ('leader', 'Leadership'),
+
+        # Clubs
+        ('blockchain', 'Blockchain'),
+        ('design', 'Design'),
+        ('mac', 'MAC Racing Club'),
+        ('smart', 'Smart City Club'),
+        ('web', 'Web Development'),
+        ('software-dev', 'Software Development'),
+
+        # OJUS
+        ('design-team', 'OJUS Design Team'),
+        ('tech-team', 'OJUS Technical Team'),
+        ('creative-team', 'OJUS Creative Team'),
+        ('photo-team', 'OJUS Photography Team'),
+        ('pub-team', 'OJUS Publicity Team'),
+        ('eve-team', 'OJUS Event Team'),
+
+        # Student Council
+        ('gen-sec', 'General Secretary'),
+        ('gs-associate', 'General Secretary Associate'),
+        ('edit-team', 'Editorial Team'),
+        ('creative-media-team', 'Creative Media Team'),
+        ('sports-sec', 'Sports Secretary'),
+        ('cult-sec', 'Cultural Secretary'),
+        ('joint-cult-sec', 'Joint Cultural Secretary'),
+        ('ladies-rep', 'Ladies Representative'),
+        ('joint-ladies-rep', 'Joint Ladies Representative'),
+
+        # Dept Societies
+        ('society', 'Department Level Societies'),
+    ]
+
+    student = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True)  # only 1 entry per user
+    interests = models.JSONField(default=list)  # stores multiple interests in one field
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.username} - {', '.join(self.interests)}"
+
+
 class Reply(models.Model):
     """Reply Model"""
 

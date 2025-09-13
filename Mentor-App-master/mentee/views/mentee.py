@@ -4,9 +4,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
-from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm
+from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, InterestForm
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, Mentor, Mentee
+from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -767,6 +767,63 @@ def delete_semester(request, pk):
     semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
     semester.delete()
     return redirect("semester_results")
+
+
+@login_required
+def student_interests(request):
+    if request.method == "POST":
+        selected = request.POST.getlist("interests")
+
+        obj, created = StudentInterest.objects.get_or_create(student=request.user)
+        obj.interests = selected
+        obj.save()
+
+        messages.success(request, "Your interests have been saved!")
+        return redirect("student_interests")
+
+    saved_interests = []
+    try:
+        saved_interests = StudentInterest.objects.get(student=request.user).interests
+    except StudentInterest.DoesNotExist:
+        pass
+
+    return render(request, "menti/student_interests.html", {
+        "saved_interests": saved_interests
+    })
+
+
+@login_required
+def uploaded_documents(request):
+    documents = []
+
+    # Collect user’s uploaded files from each model
+    internships = InternshipPBL.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    marksheets = SemesterResult.objects.filter(user=request.user, marksheet__isnull=False).exclude(marksheet="")
+    publications = PaperPublication.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    other_events = OtherEvent.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    sports = SportsCulturalEvent.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    courses = CertificationCourse.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+
+    # Normalize them into one list
+    for doc in internships:
+        documents.append({"category": "Internship/PBL", "name": doc.title or doc.company_name or "Internship Certificate", "file": doc.certificate})
+    for doc in marksheets:
+        documents.append({"category": "Marksheet", "name": f"Semester - {doc.semester} Marksheet" or "Marksheet", "file": doc.marksheet})
+    for doc in publications:
+        documents.append({"category": "Publication", "name": doc.title or "Publication Certificate", "file": doc.certificate})
+    for doc in other_events:
+        documents.append({"category": "Other Event", "name": doc.name_of_event or "Other Event Certificate", "file": doc.certificate})
+    for doc in sports:
+        documents.append({"category": "Sports & Cultural", "name": doc.name_of_event or "Sports Certificate", "file": doc.certificate})
+    for doc in courses:
+        documents.append({"category": "Certification Course", "name": doc.title or "Certification", "file": doc.certificate})
+
+    return render(request, "menti/uploaded_documents.html", {"documents": documents})
+
+
+@login_required
+def credits_view(request):
+    return render(request, 'menti/credits.html')
 
 
 class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):

@@ -84,7 +84,7 @@
                                     <div class="row g-3">
                                     <small class="text-muted" style="color:#ff0000 !important;">
                                         Note: '*' asterisk denotes that the fields are required.</small>
-                                        <div class="col-12">
+                                        <div class="col-md-6">
                                             <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.title|add_class:"form-control" }}
                                         </div>
@@ -94,22 +94,22 @@
                                             {{ form.academic_year|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-md-3">
+                                        <div class="col-md-6">
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.semester|add_class:"form-select" }}
                                         </div>
 
-                                        <div class="col-md-3">
+                                        <div class="col-md-6">
                                             <label class="form-label">Type <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.type|add_class:"form-select" }}
                                         </div>
 
-                                        <div class="col-12">
+                                        <div class="col-md-6">
                                             <label class="form-label">Company Name <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.company_name|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-12">
+                                        <div class="col-md-6">
                                             <label class="form-label">Details</label>
                                             {{ form.details|add_class:"form-control" }}
                                         </div>
@@ -145,7 +145,7 @@
                                     </div>
 
                                     <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
-                                        <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">
+                                        <button type="submit" class="btn btn-success btn-lg w-40 w-md-50">
                                             {% if editing %}Update{% else %}Submit{% endif %}
                                         </button>
                                         {% if editing %}

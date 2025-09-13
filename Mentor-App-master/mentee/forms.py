@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting
+from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -269,6 +269,13 @@ class SemesterResultForm(forms.ModelForm):
             "no_of_kt": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 2 (If none enter 0)"}),
         }
 
+
+class InterestForm(forms.Form):
+    interests = forms.MultipleChoiceField(
+        choices=StudentInterest.INTEREST_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
 
 class MentorRegisterForm(UserCreationForm):
     email = forms.EmailField()

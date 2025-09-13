@@ -44,7 +44,7 @@
                 <a class="nav-item nav-link text-white" href="{% url 'profile' %}">Profile</a>
                 <a class="nav-item nav-link text-white" href="{% url 'module-message' %}">Message</a>
                 <a class="nav-item nav-link text-white" href="{% url 'account' %}">Mentor</a>
-                <a class="nav-item nav-link text-white" href="#">Documents</a>
+                <a class="nav-item nav-link text-white" href="{% url 'uploaded_documents' %}">Documents</a>
               {% else %}
                 <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home</a>
                 <a class="nav-item nav-link text-white" href="{% url 'login' %}">Login</a>

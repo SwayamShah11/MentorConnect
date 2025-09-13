@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin
+from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -48,6 +48,15 @@ class LongTermGoalAdmin(admin.ModelAdmin):
 @admin.register(EducationalDetail)
 class EducationalDetailAdmin(admin.ModelAdmin):
     list_display = ("user", "examination", "percentage", "university_board", "year_of_passing")
+
+
+@admin.register(StudentInterest)
+class StudentInterestAdmin(admin.ModelAdmin):
+    list_display = ("student", "get_interests", "created_at")
+
+    def get_interests(self, obj):
+        return ", ".join(obj.interests)
+    get_interests.short_description = "Interests"
 
 
 
