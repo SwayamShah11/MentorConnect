@@ -38,15 +38,20 @@
 
         <!-- User Info -->
         <div class="card-body text-center">
-            <h3 class="fw-bold mb-1">
-                {{ profile.student_name }}
-            </h3>
-            <p class="text-muted mb-3">{{ profile.about_me }}</p>
+            {% if profile %}
+                <h3 class="fw-bold mb-1">
+                    {{ profile.student_name|default:"Guest User" }}
+                </h3>
+                <p class="text-muted mb-3">{{ profile.about_me|default:"No information available" }}</p>
 
-            <div class="text-start text-center px-4">
-                <p><strong>Year:</strong> {{ profile.year }}</p>
-                <p><strong>Branch:</strong> {{ profile.branch }}</p>
-            </div>
+                <div class="text-start text-center px-4">
+                    <p><strong>Year:</strong> {{ profile.year|default:"-" }}</p>
+                    <p><strong>Branch:</strong> {{ profile.branch|default:"-" }}</p>
+                </div>
+            {% else %}
+                <h3 class="fw-bold mb-1">Guest User</h3>
+                <p class="text-muted mb-3">Please log in to see your profile.</p>
+            {% endif %}
         </div>
 
         <!-- Next Button -->

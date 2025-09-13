@@ -10,17 +10,16 @@ from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, 
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
-
 User = get_user_model()
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.urls import reverse
-
+import traceback
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
                                   DeleteView)
-
+from django.core.mail import send_mail
 from django.urls import reverse_lazy
 from .. import models
 from django.contrib.messages.views import SuccessMessageMixin
@@ -201,6 +200,113 @@ def user_login(request):
 def custom_logout(request):
     logout(request)
     return redirect('login')
+
+
+def send_forget_password_email(email, token):
+    try:
+        subject = 'Reset Your Password'
+        reset_link = f'http://127.0.0.1:8000/change-password/{token}/'
+        message = f"""
+        Hi,
+
+        You requested a password reset. Click the link below to reset your password:
+
+        {reset_link}
+
+        If you did not request this, please ignore this email.
+
+        Regards,
+        Your App Team
+        """
+        email_from = settings.EMAIL_HOST_USER
+        recipient_list = [email]
+
+        send_mail(subject, message.strip(), email_from, recipient_list)
+        print("✅ Reset email sent successfully.")
+        return True
+
+    except Exception as e:
+        print(f"❌ Email send failed: {e}")
+        return False
+
+
+def ForgetPassword(request):
+    try:
+        if request.method == 'POST':
+            moodle_id = request.POST.get('username')  # still from the same form field
+            print(f"Submitted moodle_id: {moodle_id}")
+
+            # Find the profile by moodle_id
+            profile_obj = Profile.objects.filter(moodle_id=moodle_id).first()
+            if not profile_obj:
+                messages.error(request, 'No user found with this Moodle ID.')
+                return render(request, 'menti/forget-password.html')
+
+            user_obj = profile_obj.user  # Get the related User
+
+            # Create token and save
+            token = str(uuid.uuid4())
+            profile_obj.forget_password_token = token
+            profile_obj.save()
+
+            # Send email
+            send_forget_password_email(user_obj.email, token)
+
+            messages.success(request, 'Password reset link has been sent to your email.')
+            return render(request, 'menti/forget-password.html')
+
+    except Exception as e:
+        print("Error in ForgetPassword:")
+        traceback.print_exc()
+        messages.error(request, 'Something went wrong. Please try again.')
+
+    return render(request, 'menti/forget-password.html')
+
+
+def ChangePassword(request, token):
+    try:
+        profile_obj = Profile.objects.filter(forget_password_token=token).first()
+
+        if not profile_obj:
+            messages.error(request, "Invalid or expired token.")
+            return redirect('login')
+
+        context = {
+            'user_id': profile_obj.user.id,
+            'token': token
+        }
+
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('reconfirm_password')
+            user_id = request.POST.get('user_id')
+
+            if not user_id:
+                messages.error(request, 'User ID is missing.')
+                return render(request, 'menti/change-password.html', context)
+
+            if new_password != confirm_password:
+                messages.error(request, 'Passwords do not match.')
+                return render(request, 'menti/change-password.html', context)
+
+            user = User.objects.get(id=user_id)
+            user.set_password(new_password)
+            user.save()
+
+            # Clear token after reset
+            profile_obj.forget_password_token = None
+            profile_obj.save()
+
+            messages.success(request, 'Password updated successfully.')
+            return redirect('login')
+
+        # GET request
+        return render(request, 'menti/change-password.html', context)
+
+    except Exception as e:
+        print("Error in ChangePassword:", e)
+        messages.error(request, "Something went wrong. Try again.")
+        return redirect('forget_password')
 
 
 @login_required

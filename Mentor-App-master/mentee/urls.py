@@ -70,6 +70,8 @@ urlpatterns = [
     path('meetings/', mentee.meetings_view, name='vc'),
     path('meeting-room/<str:room_name>/', mentee.meeting_room_view, name='meeting_room'),
     path('meeting/<str:room_name>/', mentee.meeting_room_view, name='meeting-room'),
+    path('forget-password/' , mentee.ForgetPassword , name="forget_password"),
+    path('change-password/<str:token>/' , mentee.ChangePassword , name="change_password"),
 
 
     #mentor urls
