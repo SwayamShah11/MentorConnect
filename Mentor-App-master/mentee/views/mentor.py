@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from ..forms import MentorRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm
+from ..forms import MentorRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, MoodleIdForm
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
@@ -17,7 +17,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, Meeting
+from ..models import Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -47,10 +47,55 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
     """For Mentor Account"""
 
     def test_func(self):
-        return self.request.user.is_mentor
+        # Only allow if the logged-in user is a mentor
+        return hasattr(self.request.user, "mentor")
+
+    def handle_no_permission(self):
+        # If user is logged in but not mentor → redirect to home
+        if self.request.user.is_authenticated:
+            return redirect("home")
+        # If not logged in → go to login
+        return super().handle_no_permission()
 
     def get(self, request):
-        return render(request, 'mentor/account1.html', )
+        form = MoodleIdForm()
+        mentor = get_object_or_404(Mentor, user=request.user)
+
+        mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
+        mentees = []
+        for mapping in mentee_mappings:
+            profile = Profile.objects.filter(user=mapping.mentee.user).first()
+            mentees.append({
+                "id": mapping.mentee.pk,
+                "moodle_id": profile.moodle_id if profile else "",
+                "name": profile.student_name if profile else mapping.mentee.user.username,
+                "semester": profile.semester if profile else "",
+                "contact": profile.contact_number if profile else "",
+            })
+
+        return render(request, "mentor/account1.html", {"form": form, "mentees": mentees})
+
+    def post(self, request):
+        form = MoodleIdForm(request.POST)
+        mentor = get_object_or_404(Mentor, user=request.user)
+
+        if form.is_valid():
+            moodle_id = form.cleaned_data["moodle_id"]
+            profile = Profile.objects.filter(moodle_id=moodle_id).first()
+
+            if not profile:
+                messages.error(request, "No student found with that Moodle ID.")
+                return redirect("account1")
+
+            mentee = Mentee.objects.filter(user=profile.user).first()
+            if not mentee:
+                mentee = Mentee.objects.create(user=profile.user)
+
+            # Prevent duplicates
+            MentorMentee.objects.get_or_create(mentor=mentor, mentee=mentee)
+            messages.success(request, f"{profile.student_name} added as your mentee!")
+
+        return redirect("account1")
 
 
 
@@ -128,7 +173,7 @@ def user_login(request):
         if user:
             if user.is_active:
                 login(request, user)
-                return HttpResponseRedirect(reverse('module-message1'))
+                return HttpResponseRedirect(reverse('account1'))
             else:
                 return HttpResponse("Your account was inactive.")
         else:
@@ -142,6 +187,60 @@ def user_login(request):
 def custom_logout(request):
     logout(request)
     return redirect('login1')
+
+
+@login_required
+def remove_mentee(request, mentee_id):
+    if not hasattr(request.user, "mentor"):
+        return redirect("home")  # block non-mentors
+
+    mentor = get_object_or_404(Mentor, user=request.user)
+    mapping = get_object_or_404(MentorMentee, mentor=mentor, mentee_id=mentee_id)
+    mapping.delete()
+    return redirect("account1")
+
+
+@login_required
+def view_mentee(request, mentee_id):
+    from mentee.models import (
+        EducationalDetail, InternshipPBL,Project, SportsCulturalEvent, OtherEvent, LongTermGoal, CertificationCourse,
+        PaperPublication, SelfAssessment, StudentInterest, SemesterResult, Profile
+    )
+
+    # get mentee profile
+    mentee = get_object_or_404(User, pk=mentee_id)
+
+    # fetch related objects
+    profile = Profile.objects.filter(user=mentee).first()
+    education = EducationalDetail.objects.filter(user=mentee)
+    projects = Project.objects.filter(user=mentee)
+    sports = SportsCulturalEvent.objects.filter(user=mentee)
+    other_event = OtherEvent.objects.filter(user=mentee)
+    publications = PaperPublication.objects.filter(user=mentee)
+    student_interest = StudentInterest.objects.filter(student=mentee)
+    results = SemesterResult.objects.filter(user=mentee)
+    internships = InternshipPBL.objects.filter(user=mentee)
+    goals = LongTermGoal.objects.filter(user=mentee)
+    certifications = CertificationCourse.objects.filter(user=mentee)
+    assessment = SelfAssessment.objects.filter(user=mentee)
+
+    context = {
+        "mentee": mentee,
+        "profile": profile,
+        "education": education,
+        "projects": projects,
+        "sports": sports,
+        "other_event": other_event,
+        "publications": publications,
+        "student_interest": student_interest,
+        "results": results,
+        "internships": internships,
+        "goals": goals,
+        "certifications": certifications,
+        "assessment": assessment,
+        "is_mentor_view": True,   # 👈 flag to hide edit buttons
+    }
+    return render(request, "mentor/view_mentee_dashboard.html", context)
 
 
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

@@ -9,9 +9,11 @@
         <div class="container">
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
+                {% if is_mentor_view == False %}
                 <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
                     <i id="sidebarIcon" class="bi bi-list"></i>
                 </a>
+                {% endif %}
                 <h2 class="text-white p-3 bg-primary rounded">Educational Details</h2>
             </div>
 
@@ -23,7 +25,9 @@
                         <th class="text-center">Percentage</th>
                         <th class="text-center">University/Board</th>
                         <th class="text-center">Year of Passing</th>
+                        {% if is_mentor_view == False %}
                         <th class="text-center">Action</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -33,6 +37,7 @@
                         <td class="text-center">{{ detail.percentage }}</td>
                         <td class="text-center">{{ detail.university_board }}</td>
                         <td class="text-center">{{ detail.year_of_passing }}</td>
+                        {% if is_mentor_view == False %}
                         <td class="text-center">
                             <form method="post" style="display:inline;">
                                 {% csrf_token %}
@@ -43,6 +48,7 @@
                                 </button>
                             </form>
                         </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
@@ -51,7 +57,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-
+            {% if is_mentor_view == False %}
             <!-- Add Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
@@ -110,6 +116,7 @@
                     Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

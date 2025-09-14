@@ -9,9 +9,11 @@
     <div class="content flex-grow-1 p-4">
         <div class="container">
             <div class="d-flex align-items-center mb-3">
+                {% if is_mentor_view == False %}
                 <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
                     <i id="sidebarIcon" class="bi bi-list"></i>
                 </a>
+                {% endif %}
                 <h2 class="mb-0">Projects</h2>
             </div>
 
@@ -27,7 +29,9 @@
                         <th class="text-center">Details</th>
                         <th class="text-center">Guide</th>
                         <th class="text-center">Link</th>
+                        {% if is_mentor_view == False %}
                         <th class="text-center">Action</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -43,6 +47,7 @@
                             <td class="text-center">
                                 <a class="btn btn-primary btn-sm" href="{{ project.link }}" target="_blank">View</a>
                             </td>
+                            {% if is_mentor_view == False %}
                             <td class="text-center">
                                 <!-- Edit Button -->
                                 <a href="?edit={{ project.id }}" class="btn btn-dark btn-sm">
@@ -59,6 +64,7 @@
                                     </button>
                                 </form>
                             </td>
+                            {% endif %}
                         </tr>
                     {% empty %}
                         <tr>
@@ -67,7 +73,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-
+            {% if is_mentor_view == False %}
             <!-- Project Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
@@ -144,6 +150,7 @@
                     Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

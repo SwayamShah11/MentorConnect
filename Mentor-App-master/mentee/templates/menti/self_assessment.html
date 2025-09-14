@@ -10,9 +10,11 @@
         <div class="container mt-4">
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
+                {% if is_mentor_view == False %}
                 <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
                     <i id="sidebarIcon" class="bi bi-list"></i>
                 </a>
+                {% endif %}
                 <h3 class="text-white p-3 bg-primary rounded">Goals/Plans for upcoming Semester</h3>
             </div>
 
@@ -37,18 +39,20 @@
                             {% endfor %}
                         </td>
                         <td class="text-center">{{ item.reason }}</td>
+                        {% if is_mentor_view == False %}
                         <td class="text-center">
                             <a href="{% url 'edit_assessment' item.pk %}" class="btn btn-info btn-sm"><i class="bi bi-pencil"></i></a>
                             <a href="{% url 'delete_assessment' item.pk %}" class="btn btn-danger btn-sm"
                                onclick="return confirm('Delete this record?')"><i class="bi bi-x"></i></a>
                         </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr><td colspan="4" class="text-center">No records yet</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-
+            {% if is_mentor_view == False %}
             <!-- Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
@@ -122,6 +126,7 @@
                     Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

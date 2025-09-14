@@ -10,10 +10,15 @@
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
                 <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
                     <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
                         <i id="sidebarIcon" class="bi bi-list"></i>
-                    </a>Student Interests</h2>
-            </div><hr>
+                    </a>
+                    {% endif %}
+                    Student Interests</h2>
+            </div>
+            {% if is_mentor_view == False %}
+            <hr>
             <form method="post">
               {% csrf_token %}
             <!-- Post BE Examination Interests -->
@@ -585,6 +590,17 @@
                     Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
             </div><br>
+            {% endif %}
+
+            <hr>
+            <h4>Saved Interests</h4>
+            <ul>
+              {% for i in saved_interests %}
+                <li>{{ i }}</li>
+              {% empty %}
+                <li>No interests saved yet.</li>
+              {% endfor %}
+            </ul>
           </div>
     </div>
 </div>

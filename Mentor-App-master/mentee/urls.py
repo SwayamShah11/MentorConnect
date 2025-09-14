@@ -76,6 +76,8 @@ urlpatterns = [
 
     #mentor urls
     path('account1/', mentor.AccountView.as_view(), name="account1"),
+    path("account1/remove/<int:mentee_id>/", mentor.remove_mentee, name="remove_mentee"),
+    path("account1/view/<int:mentee_id>/", mentor.view_mentee, name="view_mentee"),
     path('register1/', mentor.register1, name="register1"),
     path('profile1/', mentor.profile1, name="profile1"),
     #path('login1/', mentor.login1, name="login1"),

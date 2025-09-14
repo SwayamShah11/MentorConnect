@@ -150,6 +150,18 @@ def save_profile(sender, instance, **kwargs):
     instance.profile.save()
 
 
+class MentorMentee(models.Model):
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name="mentor_mappings")
+    mentee = models.ForeignKey(Mentee, on_delete=models.CASCADE, related_name="mentee_mappings")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("mentor", "mentee")
+
+    def __str__(self):
+        return f"{self.mentor.user.username} → {self.mentee.user.username}"
+
+
 class InternshipPBL(models.Model):
     TYPE_CHOICES = [
         ("Internship in Industry", "Internship in Industry"),

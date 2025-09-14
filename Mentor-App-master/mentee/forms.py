@@ -277,6 +277,16 @@ class InterestForm(forms.Form):
         required=False
     )
 
+
+#mentor
+class MoodleIdForm(forms.Form):
+    moodle_id = forms.CharField(
+        label="Moodle Id",
+        max_length=20,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Moodle Id of the Mentee"})
+    )
+
+
 class MentorRegisterForm(UserCreationForm):
     email = forms.EmailField()
 

@@ -8,17 +8,17 @@
   <div class="content flex-grow-1 p-4">
     <div class="container mt-3">
       <div class="card shadow-sm border-0">
-
+        {% if is_mentor_view == False %}
         <!-- Card Header -->
         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-          <button id="toggleSidebarBtn"
+            <button id="toggleSidebarBtn"
                   class="btn header-btn border-0 me-3 d-flex align-items-center justify-content-center"
                   style="width:40px; height:40px;">
             <i id="sidebarIcon" class="bi bi-list fs-4"></i>
           </button>
           <h4 class="mb-0 fw-semibold">Update Profile</h4>
         </div>
-
+        {% endif %}
         <!-- Body (Form) -->
         <div class="card-body">
           <form method="POST" enctype="multipart/form-data">
@@ -145,13 +145,14 @@
                 </div>
 
               </div>
-
+              {% if is_mentor_view == False %}
               <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
                 <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">Save Changes</button>
                 <a href="{% url 'internship-pbl-list' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm w-100 w-md-50">
                   Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
               </div>
+              {% endif %}
             </form>
         </div>
       </div>

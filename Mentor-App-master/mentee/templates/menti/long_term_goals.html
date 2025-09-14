@@ -10,9 +10,11 @@
         <div class="container">
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
+                {% if is_mentor_view == False %}
                 <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
                     <i id="sidebarIcon" class="bi bi-list"></i>
                 </a>
+                {% endif %}
                 <h2 class="text-white p-3 bg-primary rounded">Long Term Goals & Subject of Interest</h2>
             </div>
 
@@ -48,6 +50,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {% if is_mentor_view == False %}
             <!-- Add Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
@@ -88,6 +91,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             <hr style="border:none; border: 1px dashed #fff; opacity:1;">
             <!-- Subject of Interest Section -->
             <div class="card shadow-sm rounded">
@@ -121,6 +125,7 @@
                     </tbody>
                 </table>
             </div>
+            {% if is_mentor_view == False %}
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
                     <button class="btn btn-danger mb-3" id="toggleSubjectBtn">
@@ -163,6 +168,7 @@
                     Next <i class="bi bi-arrow-right-circle-fill"></i>
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

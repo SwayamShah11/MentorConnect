@@ -1,15 +1,95 @@
 {% extends 'mentor/base1.html' %}
-
-
+{% load static %}
+{% load widget_tweaks %}
 {% block content %}
+<div class="container mt-4">
+  <h5><strong>Name:</strong> {{ request.user.username }} <br>
+  <strong>Department:</strong> IT</h5>
 
-   <main role="main" class="container">
-      <div class="row">
-        <div class="col-md-8">
+  <div class="text-center my-3">
+    <a href="#" class="btn btn-warning">Next <i class="bi bi-arrow-right-circle"></i></a>
+  </div>
 
+    <!-- Add button -->
+    <div class="d-flex justify-content-end mb-2">
+      <button class="btn btn-sm btn-warning" onclick="toggleForm()">Add</button>
+    </div>
 
+    <!-- Hidden Form -->
+    <div id="add-form" class="card p-3 mb-4 bg-primary bg-opacity-50">
+      <form method="post" class="d-flex justify-content-center align-items-center gap-2">
+        {% csrf_token %}
+        <label class="fw-bold text-white">Moodle Id</label>
+        {{ form.moodle_id }}
+        <button type="submit" class="btn btn-warning">
+          Submit <i class="bi bi-send"></i>
+        </button>
+      </form>
+      {% if form.errors %}
+        <div class="text-danger mt-2">{{ form.errors.moodle_id }}</div>
+      {% endif %}
+    </div>
 
+  <!-- Table -->
+  <div class="card p-3 bg-primary bg-opacity-50">
+    <h5 class="text-white">Mentees Under You</h5>
+    <table class="table table-bordered table-hover table-striped text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>Sr.No</th>
+          <th>Moodle Id</th>
+          <th>Name</th>
+          <th>Semester</th>
+          <th>Contact</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for mentee in mentees %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ mentee.moodle_id }}</td>
+        <td>{{ mentee.name }}</td>
+        <td>{{ mentee.semester }}</td>
+        <td>{{ mentee.contact }}</td>
+        <td>
+          <a href="{% url 'view_mentee' mentee.id %}" class="btn btn-info btn-sm">View</a>
+          <form action="{% url 'remove_mentee' mentee.id %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Are you sure you want to remove this mentee?');">
+                <i class="bi bi-x"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No mentees assigned yet.</td></tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+</div>
 
+<script>
+function toggleForm() {
+  var formDiv = document.getElementById("add-form");
+  formDiv.classList.toggle("show");
+}
+</script>
 
+<style>
+#add-form {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+  opacity: 0;
+}
 
+#add-form.show {
+  max-height: 200px;  /* adjust based on your form height */
+  opacity: 1;
+}
+
+</style>
 {% endblock %}

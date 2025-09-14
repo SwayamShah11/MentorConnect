@@ -122,6 +122,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         context = {
             'user_meeting_data': user_meeting_data,
             'now': now,
+            "is_mentor_view": False,
         }
         return render(request, "menti/account.html", context)
 
@@ -312,7 +313,7 @@ def ChangePassword(request, token):
 @login_required
 def mentee_home(request):
     profile = Profile.objects.get(user=request.user)
-    return render(request, "menti/mentee_home.html", {"profile": profile})
+    return render(request, "menti/mentee_home.html", {"profile": profile, "is_mentor_view": False,})
 
 
 @login_required
@@ -326,7 +327,7 @@ def profile(request):
     else:
         form = ProfileUpdateForm(instance=profile)
 
-    return render(request, 'menti/profile.html', {'form': form})
+    return render(request, 'menti/profile.html', {'form': form, "is_mentor_view": False,})
 
 
 class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -346,6 +347,14 @@ class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_success_url(self):
         return reverse('list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # 👇 Add flag here
+        context['is_mentor_view'] = False
+
+        return context
 
 
 @login_required
@@ -384,9 +393,9 @@ def internship_pbl_list(request, pk=None):
         "internships": internships,
         "form": form,
         "editing": editing,
-        "edit_id": internship.pk if internship else None
+        "edit_id": internship.pk if internship else None,
+        "is_mentor_view": False,
     })
-
 
 
 #download internship certificate
@@ -496,6 +505,7 @@ def projects_view(request):
             "form": form,
             "editing": bool(project_to_edit),
             "project_id": project_to_edit.id if project_to_edit else None,
+            "is_mentor_view": False,
         },
     )
 
@@ -523,6 +533,7 @@ def sports_cultural_list(request):
         "form": form,
         "editing": editing,
         "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -548,6 +559,7 @@ def edit_sports_cultural(request, pk):
         "form": form,
         "editing": editing,
         "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -593,7 +605,8 @@ def other_event_list(request, pk=None):
         "events": events,
         "form": form,
         "editing": editing,
-        "edit_id": edit_id
+        "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -642,6 +655,7 @@ def certification_list(request, pk=None):
         "form": form,
         "editing": editing,
         "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -690,6 +704,7 @@ def publications_list(request, pk=None):
         "form": form,
         "editing": editing,
         "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -731,6 +746,7 @@ def self_assessment(request, pk=None):
         "form": form,
         "editing": editing,
         "edit_id": edit_id,
+        "is_mentor_view": False,
     })
 
 
@@ -778,6 +794,7 @@ def long_term_goals(request, edit_id=None):
         "subject_form": subject_form,
         "subjects": subjects,
         "edit_id": edit_id,  # pass edit id to template
+        "is_mentor_view": False,
     })
 
 
@@ -821,6 +838,7 @@ def educational_details(request):
         "details": details,
         "form": form,
         "editing": editing,
+        "is_mentor_view": False,
     }
     return render(request, "menti/educational_details.html", context)
 
@@ -844,6 +862,7 @@ def semester_results(request):
         "form": form,
         "semesters": semesters,
         "editing": False,
+        "is_mentor_view": False,
     })
 
 
@@ -865,6 +884,7 @@ def edit_semester(request, pk):
         "semesters": semesters,
         "editing": True,
         "edit_id": semester.pk,
+        "is_mentor_view": False,
     })
 
 
@@ -894,7 +914,8 @@ def student_interests(request):
         pass
 
     return render(request, "menti/student_interests.html", {
-        "saved_interests": saved_interests
+        "saved_interests": saved_interests,
+        "is_mentor_view": False,
     })
 
 
@@ -924,12 +945,12 @@ def uploaded_documents(request):
     for doc in courses:
         documents.append({"category": "Certification Course", "name": doc.title or "Certification", "file": doc.certificate})
 
-    return render(request, "menti/uploaded_documents.html", {"documents": documents})
+    return render(request, "menti/uploaded_documents.html", {"documents": documents, "is_mentor_view": False})
 
 
 @login_required
 def credits_view(request):
-    return render(request, 'menti/credits.html')
+    return render(request, 'menti/credits.html', {"is_mentor_view": False,})
 
 
 class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -945,6 +966,11 @@ class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return self.model.objects.filter(sender=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class SentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -974,6 +1000,11 @@ class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
+
 
 class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Inbox Detailed view"""
@@ -987,6 +1018,11 @@ class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1003,7 +1039,7 @@ class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['count1'] = Msg.objects.filter(sender=self.request.user).filter(is_approved=True).count()
         context['count3'] = Conversation.objects.filter(receipient=self.request.user).count()
         context['count4'] = Conversation.objects.filter(sender=self.request.user).count()
-
+        context['is_mentor_view'] = False
         return context
 
     def get_queryset(self):
@@ -1016,7 +1052,7 @@ def messege_view(request):
     if not request.user.is_mentee:
         return redirect('home')
 
-    return render(request, 'menti/messages-module.html', )
+    return render(request, 'menti/messages-module.html', {"is_mentor_view": False,})
 
 
 class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
@@ -1028,6 +1064,11 @@ class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         return self.request.user.is_mentee
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1058,6 +1099,11 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return self.model.filter(sender=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class Pdf(View):
@@ -1119,6 +1165,11 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -1217,7 +1268,7 @@ def search(request):
         ).distinct()
 
     context = {
-
+        'is_mentor_view': False,
         'queryset': queryset
     }
 
