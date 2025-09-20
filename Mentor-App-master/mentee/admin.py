@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, UserInfo, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest
+from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -110,8 +110,6 @@ class UserAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Reply)
-
-admin.site.register(UserInfo)
 
 admin.site.register(Mentee)
 

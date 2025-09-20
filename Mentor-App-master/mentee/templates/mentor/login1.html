@@ -30,19 +30,28 @@
             flex: 0 0 auto;
         }
 
+        .navbar-left img {
+          display: block;
+        }
+
         .navbar-center {
-            flex: 1;
+            flex-grow: 1;
             text-align: center;
             font-weight: bold;
+            line-height: 1.2;
         }
 
         .navbar-right {
             flex: 0 0 auto;
-            width: 65px; /* same as logo width to balance */
+            display: flex;
+            gap: 20px;   /* adds spacing between links */
+            align-items: center;
         }
+
         .card {
             border-radius: 10px;
         }
+
         .card-body {
             padding: 2rem;
         }
@@ -63,8 +72,11 @@
         <strong>A P Shah Institute of Technology, Thane</strong>
       </div>
 
-      <!-- Right: Empty (to balance) -->
-      <div class="navbar-right"></div>
+      <!-- Right: Links -->
+      <div class="navbar-right d-flex">
+        <a class="nav-item nav-link text-white" href="{% url 'register1' %}">Register</a>
+        <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home</a>
+      </div>
     </div>
 
     <!-- Page Content -->

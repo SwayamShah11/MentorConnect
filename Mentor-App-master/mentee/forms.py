@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, UserInfo, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest
+from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -17,21 +17,14 @@ User = get_user_model()
 
 class MenteeRegisterForm(UserCreationForm):
 
-    email = forms.EmailField()
-
-    #interests = forms.ModelMultipleChoiceField(
-        #queryset=Subject.objects.all(),
-        #widget=forms.CheckboxSelectMultiple,
-        #required=True)
-
-    #interests= forms.ChoiceField(required=True, widget=forms.RadioSelect(
-        #attrs={'class': 'Radio'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'placeholder': 'example@gmail.com'}))
 
     class Meta:
        model = User
        fields = ['username', 'email', 'password1', 'password2']
-
-
+       widgets = {
+           'username': forms.TextInput(attrs={"placeholder": "Enter Moodle ID only"})
+       }
 
     def save(self):
         user = super().save(commit=False)
@@ -44,22 +37,19 @@ class MenteeRegisterForm(UserCreationForm):
         return user
 
 
-class UserInfoForm(forms.ModelForm):
-
-    interest = forms.ChoiceField(required=True, widget=forms.RadioSelect(
-        attrs={'class': 'Radio'}), choices=(('economics', 'Economics'), ('bbit', 'BBIT'),))
-
-    class Meta():
-        model = UserInfo
-        fields = ('interest',)
-
-
-class UserUpdateForm(forms.ModelForm):
-    email = forms.EmailField()
+class MentorProfileForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True)
 
     class Meta:
-        model = User
-        fields = ['username', 'email']
+        model = Mentor
+        fields = ["image", "name", "department", "expertise"]
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["username"].initial = user.username
+            self.fields["email"] = forms.EmailField(initial=user.email, required=True)
 
 
 # custom validator for contact numbers
@@ -288,17 +278,14 @@ class MoodleIdForm(forms.Form):
 
 
 class MentorRegisterForm(UserCreationForm):
-    email = forms.EmailField()
-
-    #interests = forms.ModelMultipleChoiceField(
-        #queryset=Subject.objects.all(),
-        #widget=forms.CheckboxSelectMultiple,
-        #required=True
-    #)
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'placeholder': 'example@gmail.com'}))
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
+        widgets = {
+            'username': forms.TextInput(attrs={"placeholder": "Enter username"})
+        }
 
 
     def save(self):
@@ -309,16 +296,6 @@ class MentorRegisterForm(UserCreationForm):
         #mentor.interests.add(*self.cleaned_data.get('interests'))
 
         return user
-
-
-class UserInfoForm(forms.ModelForm):
-
-    interest = forms.ChoiceField(required=True, widget=forms.RadioSelect(
-        attrs={'class': 'Radio'}), choices=(('economics', 'Economics'), ('bbit', 'BBIT'),))
-
-    class Meta():
-        model = UserInfo
-        fields = ('interest',)
 
 
 class ReplyForm(forms.Form):

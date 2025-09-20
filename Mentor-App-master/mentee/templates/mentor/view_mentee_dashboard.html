@@ -52,7 +52,7 @@
 
   <div class="tab-content">
     <div class="tab-pane fade show active" id="profile">
-        {% include "menti/profile.html" with profile=profile only %}
+        {% include "menti/profile_readonly.html" with profile=profile only %}
     </div>
     <div class="tab-pane fade" id="internships">
         {% include "menti/internship_pbl_list.html" with internships=internships only %}
@@ -76,13 +76,13 @@
         {% include "menti/self_assessment.html" with assessments=assessment only %}
     </div>
     <div class="tab-pane fade" id="goals">
-        {% include "menti/long_term_goals.html" with goal=goals subjects=subjects only %}
+        {% include "menti/long_term_goals.html" %}
     </div>
     <div class="tab-pane fade" id="education">
         {% include "menti/educational_details.html" with details=education only %}
     </div>
     <div class="tab-pane fade" id="results">
-        {% include "menti/semester_results.html" with semesters =results only %}
+        {% include "menti/semester_results.html" with semesters=results only %}
     </div>
     <div class="tab-pane fade" id="student_interest">
         {% include "menti/student_interests.html" with saved_interests=saved_interests only %}

@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from ..forms import MentorRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, MoodleIdForm
+from ..forms import MentorRegisterForm, MentorProfileForm, ProfileUpdateForm, MoodleIdForm
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
@@ -107,60 +107,48 @@ def register1(request):
     if request.method == 'POST':
 
         form1 = MentorRegisterForm(request.POST)
-        form2 = UserInfoForm(request.POST)
 
-        if form1.is_valid() and form2.is_valid():
+        if form1.is_valid():
             user = form1.save()
             user.is_mentor = True
             user.save()
 
-            info = form2.save(commit=False)
-            info.user = user
-            info.save()
-
             registered = True
-
             messages.success(request, f'Your account has been created! You are now able to log in')
-
             return redirect('login1')
-
     else:
-
         form1 = MentorRegisterForm()
-        form2 = UserInfoForm()
 
-    return render(request, 'mentor/register1.html', {'form1': form1, 'form2': form2, })
+    return render(request, 'mentor/register1.html', {'form1': form1})
 
 
 
 def profile1(request):
     """Update Mentor Profile"""
 
-    if not request.user.is_mentor:
-        return redirect('home')
+    if not hasattr(request.user, "mentor"):
+        return redirect("home")
 
-    if request.method == 'POST':
+    mentor = request.user.mentor  # one-to-one relation
 
-        u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+    if request.method == "POST":
+        form = MentorProfileForm(request.POST, request.FILES, instance=mentor, user=request.user)
 
-        if u_form.is_valid() and p_form.is_valid():
-            u_form.save()
-            p_form.save()
-            messages.success(request, f'Your account has been Updated!')
-            return redirect('profile1')
+        if form.is_valid():
+            # Update User info
+            request.user.username = form.cleaned_data["username"]
+            request.user.email = form.cleaned_data["email"]
+            request.user.save()
 
+            # Update Mentor info
+            form.save()
+
+            messages.success(request, "Your profile has been updated successfully!")
+            return redirect("profile1")
     else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
+        form = MentorProfileForm(instance=mentor, user=request.user)
 
-    context = {
-
-        'u_form': u_form,
-        'p_form': p_form
-    }
-
-    return render(request, 'mentor/profile1.html', context)
+    return render(request, "mentor/profile1.html", {"form": form})
 
 
 def user_login(request):
@@ -237,7 +225,7 @@ def view_mentee(request, mentee_id):
         "saved_interests": student_interest.interests if student_interest else [],
         "results": results,
         "internships": internships,
-        "goals": goals,
+        "goal": goals,
         "subjects": subjects,
         "certifications": certifications,
         "assessment": assessment,

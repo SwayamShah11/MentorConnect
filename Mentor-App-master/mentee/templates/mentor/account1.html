@@ -3,16 +3,18 @@
 {% load widget_tweaks %}
 {% block content %}
 <div class="container mt-4">
-  <h5><strong>Name:</strong> {{ request.user.username }} <br>
-  <strong>Department:</strong> IT</h5>
+  <h5 class="text-center">
+      <strong>Name:</strong> {{ request.user.mentor.name }} <br>
+      <strong>Department:</strong> {{ request.user.mentor.department }}
+  </h5>
 
   <div class="text-center my-3">
-    <a href="#" class="btn btn-warning">Next <i class="bi bi-arrow-right-circle"></i></a>
+    <a href="{% url 'profile1' %}" class="btn btn-warning">Next <i class="bi bi-arrow-right-circle"></i></a>
   </div>
 
     <!-- Add button -->
     <div class="d-flex justify-content-end mb-2">
-      <button class="btn btn-sm btn-warning" onclick="toggleForm()">Add</button>
+      <button id="showFormBtn" class="btn btn-sm btn-warning" onclick="toggleForm()">Add <i id="toggleIcon" class="bi bi-plus-lg"></i></button>
     </div>
 
     <!-- Hidden Form -->
@@ -72,10 +74,23 @@
 </div>
 
 <script>
-function toggleForm() {
-  var formDiv = document.getElementById("add-form");
-  formDiv.classList.toggle("show");
-}
+document.getElementById("showFormBtn").addEventListener("click", function(){
+    var formDiv = document.getElementById("add-form");
+    var icon = document.getElementById("toggleIcon");
+    var btn = document.getElementById("showFormBtn");
+
+    // Toggle slide effect using class
+    formDiv.classList.toggle("show");
+
+    // toggle icon + text
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg"); // plus → minus
+        btn.childNodes[0].nodeValue = "Remove ";            // Add → Remove
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
+        btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
+    }
+});
 </script>
 
 <style>
@@ -90,6 +105,5 @@ function toggleForm() {
   max-height: 200px;  /* adjust based on your form height */
   opacity: 1;
 }
-
 </style>
 {% endblock %}

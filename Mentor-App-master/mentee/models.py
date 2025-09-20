@@ -16,34 +16,35 @@ class User(AbstractUser):
     is_mentor = models.BooleanField(default=False)
 
 
-class UserInfo(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    interest = models.CharField(max_length=100, null=True)
-
-    def __str__(self):
-        return self.user.username
-
-
 class Mentee(models.Model):
     """Mentee models"""
-
     user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
-
-    # interests = models.OneToOneField(Subject, related_name='mentees', on_delete=models.CASCADE, null=True)
+    mentor = models.ForeignKey("Mentor", on_delete=models.SET_NULL, null=True, blank=True, related_name="mentees")
 
     def __str__(self):
         return self.user.username
 
+DEPARTMENT_CHOICES = [
+    ('CIVIL', 'CIVIL'),
+    ('COMPS', 'COMPUTER SCIENCE'),
+    ('EXTC', 'ELECTRONICS & TELECOMMUNICATION'),
+    ('MECH', 'MECHANICAL'),
+    ('IT', 'INFORMATION TECHNOLOGY'),
+    ('CSE - AIML', 'ARTIFICIAL INTELLIGENCE & MACHINE LEARNING'),
+    ('CSE - DS', 'DATA SCIENCE'),
+]
 
 class Mentor(models.Model):
     """Mentor models"""
-
     user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
-
-    # interests = models.OneToOneField(Subject, related_name='mentors', on_delete=models.CASCADE, null=True)
+    image = models.ImageField(default='default.png', upload_to="mentors/", blank=True, null=True)
+    name = models.CharField(max_length=150, blank=True, null=True)
+    department = models.CharField(max_length=150, choices=DEPARTMENT_CHOICES, blank=True, null=True)
+    expertise = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.user.username
+
 
 AY = [
         ('2017-18', '2017-18'),
@@ -96,7 +97,7 @@ class Profile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     forget_password_token = models.CharField(max_length=500, blank=True, null=True)
-    image = models.ImageField(default='default.jpg', upload_to='profile_pics')
+    image = models.ImageField(default='default.png', upload_to='profile_pics')
 
     # --- Personal Details ---
     moodle_id = models.CharField(max_length=20, blank=True, null=True)

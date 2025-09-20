@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
-from ..forms import MenteeRegisterForm, UserUpdateForm, ProfileUpdateForm, UserInfoForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, InterestForm
+from ..forms import MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm
 from django.views.generic import TemplateView
 from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest
 from django.contrib.auth import get_user_model
@@ -68,63 +68,42 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user.is_mentee
 
     def get(self, request, *args, **kwargs):
-        users = User.objects.filter(is_mentor=True)
-        mentee = getattr(request.user, 'mentee', None)
-        meetings = Meeting.objects.filter(mentee=mentee) if mentee else Meeting.objects.none()
+        try:
+            mentee = request.user.mentee
+        except Mentee.DoesNotExist:
+            return render(request, "menti/account.html", {"user_meeting_data": []})
 
-        meeting_dict = {}
+            # Get the one assigned mentor
+        mapping = mentee.mentee_mappings.select_related("mentor__user").first()
+        if not mapping:
+            return render(request, "menti/account.html", {"user_meeting_data": []})
+
+        mentor = mapping.mentor
         now = timezone.localtime(timezone.now())
+        meetings = Meeting.objects.filter(mentee=mentee, mentor=mentor)
 
-        for meeting in meetings:
-            # Store meeting for each mentor
-            meeting_dict[meeting.mentor.user.id] = meeting
+        meeting = meetings.first()
+        can_join = can_feedback = feedback_exists = False
+        if meeting:
+            start = meeting.meeting_datetime
+            end = meeting.meeting_end_datetime
+            can_join = start <= now <= end
+            feedback_exists = hasattr(meeting, "feedback_obj")
+            can_feedback = now > end and not feedback_exists
 
-        user_meeting_data = []
+        user_meeting_data = [{
+            "user": mentor.user,
+            "meeting": meeting,
+            "can_join": can_join,
+            "can_feedback": can_feedback,
+            "feedback_exists": feedback_exists,
+        }]
 
-        for user in users:
-            meeting = meeting_dict.get(user.id)
-            can_join = False
-            can_feedback = False
-            feedback_exists = False
-            if meeting:
-                # Use model properties for start/end
-                start = meeting.meeting_datetime
-                end = meeting.meeting_end_datetime
-
-                can_join = start <= now <= end
-                feedback_exists = hasattr(meeting, "feedback_obj")
-                can_feedback = now > end and not feedback_exists
-
-                # 🛠️ Debug log in console
-                logger.info(
-                    f"[DEBUG] Mentor={meeting.mentor.user.username} | "
-                    f"Now={now}, Start={start}, End={end}, "
-                    f"can_join={can_join}, can_feedback={can_feedback}"
-                )
-
-                # Optional: show debug info in template
-                meeting.debug_info = {
-                    "now": now,
-                    "start": start,
-                    "end": end,
-                    "can_join": can_join,
-                    "can_feedback": can_feedback,
-                }
-
-            user_meeting_data.append({
-                "user": user,
-                "meeting": meeting,
-                "can_join": can_join,
-                "can_feedback": can_feedback,
-                "feedback_exists": hasattr(meeting, "feedback_obj"),
-            })
-
-        context = {
-            'user_meeting_data': user_meeting_data,
-            'now': now,
+        return render(request, "menti/account.html", {
+            "user_meeting_data": user_meeting_data,
+            "now": now,
             "is_mentor_view": False,
-        }
-        return render(request, "menti/account.html", context)
+        })
 
 
 def register(request):
@@ -135,44 +114,19 @@ def register(request):
     if request.method == 'POST':
 
         form1 = MenteeRegisterForm(request.POST)
-        form2 = UserInfoForm(request.POST)
 
-        if form1.is_valid() and form2.is_valid():
+        if form1.is_valid():
             user = form1.save()
             user.is_mentee = True
             user.save()
 
-            info = form2.save(commit=False)
-            info.user = user
-            info.save()
-
             registered = True
-
             messages.success(request, f'Your account has been created! You are now able to log in')
-
             return redirect('login')
-
     else:
-
         form1 = MenteeRegisterForm()
-        form2 = UserInfoForm()
 
-    return render(request, 'menti/register.html', {'form1': form1, 'form2': form2, })
-
-
-# class MenteeSignUpView(CreateView):
-# model = User
-# form_class = MenteeRegisterForm
-# template_name = 'menti/register.html'
-
-# def get_context_data(self, **kwargs):
-# kwargs['user_type'] = 'mentee'
-# return super().get_context_data(**kwargs)
-
-# def form_valid(self, form):
-# user = form.save()
-# login(self.request, user)
-# return redirect('login')
+    return render(request, 'menti/register.html', {'form1': form1})
 
 
 def user_login(request):
