@@ -143,7 +143,7 @@ class Profile(models.Model):
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance, moodle_id=instance.username)  # 👈 auto set moodle_id
+        Profile.objects.create(user=instance, moodle_id=instance.username, email=instance.email)  # 👈 auto set moodle_id
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):

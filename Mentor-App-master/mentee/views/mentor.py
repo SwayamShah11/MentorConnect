@@ -204,7 +204,7 @@ def remove_mentee(request, mentee_id):
 def view_mentee(request, mentee_id):
     from mentee.models import (
         EducationalDetail, InternshipPBL,Project, SportsCulturalEvent, OtherEvent, LongTermGoal, CertificationCourse,
-        PaperPublication, SelfAssessment, StudentInterest, SemesterResult, Profile
+        PaperPublication, SelfAssessment, StudentInterest, SemesterResult, Profile, SubjectOfInterest
     )
 
     # get mentee profile
@@ -217,10 +217,11 @@ def view_mentee(request, mentee_id):
     sports = SportsCulturalEvent.objects.filter(user=mentee)
     other_event = OtherEvent.objects.filter(user=mentee)
     publications = PaperPublication.objects.filter(user=mentee)
-    student_interest = StudentInterest.objects.filter(student=mentee)
+    student_interest = StudentInterest.objects.filter(student=mentee).first()
     results = SemesterResult.objects.filter(user=mentee)
     internships = InternshipPBL.objects.filter(user=mentee)
     goals = LongTermGoal.objects.filter(user=mentee)
+    subjects = SubjectOfInterest.objects.filter(user=mentee)
     certifications = CertificationCourse.objects.filter(user=mentee)
     assessment = SelfAssessment.objects.filter(user=mentee)
 
@@ -233,9 +234,11 @@ def view_mentee(request, mentee_id):
         "other_event": other_event,
         "publications": publications,
         "student_interest": student_interest,
+        "saved_interests": student_interest.interests if student_interest else [],
         "results": results,
         "internships": internships,
         "goals": goals,
+        "subjects": subjects,
         "certifications": certifications,
         "assessment": assessment,
         "is_mentor_view": True,   # 👈 flag to hide edit buttons

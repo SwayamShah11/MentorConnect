@@ -1,7 +1,6 @@
+<!DOCTYPE html>
 {% load static %}
 {% load crispy_forms_tags %}
-
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -16,12 +15,29 @@
             background-color: #f8f9fa;
         }
         .navbar-custom {
-            background-color: #4a64c6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #3f5cbf; /* your blue background */
             color: white;
-            padding: 15px 0;
-            text-align: center;
             font-size: 18px;
             font-weight: bold;
+        }
+
+        .navbar-left {
+            flex: 0 0 auto;
+        }
+
+        .navbar-center {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .navbar-right {
+            flex: 0 0 auto;
+            width: 65px; /* same as logo width to balance */
         }
         .card {
             border-radius: 10px;
@@ -32,17 +48,27 @@
     </style>
 </head>
 <body>
-    <!-- College Name Header -->
     <div class="navbar-custom">
+      <!-- Left: Logo -->
+      <div class="navbar-left">
+        <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
+      </div>
+
+      <!-- Center: Text -->
+      <div class="navbar-center text-center">
         Parshvanath Charitable Trust's <br>
-        A P Shah Institute of Technology, Thane
+        <strong>A P Shah Institute of Technology, Thane</strong>
+      </div>
+
+      <!-- Right: Empty (to balance) -->
+      <div class="navbar-right"></div>
     </div>
 
     <!-- Page Content -->
     <div class="container mt-5">
         <!-- Header -->
         <div class="text-center mb-4">
-            <h2 class="fw-bold" style="color:#4a64c6;">
+            <h2 class="fw-bold" style="color:#3f5cbf;">
                 Welcome to Student's Online Diary
             </h2>
         </div>
@@ -50,7 +76,7 @@
         <div class="row justify-content-center">
             <!-- Instructions Box -->
             <div class="col-md-5">
-                <div class="p-4 rounded" style="background-color:#4a64c6; color:white;">
+                <div class="p-4 rounded" style="background-color:#3f5cbf; color:white;">
                     <h4><strong>Instructions:</strong></h4>
                     <ol>
                         <li>For username and password, contact your Mentor.</li>
@@ -65,7 +91,7 @@
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
-                        <h4 class="fw-bold mb-3" style="color:#4a64c6;">Student's Online Diary</h4>
+                        <h4 class="fw-bold mb-3" style="color:#3f5cbf;">Login to Diary</h4>
                         <p class="text-muted">Please, login to continue.</p>
 
                         <form method="post" action="{% url 'login' %}">
@@ -78,10 +104,10 @@
                             <!-- Password -->
                             <div class="mb-3">
                                 <input type="password" name="password" class="form-control" placeholder="Password" required>
+                                <small><a style="margin-right:230px;" class="text-danger" href="{% url 'forget_password'%}">Forgot Password?</a></small>
                             </div>
-                            <small><a href="{% url 'forget_password'%}">Forget Password</a></small>
                             <!-- Submit -->
-                            <button type="submit" class="btn w-100" style="background-color:#4a64c6; color:white;">
+                            <button type="submit" class="btn w-100" style="background-color:#3f5cbf; color:white;">
                                 Sign in
                             </button>
                         </form>

@@ -79,7 +79,7 @@ class ProfileUpdateForm(forms.ModelForm):
     # override email field with regex validation
     email = forms.EmailField(   # 👈 changed from email_id → email
         validators=[email_validator],
-        widget=forms.EmailInput(attrs={'placeholder': 'example@email.com'})
+        widget=forms.EmailInput(attrs={'placeholder': 'example@email.com', 'readonly':'readonly'})
     )
 
     class Meta:

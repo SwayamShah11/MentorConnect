@@ -897,10 +897,9 @@ def delete_semester(request, pk):
 
 @login_required
 def student_interests(request):
+    obj, created = StudentInterest.objects.get_or_create(student=request.user)
     if request.method == "POST":
         selected = request.POST.getlist("interests")
-
-        obj, created = StudentInterest.objects.get_or_create(student=request.user)
         obj.interests = selected
         obj.save()
 

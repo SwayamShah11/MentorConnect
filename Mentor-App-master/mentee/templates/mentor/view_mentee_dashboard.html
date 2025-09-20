@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 {% load static %}
+{% load interest_filters %}
+{% load widget_tweaks %}
 <html lang="en" xmlns="http://www.w3.org/1999/html">
   <head>
     <!-- Required meta tags -->
@@ -59,10 +61,10 @@
         {% include "menti/projects_list.html" with projects=projects only %}
     </div>
     <div class="tab-pane fade" id="sports">
-        {% include "menti/sports_and_cultural.html" with sports=sports only %}
+        {% include "menti/sports_and_cultural.html" with events=sports only %}
     </div>
     <div class="tab-pane fade" id="other_event">
-        {% include "menti/other_events.html" with other_event=other_event only %}
+        {% include "menti/other_events.html" with events=other_event only %}
     </div>
     <div class="tab-pane fade" id="certifications">
         {% include "menti/certifications.html" with certifications=certifications only %}
@@ -71,19 +73,19 @@
         {% include "menti/publications.html" with publications=publications only %}
     </div>
     <div class="tab-pane fade" id="assessment">
-        {% include "menti/self_assessment.html" with assessment=assessment only %}
+        {% include "menti/self_assessment.html" with assessments=assessment only %}
     </div>
     <div class="tab-pane fade" id="goals">
-        {% include "menti/long_term_goals.html" with goals=goals only %}
+        {% include "menti/long_term_goals.html" with goal=goals subjects=subjects only %}
     </div>
     <div class="tab-pane fade" id="education">
-        {% include "menti/educational_details.html" with education=education only %}
+        {% include "menti/educational_details.html" with details=education only %}
     </div>
     <div class="tab-pane fade" id="results">
-        {% include "menti/semester_results.html" with results=results only %}
+        {% include "menti/semester_results.html" with semesters =results only %}
     </div>
     <div class="tab-pane fade" id="student_interest">
-        {% include "menti/student_interests.html" with student_interest=student_interest only %}
+        {% include "menti/student_interests.html" with saved_interests=saved_interests only %}
     </div>
   </div>
 </div>

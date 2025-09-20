@@ -10,8 +10,8 @@
     }
 
     .profile-card {
-        background: #121212;
-        color: #ffffff;
+        background: #fff;
+        color: #000;
         backdrop-filter: blur(8px); /* Frosted glass effect */
         border-radius: 20px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -22,7 +22,7 @@
         transform: translateY(-5px); /* Lift effect on hover */
     }
     p.text-muted {
-        color: #fff !important;
+        color: #000 !important;
     }
 </style>
 <div class="container d-flex justify-content-center align-items-center mt-5">
@@ -57,7 +57,7 @@
         <!-- Next Button -->
         <div class="text-center mt-3">
             <a href="{% url 'profile' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm">
-                Next <i class="bi bi-arrow-right-circle-fill"></i>
+                Next <i class="bi bi-arrow-right-circle"></i>
             </a>
         </div>
 

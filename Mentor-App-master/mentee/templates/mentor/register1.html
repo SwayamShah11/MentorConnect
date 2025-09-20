@@ -1,32 +1,104 @@
-{% extends 'mentor/base1.html' %}
+<!DOCTYPE html>
+{% load static %}
 {% load crispy_forms_tags %}
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APSIT's Online Diary - Register</title>
+
+    <link rel="stylesheet" type="text/css" href="{% static 'mentee/main.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}">
 
 
-{% block content %}
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-grid.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-reboot.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
 
-<div class="row">
-        <div class="col-md-8">
- <div class="content-section">
-        <form method="POST">
-            {% csrf_token %}
-            <fieldset class="form-group">
-                <legend class="border-bottom mb-4">Join Today To Be A mentor</legend>
-                {{ form1|crispy }}
-                {{ form2|crispy }}
-            </fieldset>
-            <div class="form-group">
-                <button class="btn btn-outline-info" type="submit">Sign Up</button>
+      <!-- Bootstrap CSS (example, if not already included) -->
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+      <!-- Bootstrap Icons CSS -->
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-custom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #3f5cbf; /* your blue background */
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .navbar-left {
+            flex: 0 0 auto;
+        }
+
+        .navbar-center {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .navbar-right {
+            flex: 0 0 auto;
+            width: 65px; /* same as logo width to balance */
+        }
+        .card {
+            border-radius: 10px;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+
+    </style>
+</head>
+<body>
+<div class="navbar-custom">
+      <!-- Left: Logo -->
+      <div class="navbar-left">
+        <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
+      </div>
+
+      <!-- Center: Text -->
+      <div class="navbar-center text-center">
+        Parshvanath Charitable Trust's <br>
+        <strong>A P Shah Institute of Technology, Thane</strong>
+      </div>
+
+      <!-- Right: Empty (to balance) -->
+      <div class="navbar-right"></div>
+</div>
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="content-section">
+            <form method="POST">
+                {% csrf_token %}
+                <fieldset class="form-group">
+                    <legend class="border-bottom mb-4">Join Today to be a Mentor</legend>
+                    {{ form1|crispy }}
+                    {{ form2|crispy }}
+                </fieldset>
+                <div class="form-group">
+                    <button class="btn btn-outline-info" type="submit">Sign Up</button>
+                </div>
+            </form>
+            <div class="border-top pt-3">
+                <small class="text-muted">
+                    Already have an Account? <a class="ml-2" href="{% url 'login1' %}">Sign In</a>
+                </small>
             </div>
-        </form>
-        <div class="border-top pt-3">
-            <small class="text-muted">
-                Already Have An Account? <a class="ml-2" href="{% url 'login1' %}">Sign In</a>
-            </small>
         </div>
     </div>
-        </div>
 </div>
-
-
-
-{% endblock %}
+</body>
+</html>
