@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from ..forms import MentorRegisterForm, MentorProfileForm, ProfileUpdateForm, MoodleIdForm
+from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,

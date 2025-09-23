@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
-# from ..models import Status
-# from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
-from ..forms import MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm, OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm
-from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest
+from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
+                     OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm,
+                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm)
+from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
+                      CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
+                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest)
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -15,19 +16,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.urls import reverse
 import traceback
-from django.views.generic import (View, TemplateView,
-                                  ListView, DetailView,
-                                  CreateView, UpdateView,
-                                  DeleteView)
+from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
 from django.core.mail import send_mail
 from django.urls import reverse_lazy
 from .. import models
 from django.contrib.messages.views import SuccessMessageMixin
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
-
-from ..forms import SendForm
 from django.db.models import Count, Q
 from ..render import Render
 from django.http import HttpResponse, Http404
@@ -44,22 +39,6 @@ from django.template.loader import render_to_string
 def home(request):
     """Home landing page"""
     return render(request, 'home.html')
-
-
-# """Home account landing page after you login"""
-# @login_required
-# def account(request):
-
-# users = User.objects.all().filter(is_mentor=True)
-
-# context = {
-
-# 'users': users
-
-
-# }
-
-# return render(request, 'menti/account.html', context)
 
 
 class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):

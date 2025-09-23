@@ -14,34 +14,75 @@
       <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-reboot.css' %}">
       <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
 
-    <title>Mentorship App</title>
+    <title>MentorConnect</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar-custom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #3f5cbf; /* your blue background */
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .navbar-left {
+            flex: 0 0 auto;
+        }
+
+        .navbar-left img {
+          display: block;
+        }
+
+        .navbar-center {
+            flex-grow: 1;
+            text-align: center;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        .navbar-right {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 20px;   /* adds spacing between links */
+            align-items: center;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+    </style>
   </head>
   <body>
 
   <header class="site-header">
-      <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
-        <div class="container">
-          <a class="navbar-brand mr-4" href="">Mentorship App</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarToggle">
-            <div class="navbar-nav mr-auto">
+      <!-- College Name Header -->
+    <div class="navbar-custom">
+      <!-- Left: Logo -->
+      <div class="navbar-left">
+        <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
+      </div>
 
-            </div>
-            <!-- Navbar Right Side -->
-            <div class="navbar-nav">
-             {% if user.is_authenticated %}
-                <a class="nav-item nav-link" href="{% url 'profile' %}">Profile</a>
-                <a class="nav-item nav-link" href="{% url 'account' %}">Account</a>
-                <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
-              {% else %}
-                <a class="nav-item nav-link" href="{% url 'home' %}">Home</a>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <!-- Center: Text -->
+      <div class="navbar-center text-center">
+        Parshvanath Charitable Trust's <br>
+        <strong>A P Shah Institute of Technology, Thane</strong>
+      </div>
+
+      <!-- Right: Links -->
+      <div class="navbar-right d-flex">
+        <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home</a>
+      </div>
+    </div>
     </header>
 
 

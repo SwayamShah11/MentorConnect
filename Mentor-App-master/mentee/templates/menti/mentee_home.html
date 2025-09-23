@@ -1,6 +1,6 @@
 {% extends 'menti/base.html' %}
 {% load static %}
-
+{% block title %} Home {% endblock %}
 {% block content %}
 <style>
     body {
@@ -34,7 +34,7 @@
             <img src="{{ profile.image.url }}"
                  class="rounded-circle shadow-sm border border-3 border-light"
                  style="width: 160px; height: 160px; object-fit: cover;">
-        </div>
+        </div><br>
 
         <!-- User Info -->
         <div class="card-body text-center">

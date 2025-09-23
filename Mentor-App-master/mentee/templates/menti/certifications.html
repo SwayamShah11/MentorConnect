@@ -1,6 +1,7 @@
 {% extends 'menti/base.html' %}
 {% load static %}
 {% load widget_tweaks %}
+{% block title %} Certifications/Courses {% endblock %}
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
@@ -11,12 +12,14 @@
 
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
-                {% if is_mentor_view == False %}
-                <a id="toggleSidebarBtn" class="btn btn-outline-primary me-2">
-                    <i id="sidebarIcon" class="bi bi-list"></i>
-                </a>
-                {% endif %}
-                <h2 class="mb-0">Certifications/Courses</h2>
+                <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>
+                    {% endif %}
+                    Certifications/Courses
+                </h2>
             </div>
 
             <!-- Table -->
