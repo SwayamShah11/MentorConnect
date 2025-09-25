@@ -640,3 +640,21 @@ class Meeting(models.Model):
         """Meeting can be joined only during scheduled window"""
         now = timezone.localtime(timezone.now())
         return self.meeting_datetime <= now <= self.meeting_end_datetime
+
+
+class Query(models.Model):
+    SEVERITY_CHOICES = [
+        ('critical', 'Critical'),
+        ('moderate', 'Moderate'),
+        ('low', 'Low'),
+    ]
+
+    mentee = models.ForeignKey(Mentee, on_delete=models.CASCADE)
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
+    text = models.TextField(blank=True, null=True)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='low')
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    status = models.CharField(max_length=20, default="pending")
+
+    def _str_(self):
+        return f"Query by {self.mentee} to {self.mentor}"

@@ -1,0 +1,50 @@
+{% extends 'menti/base.html' %}
+{% load humanize %}
+{% load static %}
+{% block title %} Queries {% endblock %}
+{% block content %}
+<h1>My Queries</h1><br>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Sr.No</th>
+                <th>Query</th>
+                <th>Submitted At</th>
+                <th>Severity</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if queries %}
+                {% for query in queries %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ query.text }}</td>
+                        <td>{{ query.created_at|naturaltime }}</td>
+                        <td>
+                            {% if query.severity == "critical" %}
+                                <span class="badge bg-danger">Critical</span>
+                            {% elif query.severity == "moderate" %}
+                                <span class="badge bg-warning text-dark">Moderate</span>
+                            {% else %}
+                                <span class="badge bg-success">Low</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if query.status == "pending" %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% else %}
+                                <span class="badge bg-success">Resolved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr><td colspan="5">You have not submitted any queries yet.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

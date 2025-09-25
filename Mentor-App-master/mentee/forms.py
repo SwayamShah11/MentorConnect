@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest
+from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest, Query
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -340,5 +340,15 @@ class MeetingForm(forms.ModelForm):
         }
 
 
-
-
+class QueryForm(forms.ModelForm):
+    class Meta:
+        model = Query
+        fields = ['text', 'severity']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'placeholder': 'Write your question or suggestion...',
+                'rows': 5,
+                'class': 'form-control'
+            }),
+            'severity': forms.RadioSelect(choices=Query.severity),
+        }

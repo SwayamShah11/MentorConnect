@@ -72,6 +72,8 @@ urlpatterns = [
     path('meeting/<str:room_name>/', mentee.meeting_room_view, name='meeting-room'),
     path('forget-password/' , mentee.ForgetPassword , name="forget_password"),
     path('change-password/<str:token>/' , mentee.ChangePassword , name="change_password"),
+    path('query_suggestion/<int:pk>', mentee.query_suggestion, name='query_suggestion'),
+    path('mentee_queries/', mentee.mentee_queries, name="mentee_queries"),
 
 
     #mentor urls
@@ -104,6 +106,8 @@ urlpatterns = [
     path('pdf1/', mentor.Pdf.as_view(), name="pdf1"),
     path('vc1/', mentor.MentorMeetingListView.as_view(), name='vc1'),
     path('vcc/<int:pk>', mentor.MentorMeetingListView.as_view(), name="video-call1"),
+    path('mentor_queries/', mentor.mentor_queries, name="mentor_queries"),
+    path("mark_as_done/<int:query_id>/", mentor.mark_as_done, name="mark_as_done"),
 ]
 
 

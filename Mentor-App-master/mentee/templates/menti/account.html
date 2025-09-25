@@ -3,7 +3,6 @@
 {% load static %}
 {% load widget_tweaks %}
 {% block title %} Mentor {% endblock %}
-
 {% block content %}
 <div class="d-flex">
   <div class="content flex-grow-1 p-4">
@@ -51,7 +50,11 @@
                           <i class="bi bi-calendar"></i> Schedule Meeting
                         </a>
                       </div>
-
+                      <div class="btn-group" role="group">
+                          <a class="btn btn-primary btn-sm" href="{% url 'query_suggestion' pk=user.pk  %}">
+                              <i class="bi bi-question-square"></i> Query/Suggestion
+                          </a>
+                      </div>
                       <!-- Meeting Info -->
                       {% if meeting %}
                         <p class="text-muted mt-2 mb-1">

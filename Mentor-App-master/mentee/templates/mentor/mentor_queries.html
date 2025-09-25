@@ -1,0 +1,81 @@
+{% extends 'mentor/base1.html' %}
+{% load humanize %}
+{% load static %}
+{% block title %} Queries {% endblock %}
+{% block content %}
+<h1>Queries</h1><br>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Sr.No</th>
+                <th>Mentee</th>
+                <th>Query</th>
+                <th>Submitted At</th>
+                <th>Severity</th>
+              <th>Status</th>
+            </tr>
+        </thead>
+       <tbody>
+    {% if queries %}
+        {% for query in queries %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ query.mentee.user }}</td>
+                <td>{{ query.text|truncatewords:12 }}</td>
+                <td>{{ query.created_at|naturaltime }}</td>
+                <td>
+                    {% if query.severity == "critical" %}
+                        <span class="badge bg-danger">Critical</span>
+                    {% elif query.severity == "moderate" %}
+                        <span class="badge bg-warning text-dark">Moderate</span>
+                    {% else %}
+                        <span class="badge bg-success">Low</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if query.status == "pending" %}
+                        <form method="post" action="{% url 'mark_as_done' query.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                Mark as Done
+                            </button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-sm btn-success" disabled>Resolved</button>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    {% else %}
+        <tr><td colspan="6">No queries submitted yet.</td></tr>
+    {% endif %}
+</tbody>
+
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="pagination mt-3">
+    {% if page_obj.has_previous %}
+        <a class="btn btn-outline-info" href="?page=1">First</a>
+        <a class="btn btn-outline-info" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+            <a class="btn btn-info" href="?page={{ num }}">{{ num }}</a>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a class="btn btn-outline-info" href="?page={{ num }}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+        <a class="btn btn-outline-info" href="?page={{ page_obj.next_page_number }}">Next</a>
+        <a class="btn btn-outline-info" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

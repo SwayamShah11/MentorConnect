@@ -17,7 +17,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee
+from ..models import Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -585,3 +585,28 @@ class MentorMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['now'] = timezone.localtime(timezone.now())
         return context
+
+
+@login_required
+def mentor_queries(request):
+    # Get the Mentor instance linked to the logged-in user
+    try:
+        mentor = Mentor.objects.get(user=request.user)
+    except Mentor.DoesNotExist:
+        # maybe the user is actually a mentee
+        return redirect('mentee_queries')
+    # Now filter queries for this mentor instance
+    queries = Query.objects.filter(mentor=mentor).order_by('-created_at')
+
+    return render(request, "mentor/mentor_queries.html", {"queries": queries})
+
+
+@login_required
+def mark_as_done(request, query_id):
+    query = get_object_or_404(Query, id=query_id)
+    query.status = "resolved"
+    query.save()
+
+    # Notify mentee (basic message, can extend to email/websocket)
+    messages.success(request, f"Query from {query.mentee} has been resolved.")
+    return redirect(reverse('mentor_queries'))

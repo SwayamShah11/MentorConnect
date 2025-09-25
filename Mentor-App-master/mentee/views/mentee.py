@@ -4,10 +4,10 @@ from django.utils import timezone
 from django.contrib import messages
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
                      OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm,
-                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm)
+                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, QueryForm)
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
-                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest)
+                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query)
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -1352,3 +1352,52 @@ def meeting_room_view(request, room_name):
 def meetings_view(request):
     # your logic here
     return render(request, 'menti/meetings.html')
+
+
+@login_required
+def query_suggestion(request, pk):
+    """
+    pk: optional, for preselecting a mentor if needed
+    """
+    # Get logged-in mentee
+    user = get_object_or_404(User, pk=pk)
+    mentor = get_object_or_404(Mentor, user=user)
+    mentee = get_object_or_404(Mentee, user=request.user)
+
+    # Select mentor
+    if pk:  # if specific mentor pk passed in URL
+        mentor_user = get_object_or_404(User, pk=pk)
+        mentor = get_object_or_404(Mentor, user=mentor_user)
+    else:
+        # pick first mentor as default
+        mentor = Mentor.objects.first()
+
+    if request.method == "POST":
+        form = QueryForm(request.POST)
+        if form.is_valid():
+            query = form.save(commit=False)
+            query.mentee = mentee
+            query.mentor = mentor
+            query.save()
+
+            messages.success(request, "Query sent to the mentor.")
+            return redirect('account')
+    else:
+        form = QueryForm()
+
+    return render(request, "menti/query_suggestion.html", {"form": form, "mentor": mentor, 'is_mentor_view': False})
+
+
+@login_required
+def mentee_queries(request):
+    # Get the Mentee instance linked to the logged-in user
+    try:
+        # Try to get the mentee profile for the logged-in user
+        mentee = Mentee.objects.get(user=request.user)
+    except Mentee.DoesNotExist:
+        # If the logged-in user is not a mentee, redirect safely
+         return redirect("mentor_queries")
+        # Now filter queries for this mentee instance
+    queries = Query.objects.filter(mentee=mentee).order_by('-created_at')
+
+    return render(request, "menti/mentee_queries.html", {"queries": queries, 'is_mentor_view': False})
