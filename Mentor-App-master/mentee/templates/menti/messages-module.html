@@ -10,18 +10,88 @@
                 <div class="container">
                   <div class="content-section">
                     <h3>
-                        <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2"><i id="sidebarIcon" class="bi bi-list"></i></a>|
+                        <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2"><i id="sidebarIcon" class="bi bi-list"></i></a> |
                         Message Corner
                     </h3>
-                    <p class='text-muted' style="color: #fff !important;">Message Corner</p>
-                      <ul class="list-group">
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'Message'%}">Create New Message</a></li>
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'list' %}">Sent Messages ({{ count4 }})</a></li>
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'inbox1'%}">Unapproved Requests ({{ count }}) </a></li>
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'approved'%}">Approved Requests ({{ count1 }})</a></li>
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'conv' %}">Conversations ({{ count3 }})</a></li>
-                        <li class="list-group-item list-group-item-light"><a href="{% url 'mentee_queries' %}">My Queries</a></li>
-                      </ul>
+                    <p class='text-muted' style="color: #fff !important;">Manage your messages and requests</p>
+
+                    <!-- Cards layout -->
+                    <div class="row row-cols-1 row-cols-md-3 g-4">
+
+                      <!-- Create Message -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-pencil-square fs-1 text-primary"></i>
+                            <h5 class="card-title mt-2">Create Message</h5>
+                            <p class="card-text">Write and send a new message.</p>
+                            <a href="{% url 'Message' %}" class="btn btn-outline-primary">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Sent Messages -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-send fs-1 text-dark"></i>
+                            <h5 class="card-title mt-2">Sent Messages</h5>
+                            <p class="card-text">View all sent messages ({{ count4 }}).</p>
+                            <a href="{% url 'list' %}" class="btn btn-outline-dark">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Unapproved Requests -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+                            <h5 class="card-title mt-2">Unapproved Requests</h5>
+                            <p class="card-text">Pending requests ({{ count }}).</p>
+                            <a href="{% url 'inbox1' %}" class="btn btn-outline-warning">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Approved Requests -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-check-circle fs-1 text-success"></i>
+                            <h5 class="card-title mt-2">Approved Requests</h5>
+                            <p class="card-text">Approved requests ({{ count1 }}).</p>
+                            <a href="{% url 'approved' %}" class="btn btn-outline-success">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Conversations -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-chat-dots fs-1 text-info"></i>
+                            <h5 class="card-title mt-2">Conversations</h5>
+                            <p class="card-text">Ongoing conversations ({{ count3 }}).</p>
+                            <a href="{% url 'conv' %}" class="btn btn-outline-info">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- My Queries -->
+                      <div class="col">
+                        <div class="card h-100 shadow-sm text-center p-3">
+                          <div class="card-body">
+                            <i class="bi bi-question-circle fs-1 text-danger"></i>
+                            <h5 class="card-title mt-2">My Queries</h5>
+                            <p class="card-text">Check your submitted queries.</p>
+                            <a href="{% url 'mentee_queries' %}" class="btn btn-outline-danger">Open</a>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div> <!-- row end -->
+
                   </div>
                 </div>
               </div>
