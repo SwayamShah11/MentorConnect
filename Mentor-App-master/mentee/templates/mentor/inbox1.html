@@ -23,10 +23,6 @@
           <th>Status</th>
           <th>View Profile</th>
            <th>Approve/Decline</th>
-
-
-
-
       </tr>
     </thead>
     <tbody>
@@ -42,7 +38,7 @@
 
         {% if messo.is_approved == False %}
 
-   <td> <button type="button" class="btn btn-danger btn-sm">Not Approved</button></td>
+   <td> <span class="badge bg-danger text-dark">Not Approved</span></td>
 
         {% endif %}
 

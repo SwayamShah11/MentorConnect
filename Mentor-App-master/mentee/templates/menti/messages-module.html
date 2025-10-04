@@ -14,33 +14,32 @@
                         Message Corner
                     </h3>
                     <p class='text-muted' style="color: #fff !important;">Manage your messages and requests</p>
-
                     <!-- Cards layout -->
-                    <div class="row row-cols-1 row-cols-md-3 g-4">
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
 
                       <!-- Create Message -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
-                          <div class="card-body">
-                            <i class="bi bi-pencil-square fs-1 text-primary"></i>
-                            <h5 class="card-title mt-2">Create Message</h5>
-                            <p class="card-text">Write and send a new message.</p>
-                            <a href="{% url 'Message' %}" class="btn btn-outline-primary">Open</a>
-                          </div>
-                        </div>
-                      </div>
+<!--                      <div class="col">-->
+<!--                        <div class="card h-100 shadow-sm text-center p-3">-->
+<!--                          <div class="card-body">-->
+<!--                            <i class="bi bi-pencil-square fs-1 text-primary"></i>-->
+<!--                            <h5 class="card-title mt-2">Create Message</h5>-->
+<!--                            <p class="card-text">Write and send a new message.</p>-->
+<!--                            <a href="{% url 'Message' %}" class="btn btn-outline-primary">Open</a>-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                      </div>-->
 
                       <!-- Sent Messages -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
-                          <div class="card-body">
-                            <i class="bi bi-send fs-1 text-dark"></i>
-                            <h5 class="card-title mt-2">Sent Messages</h5>
-                            <p class="card-text">View all sent messages ({{ count4 }}).</p>
-                            <a href="{% url 'list' %}" class="btn btn-outline-dark">Open</a>
-                          </div>
-                        </div>
-                      </div>
+<!--                      <div class="col">-->
+<!--                        <div class="card h-100 shadow-sm text-center p-3">-->
+<!--                          <div class="card-body">-->
+<!--                            <i class="bi bi-send fs-1 text-dark"></i>-->
+<!--                            <h5 class="card-title mt-2">Sent Messages</h5>-->
+<!--                            <p class="card-text">View all sent messages ({{ count4 }}).</p>-->
+<!--                            <a href="{% url 'list' %}" class="btn btn-outline-dark">Open</a>-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                      </div>-->
 
                       <!-- Unapproved Requests -->
                       <div class="col">
@@ -84,14 +83,12 @@
                           <div class="card-body">
                             <i class="bi bi-question-circle fs-1 text-danger"></i>
                             <h5 class="card-title mt-2">My Queries</h5>
-                            <p class="card-text">Check your submitted queries.</p>
+                            <p class="card-text">Check & track your submitted queries.</p>
                             <a href="{% url 'mentee_queries' %}" class="btn btn-outline-danger">Open</a>
                           </div>
                         </div>
                       </div>
-
                     </div> <!-- row end -->
-
                   </div>
                 </div>
               </div>

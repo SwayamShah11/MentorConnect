@@ -16,8 +16,9 @@
           <th>From</th>
           <th>Comment</th>
           <th>Approved At</th>
-           <th>Status</th>
+          <th>Status</th>
           <th>Start Chat</th>
+          <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -35,7 +36,7 @@
 
         {% if approved.is_approved == True %}
 
-   <td> <button type="button" class="btn btn-success btn-sm">Approved</button></td>
+   <td> <span class="badge bg-success text-dark">Approved</span></td>
 
 
         {% endif %}
