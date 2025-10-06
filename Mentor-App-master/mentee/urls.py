@@ -1,6 +1,8 @@
 from .views import mentee, mentor
 from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
+from django.conf import settings
+from django.conf.urls.static import static
 
 """Mentor and Mentee URLs"""
 urlpatterns = [
@@ -108,7 +110,7 @@ urlpatterns = [
     path('vcc/<int:pk>', mentor.MentorMeetingListView.as_view(), name="video-call1"),
     path('mentor_queries/', mentor.mentor_queries, name="mentor_queries"),
     path("mark_as_done/<int:query_id>/", mentor.mark_as_done, name="mark_as_done"),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 

@@ -1,141 +1,253 @@
 {% extends 'menti/base.html' %}
-
-
 {% load humanize %}
-
+{% load file_extras %}  {% load static %}
+{% block title %} {{conv.sender.mentor.name}}'s Chat {% endblock %}
 {% block content %}
 
+<div class="chat-wrapper">
+  <div class="chat-container" id="chatBox">
+    <p class="chat-header">
+      <b>Conversation:</b> {{ conv.conversation }}
+      <b>From:</b> {{ conv.sender.mentor.name }}
+    </p>
 
+    {% if conv.get_replies %}
+      {% for r in conv.get_replies %}
+        <div class="{% if r.sender == user %}container1 right fade-in{% else %}container1 left fade-in{% endif %}">
+          {% if r.sender != user %}
+            <img src="{{ r.sender.profile.image.url }}" alt="Avatar">
+          {% endif %}
 
+          <div class="msg-bubble {% if r.sender == user %}user-msg{% else %}other-msg{% endif %}">
 
-<div class="row">
-        <div class="col-md-8">
- <div class="content-section">
+            {% if r.reply %}
+              <p><b>Message:</b> {{ r.reply }}</p>
+            {% endif %}
 
+            {% if r.file %}
+              {% with file_url=r.file.url file_name=r.file.name|cut:"chat_files/" %}
 
-     <p><b>Conversation: </b>{{ conv.conversation }} <b> From: {{ conv.sender }}</b></p>
+                {% if file_url|is_file_type:"jpg,jpeg,png,gif" %}
+                  <img src="{{ file_url }}" alt="Attachment" class="rounded mt-2" style="max-width:250px; border:1px solid #444;">
 
+                {% elif file_url|is_file_type:"mp4,mov,webm" %}
+                  <video controls class="mt-2 rounded" style="max-width:250px; border:1px solid #444;">
+                    <source src="{{ file_url }}">
+                    Your browser does not support video playback.
+                  </video>
 
+                {% elif file_url|is_file_type:"pdf" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-info d-block mt-2">📄 {{ file_name }}</a>
 
- </div>
+                {% elif file_url|is_file_type:"doc,docx" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-info d-block mt-2">📝 {{ file_name }}</a>
+
+                {% elif file_url|is_file_type:"xls,xlsx" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-success d-block mt-2">📊 {{ file_name }}</a>
+
+                {% elif file_url|is_file_type:"ppt,pptx" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-warning d-block mt-2">📽️ {{ file_name }}</a>
+
+                {% elif file_url|is_file_type:"zip,rar" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-muted d-block mt-2">🗜️ {{ file_name }}</a>
+
+                {% elif file_url|is_file_type:"csv,txt" %}
+                  <a href="{{ file_url }}" target="_blank" class="text-info d-block mt-2">📑 {{ file_name }}</a>
+
+                {% else %}
+                  <a href="{{ file_url }}" target="_blank" class="text-light d-block mt-2">📎 {{ file_name }}</a>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+
+            <span class="chat-time">{{ r.replied_at|naturaltime }}</span>
+            <a class="btn btn-danger btn-sm mt-1" href="{% url 'chat-delete1' pk=r.pk %}">Delete</a>
+          </div>
+
+          {% if r.sender == user %}
+            <img src="{{ r.sender.profile.image.url }}" alt="Avatar" class="right">
+          {% endif %}
         </div>
+      {% endfor %}
+    {% else %}
+      <p class="no-replies">There are no Replies Available</p>
+    {% endif %}
+  </div>
+
+  <div class="message-input">
+    <form method="post" enctype="multipart/form-data" action="{% url 'reply' pk=conv.pk %}">
+      {% csrf_token %}
+      <div class="input-group">
+        <input type="text" name="reply" class="form-control" placeholder="Type your message..." required>
+        <input
+          type="file"
+          name="file"
+          class="form-control bg-dark text-white border-secondary"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp4,.mov,.webm,.zip,.rar,.csv,.txt"
+        >
+        <button class="btn btn-primary" type="submit">Send</button>
+      </div>
+    </form>
+  </div>
 </div>
-
-
-<div class="row">
-        <div class="col-md-8">
-
-
-
- <div class="content-section">
-
-
-{% if conv.get_replies %}
-     {% for reply in conv.get_replies %}
-
-
-        <div class="container1">
-
-  <img src="{{ reply.sender.profile.image.url }}" alt="Avatar">
-
-
-  <p><b>Message:</b> {{ reply.reply }}</p>
-            <p> <b>From:</b> {{ reply.sender }}</p>
-            <span class="time-right">{{ reply.replied_at|naturaltime }}</span> </br>
-
-            <span class="time-right"><a class="btn btn-danger btn-sm" href="{% url 'chat-delete1' pk=reply.pk %}">Delete Message</a></span>
-
-</div>
-
-
-     {% endfor %}
-
-     {% else %}
-     <p>There are no Replies Available</p>
-
-     {% endif %}
-
-
- </div>
-        </div>
-</div>
-
-
-
-
-<div class="row">
-        <div class="col-md-8">
- <div class="content-section">
-
-
-
-     <p><a class="btn btn-primary btn-sm" href="{% url 'reply' pk=conv.pk %}">Reply Chat</a></p>
-
-
-	 </div>
-        </div>
-</div>
-
-
-
-
 
 <style>
-/* Chat containers */
+/* === DARK MODE CHAT STYLE === */
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.chat-container {
+  background-color: #000;
+  border-radius: 0;
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #000;
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-container::-webkit-scrollbar-track {
+  background: #000;
+}
+.chat-container::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 10px;
+}
+
+.chat-header {
+  color: #bbb;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+
+/* Message containers */
 .container1 {
-  border: 2px solid #dedede;
-  background-color: #f1f1f1;
-  border-radius: 5px;
-  padding: 10px;
-  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  margin: 15px 0;
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeSlideIn 0.5s ease-out forwards;
 }
 
-/* Darker chat container */
-.darker {
-  border-color: #ccc;
-  background-color: #ddd;
+.container1.left {
+  justify-content: flex-start;
+  animation-delay: 0.1s;
 }
 
-/* Clear floats */
-.container1::after {
-  content: "";
-  clear: both;
-  display: table;
+.container1.right {
+  justify-content: flex-end;
+  animation-delay: 0.15s;
 }
 
-/* Style images */
+/* Message bubbles */
+.msg-bubble {
+  border-radius: 14px;
+  padding: 12px 16px;
+  max-width: 70%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  font-size: 0.95em;
+  line-height: 1.4em;
+}
+
+.other-msg {
+  background-color: #2a2a2a;
+  color: #f1f1f1;
+}
+
+.user-msg {
+  background-color: #2a2a2a;
+  color: white;
+}
+
 .container1 img {
-  float: left;
-  max-width: 60px;
-  width: 100%;
-  margin-right: 20px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
+  border: 2px solid #444;
+  margin: 0 10px;
 }
 
-/* Style the right image */
 .container1 img.right {
-  float: right;
-  margin-left: 20px;
-  margin-right:0;
+  order: 2;
+  margin-left: 10px;
+  margin-right: 0;
 }
 
-/* Style time text */
-.time-right {
-  float: right;
+.chat-time {
+  display: block;
+  font-size: 0.8em;
   color: #aaa;
+  margin-top: 6px;
 }
 
-/* Style time text */
-.time-left {
-  float: left;
-  color: #999;
+.btn-danger {
+  background-color: #dc3545;
+  border: none;
+  font-weight: 600;
+  padding: 3px 10px;
+  margin-top: 6px;
 }
 
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.no-replies {
+  text-align: center;
+  color: #888;
+  margin-top: 30px;
+}
+
+/* === FIXED INPUT BAR === */
+.message-input {
+  background-color: #1e1e1e;
+  padding: 12px 20px;
+  border-top: 1px solid #333;
+}
+
+.message-input .form-control {
+  background-color: #2a2a2a;
+  border: none;
+  color: #fff;
+  border-radius: 25px;
+  padding: 10px 15px;
+}
+
+.message-input .form-control:focus {
+  outline: none;
+  box-shadow: 0 0 5px #007bff;
+}
+
+.message-input .btn-primary {
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-weight: 600;
+  border: none;
+}
+
+/* === Animation === */
+@keyframes fadeSlideIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 </style>
 
-
-
-
-
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const chatBox = document.getElementById("chatBox");
+    if (chatBox) {
+      // Scroll to the bottom of the chat box on load
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  });
+</script>
 
 {% endblock %}

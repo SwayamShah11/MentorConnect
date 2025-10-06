@@ -3,8 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
-                     OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm, LongTermGoalForm,
-                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, QueryForm)
+                     OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm,
+                     LongTermGoalForm,
+                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, QueryForm, SendForm,
+                     ReplyForm, ChatReplyForm)
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query)
@@ -1117,6 +1119,11 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
+
 
 class ConversationList1View(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """List Conversation"""
@@ -1131,19 +1138,34 @@ class ConversationList1View(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
 
+
+@login_required
 def con(request, pk):
-    """List conversations"""
-
     conv = get_object_or_404(Conversation, pk=pk)
 
-    context = {
+    if request.method == 'POST':
+        form = ChatReplyForm(request.POST, request.FILES)
+        print("FILES:", request.FILES)
+        print("CLEANED DATA:", form.cleaned_data if form.is_valid() else form.errors)
 
+        if form.is_valid():
+            reply_obj = form.save(commit=False)
+            reply_obj.sender = request.user
+            reply_obj.conversation = conv
+            reply_obj.save()
+            print("Saved reply with file:", reply_obj.file)
+            return redirect('conv2-reply', pk=conv.pk)
+
+    return render(request, 'menti/conversation1.html', {
         'conv': conv,
-
-    }
-
-    return render(request, 'menti/conversation1.html', context)
+        'is_mentor_view': False,
+        'form': form,
+    })
 
 
 class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -1168,6 +1190,11 @@ class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
+
 
 class ConversationDeleteView(DeleteView):
     """delete view Chat"""
@@ -1179,6 +1206,11 @@ class ConversationDeleteView(DeleteView):
     def get_success_url(self):
         conversation = self.object.conversation
         return reverse_lazy('conv1-reply', kwargs={'pk': self.object.conversation_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
 
 
 def search(request):
@@ -1238,6 +1270,11 @@ class Profile2DetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def test_func(self):
         return self.request.user.is_mentee
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
+
 
 class Reply1CreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Replies by a user"""
@@ -1261,6 +1298,11 @@ class Reply1CreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_mentor_view"] = False
+        return context
+
 
 def con1(request, pk):
     """View individual conversation"""
@@ -1268,9 +1310,8 @@ def con1(request, pk):
     conv = get_object_or_404(Conversation, pk=pk)
 
     context = {
-
+        'is_mentor_view': False,
         'conv': conv,
-
     }
 
     return render(request, 'menti/conversation4.html', context)

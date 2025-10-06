@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest, Query
+from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -268,7 +268,6 @@ class InterestForm(forms.Form):
     )
 
 
-#mentor
 class MoodleIdForm(forms.Form):
     moodle_id = forms.CharField(
         label="Moodle Id",
@@ -321,14 +320,29 @@ class ReplyForm(forms.Form):
 
     )
 
+
+class ChatReplyForm(forms.ModelForm):
+    class Meta:
+        model = Reply
+        fields = ['reply', 'file']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['reply'].required = False
+        self.fields['file'].required = False
+
 class SendForm(ModelForm):
 
     class Meta:
         model = Msg
-        fields = ['msg_content']
+        fields = ['msg_content', 'file']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['msg_content'].required = False
+        self.fields['file'].required = False
 
 
-#zaruuu
 class MeetingForm(forms.ModelForm):
     class Meta:
         model = Meeting

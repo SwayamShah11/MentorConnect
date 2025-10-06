@@ -503,17 +503,17 @@ class Reply(models.Model):
 
     sender = models.ForeignKey(User, related_name="sender2", on_delete=models.CASCADE, null=True)
     reply = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     replied_at = models.DateTimeField(blank=True, null=True)
     conversation = models.ForeignKey('Conversation', related_name='replies', on_delete=models.CASCADE)
 
     def __str__(self):
-        return "From {}, in {}".format(self.sender.username, self.conversation)
+        return f"From {self.sender.username}, in {self.conversation}"
 
     def save(self, *args, **kwargs):
-        if self.reply and self.replied_at is None:
+        if (self.reply or self.file) and self.replied_at is None:
             self.replied_at = now()
-
-        super(Reply, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Conversation(models.Model):
@@ -522,10 +522,8 @@ class Conversation(models.Model):
     sender = models.ForeignKey(User, related_name="sender1", on_delete=models.CASCADE, null=True)
     receipient = models.ForeignKey(User, related_name="receipient1", on_delete=models.CASCADE)
     conversation = models.TextField(max_length=100)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     sent_at = models.DateTimeField(null=True, blank=True)
-
-    # reply = models.TextField(blank=True, null=True)
-    # replied_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ['-sent_at']
@@ -541,9 +539,6 @@ class Conversation(models.Model):
         if not self.id:
             self.sent_at = timezone.now()
 
-        # if (self.reply and self.replied_at is None):
-        # self.replied_at = now()
-
         super(Conversation, self).save(*args, **kwargs)
 
 
@@ -553,6 +548,7 @@ class Msg(models.Model):
     sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE, null=True)
     receipient = models.ForeignKey(User, related_name="receipient", on_delete=models.CASCADE)
     msg_content = models.TextField(max_length=100)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     sent_at = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(blank=True, null=True)
     comment_at = models.DateTimeField(blank=True, null=True)
@@ -560,19 +556,16 @@ class Msg(models.Model):
     date_approved = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return "From {}, to {}".format(self.sender.username, self.receipient.username)
+        return f"From {self.sender.username}, to {self.receipient.username}"
 
     def save(self, *args, **kwargs):
         if not self.id:
             self.sent_at = timezone.now()
-
         if self.comment and self.date_approved is None:
             self.date_approved = now()
-
         if self.comment and self.comment_at is None:
             self.comment_at = now()
-
-        super(Msg, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-sent_at']

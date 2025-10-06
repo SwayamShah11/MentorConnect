@@ -8,7 +8,7 @@ from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
                                   DeleteView)
-
+from django.utils.timezone import now
 from django.http import HttpResponseRedirect
 from ..models import Profile
 
@@ -516,17 +516,42 @@ class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMix
 
 
 class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """List Conversations"""
-
+    """Mentor Conversation Detail + Chat/File Upload"""
     model = Conversation
     template_name = 'mentor/conversation1.html'
     context_object_name = 'conv'
 
     def test_func(self):
+        # Only mentors can view this
         return self.request.user.is_mentor
 
     def get_queryset(self):
+        # Show only mentor’s conversations
         return self.model.objects.filter(sender=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Include ReplyForm and chat replies"""
+        context = super().get_context_data(**kwargs)
+        context["form"] = ReplyForm()
+        context["is_mentor_view"] = True
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle message or file submission"""
+        self.object = self.get_object()
+        form = ReplyForm(request.POST, request.FILES)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.sender = request.user
+            reply.conversation = self.object
+            reply.replied_at = now()
+            reply.save()
+            return redirect('mentor_conversation_detail', pk=self.object.pk)
+
+        # If invalid, re-render the page with errors
+        context = self.get_context_data(object=self.object)
+        context['form'] = form
+        return self.render_to_response(context)
 
 
 class ConversationDeleteView(SuccessMessageMixin, DeleteView):
