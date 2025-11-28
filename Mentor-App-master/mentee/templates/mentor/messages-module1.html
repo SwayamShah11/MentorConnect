@@ -114,6 +114,25 @@
   </div>
 </main>
 
+<style>
+    /* Dropdown toggle icon animation */
+    .toggle-icon {
+        transition: transform 0.3s ease-in-out;
+    }
+    a[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .slide-toggle {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease; /* smooth slide */
+    }
+
+    .slide-toggle.show {
+        max-height: 800px; /* set bigger than your form height */
+    }
+</style>
 
 <!--   <main role="main" class="container">-->
 <!--      <div class="row">-->

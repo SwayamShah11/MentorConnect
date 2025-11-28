@@ -89,10 +89,8 @@ class Profile(models.Model):
         ('CSE', 'Computer Science'),
         ('AIML', 'Computer Science - Artificial Intelligence & Machine Learning'),
         ('DS', 'Computer Science - Data Science'),
-        ('EXTC', 'Electronics & Telecommunication'),
-        ('EEE', 'Electrical & Electronics'),
-        ('ME', 'Mechanical Engineering'),
-        ('CE', 'Civil Engineering'),
+        ('MECH', 'Mechanical Engineering'),
+        ('CIVIL', 'Civil Engineering'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)

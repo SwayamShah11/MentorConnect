@@ -9,6 +9,7 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
         body {
@@ -94,10 +95,8 @@
                 <div class="p-4 rounded" style="background-color:#3f5cbf; color:white;">
                     <h4><strong>Instructions:</strong></h4>
                     <ol>
-                        <li>For username and password, contact your Mentor.</li>
-                        <li>Upload images in <code>.jpg</code> format only.</li>
-                        <li>Upload documents in <code>.pdf</code> format only.</li>
-                        <li>Change your password immediately after login.</li>
+                        <li>Log in using username and password.</li>
+                        <li>If not already a user, Sign Up/Register to create an account.</li>
                     </ol>
                 </div>
             </div>
@@ -117,9 +116,10 @@
                             </div>
 
                             <!-- Password -->
-                            <div class="mb-3">
-                                <input type="password" name="password" class="form-control" placeholder="Password" required>
-                                <small><a style="margin-right:230px;" class="text-danger" href="{% url 'forget_password'%}">Forgot Password?</a></small>
+                            <div class="mb-3 position-relative">
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+                                <i class="fa fa-eye position-absolute" id="togglePassword" style="right: 15px; top: 30%; transform: translateY(-50%); cursor: pointer;"></i>
+                                <small><a style="margin-right:230px;" class="text-danger" href="{% url 'forget_pass'%}">Forgot Password?</a></small>
                             </div>
                             <!-- Submit -->
                             <button type="submit" class="btn w-100" style="background-color:#3f5cbf; color:white;">
@@ -134,5 +134,20 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("togglePassword").addEventListener("click", function () {
+        const password = document.getElementById("password");
+
+        if (password.type === "password") {
+            password.type = "text";
+            this.classList.remove("fa-eye");
+            this.classList.add("fa-eye-slash");
+        } else {
+            password.type = "password";
+            this.classList.remove("fa-eye-slash");
+            this.classList.add("fa-eye");
+        }
+    });
+    </script>
 </body>
 </html>

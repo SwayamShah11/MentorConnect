@@ -68,6 +68,27 @@
         .card-body {
             padding: 2rem;
         }
+
+        .marquee {
+          width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        .marquee span {
+          display: inline-block;
+          padding-left: 100%;
+          animation: scroll 12s linear infinite;
+        }
+
+        .pause-on-hover:hover span {
+          animation-play-state: paused;
+        }
+
+        @keyframes scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
     </style>
 </head>
 <body>
@@ -91,6 +112,9 @@
 </div>
 <div class="row justify-content-center mt-4">
     <div class="col-md-8">
+        <div class="marquee">
+            <span style="color: rgb(255,0,0);">Username should be Moodle ID only.</span>
+        </div>
         <div class="content-section">
             <form method="POST">
                 {% csrf_token %}

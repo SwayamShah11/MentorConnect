@@ -12,7 +12,12 @@
 
         <!-- Card Header -->
         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-          <h4 class="mb-0 fw-semibold">Update Profile</h4>
+            <button id="toggleSidebarBtn"
+                  class="btn header-btn border-0 me-3 d-flex align-items-center justify-content-center"
+                  style="width:40px; height:40px;">
+            <i id="sidebarIcon" class="bi bi-list fs-4"></i>
+            </button>
+            <h4 class="mb-0 fw-semibold">Update Profile</h4>
         </div>
 
         <!-- Body (Form) -->
@@ -96,5 +101,23 @@ h5.fw-bold { color: #000; font-size: 1.1rem; }
 }
 .btn { border-radius: 12px; font-weight: 500; transition: transform 0.2s; }
 .btn:hover { transform: translateY(-2px); }
+
+    /* Dropdown toggle icon animation */
+    .toggle-icon {
+        transition: transform 0.3s ease-in-out;
+    }
+    a[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .slide-toggle {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease; /* smooth slide */
+    }
+
+    .slide-toggle.show {
+        max-height: 800px; /* set bigger than your form height */
+    }
 </style>
 {% endblock %}

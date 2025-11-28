@@ -1,10 +1,7 @@
 {% extends 'mentor/base1.html' %}
-
+{% block title %} Conversations {% endblock %}
 {% load humanize %}
-
 {% block content %}
-
-
   <div class="row">
         <div class="col-md-12">
  <div class="content-section">
@@ -20,62 +17,32 @@
           <th>Created At</th>
           <th>View Chat</th>
            <th>Delete Chat</th>
-
-
-
-
       </tr>
     </thead>
     <tbody>
-
     {% if conversation %}
   <ol>
-
  {% for conv in conversation %}
     <tr>
          <td>{{ conv.id }}</td>
         <td>{{ conv.receipient }}</td>
-          <td>{{ conv.conversation }}</td>
+        <td>{{ conv.conversation }}</td>
         <td>{{ conv.sent_at|naturaltime }}</td>
-
         <td> <a class="btn btn-primary btn-sm" href="{% url 'conv-reply' pk=conv.pk %}">View Chat</a></td>
           <td> <a class="btn btn-danger btn-sm" href="{% url 'conversation-delete' pk=conv.pk %}">Delete Conv</a></td>
-
-
     </tr>
-
-
 {% endfor %}
-
-
        </ol>
-
 {% else %}
-
 <p>There Are no Chats Available</p>
-
 {% endif %}
-
  </tbody>
-
-
-
-
   </table>
 </div>
-
  </div>
         </div>
 </div>
-
-
-
-
-
 {% if is_paginated %}
-
-
-
         {% if page_obj.has_previous %}
             <a class="btn btn-outline-info mb-4" href="?page=1">First</a>
              <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.previous_page_number }}">Previous</a>
@@ -90,22 +57,15 @@
         {% endif %}
       {% endfor %}
 
-
         {% if page_obj.has_next %}
         <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.next_page_number }}">Next</a>
         <a class="btn btn-outline-info mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
       {% endif %}
-
-
-
-
         {% endif %}
-
-
-
-
-
-
-
-
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+    <a href="{% url 'module-message1' %}"
+       class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+        <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+</div><br>
 {% endblock %}

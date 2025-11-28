@@ -10,16 +10,22 @@
         <!-- User Info -->
         {% if user.is_authenticated and user.profile %}
         <div class="text-center mb-3">
+            {% if user.profile.image %}
             <img src="{{ user.profile.image.url }}"
                  alt="Profile Pic"
                  class="rounded-circle border shadow-sm mb-2"
                  style="width:80px; height:80px; object-fit:cover;">
+            {% else %}
+            <img src="/media/default.png"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width:80px; height:80px; object-fit: cover;">
+            {% endif %}
         </div>
         <h5 class="fw-semibold">{{ user.profile.student_name|default:user.get_full_name }}</h5>
         <small><b>ID: {{ user.profile.moodle_id }}</b></small><br>
         <small><b>{{ user.profile.branch }} - {{ user.profile.year }}</b></small><hr>
         {% else %}
-            <img src="{% static 'default-profile.png' %}"
+            <img src="/media/default.png"
                  alt="Profile Pic"
                  class="rounded-circle border shadow-sm mb-2"
                  style="width:80px; height:80px; object-fit:cover;">
@@ -97,9 +103,8 @@
             <li class="nav-item"><a href="{% url 'credits' %}" class="nav-link text-white">Credits</a></li>
             <li class="nav-item"><a href="{% url 'logout' %}" class="nav-link text-white">Logout</a></li>
         </ul>
-
         <hr>
-        <button class="btn btn-light btn-sm w-100">Generate Resume</button>
+        <a class="btn btn-light btn-sm w-100" href="#">Generate Profile Overview</a>
     </div>
 </body>
 </html>

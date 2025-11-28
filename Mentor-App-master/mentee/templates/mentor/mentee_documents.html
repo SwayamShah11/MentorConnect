@@ -1,0 +1,200 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %}Student Documents{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <!-- Page header -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold">Mentee Uploaded Documents</h2>
+            <p class="text-muted mb-0">
+                Select a mentee's <span class="fw-semibold">Moodle ID</span> to view all their uploaded documents.
+            </p>
+        </div>
+    </div>
+
+    <!-- Search card -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form method="POST" class="mb-3" id="moodle-search-form">
+                        {% csrf_token %}
+                        <label class="form-label fw-semibold">Select Mentee Moodle Id</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <select name="moodle_id"
+                                    class="form-select form-select-lg"
+                                    required>
+                                <option value="" disabled {% if not moodle %}selected{% endif %}>
+                                    Choose Moodle ID
+                                </option>
+
+                                {% for mentee in mentees %}
+                                    <option value="{{ mentee.moodle_id }}"
+                                            {% if moodle == mentee.moodle_id %}selected{% endif %}>
+                                        {{ mentee.moodle_id }} — {{ mentee.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-center mt-2">
+                            <button type="submit"
+                                    class="btn btn-primary ms-md-2"
+                                    id="search-btn">
+                                <span id="search-btn-text">Submit</span>
+                                <span id="search-btn-spinner"
+                                      class="spinner-border spinner-border-sm ms-1 d-none"
+                                      role="status"
+                                      aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if error %}
+                        <div class="alert alert-danger mt-2 mb-0 py-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            {{ error }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if moodle %}
+        <!-- Results card -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div>
+                            <h5 class="mb-0 fw-semibold">Uploaded Documents</h5>
+                            <small class="text-muted">
+                                Moodle ID: <span class="fw-semibold">{{ moodle }}</span>
+                            </small>
+                        </div>
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mt-2 mt-md-0">
+                            <form method="POST" action="{% url 'download_all_documents' %}" class="d-inline-block">
+                                {% csrf_token %}
+                                <input type="hidden" name="moodle_id" value="{{ moodle }}">
+                                <button type="submit" class="btn btn-success ms-2" id="download-all-btn" {% if not moodle %}disabled{% endif %}>
+                                    <i class="bi bi-download me-1"></i> Download All
+                                </button>
+                            </form>
+                            <span class="badge bg-primary-subtle text-primary">
+                                {{ documents|length }} document{{ documents|length|pluralize }}
+                            </span>
+
+                            <!-- Filter by type -->
+                            <div class="input-group input-group-sm" style="max-width:260px;">
+                                <span class="input-group-text">Filter</span>
+                                <select id="doc-type-filter" class="form-select">
+                                    <option value="">All Types</option>
+                                    <option value="Internship / PBL">Internship / PBL</option>
+                                    <option value="Sports / Cultural">Sports / Cultural</option>
+                                    <option value="Other Event">Other Event</option>
+                                    <option value="Course">Course</option>
+                                    <option value="Publication">Publication</option>
+                                    <option value="Semester Result">Semester Result</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {% if documents %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0 align-middle text-center">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col">Sr. No.</th>
+                                            <th scope="col">Type</th>
+                                            <th scope="col">Document Name</th>
+                                            <th scope="col">Download</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for doc in documents %}
+                                        <tr data-doc-type="{{ doc.type }}">
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ doc.type }}</td>
+                                            <td class="text-start px-4">
+                                                <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                                {{ doc.name|default:doc.file.name }}
+                                            </td>
+                                            <td>
+                                                <a href="{{ doc.file.url }}"
+                                                   class="btn btn-outline-success btn-sm"
+                                                   target="_blank">
+                                                    <i class="bi bi-download me-1"></i>
+                                                    Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="p-4 text-center text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No documents found for this Moodle ID.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+    }
+    @media (max-width: 575.98px) {
+        h2.fw-bold {
+            font-size: 1.4rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Loading state for search button
+        const form = document.getElementById("moodle-search-form");
+        const btn = document.getElementById("search-btn");
+        const btnText = document.getElementById("search-btn-text");
+        const btnSpinner = document.getElementById("search-btn-spinner");
+
+        if (form && btn && btnText && btnSpinner) {
+            form.addEventListener("submit", function () {
+                btn.disabled = true;
+                btnText.textContent = "Searching...";
+                btnSpinner.classList.remove("d-none");
+            });
+        }
+
+        // Client-side filter by document type
+        const filterSelect = document.getElementById("doc-type-filter");
+        if (filterSelect) {
+            filterSelect.addEventListener("change", function () {
+                const selected = this.value;
+                const rows = document.querySelectorAll("tbody tr[data-doc-type]");
+
+                rows.forEach(function (row) {
+                    const rowType = row.getAttribute("data-doc-type") || "";
+                    if (!selected || rowType === selected) {
+                        row.classList.remove("d-none");
+                    } else {
+                        row.classList.add("d-none");
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

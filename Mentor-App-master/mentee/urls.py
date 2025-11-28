@@ -110,6 +110,12 @@ urlpatterns = [
     path('vcc/<int:pk>', mentor.MentorMeetingListView.as_view(), name="video-call1"),
     path('mentor_queries/', mentor.mentor_queries, name="mentor_queries"),
     path("mark_as_done/<int:query_id>/", mentor.mark_as_done, name="mark_as_done"),
+    path("mentee-documents/", mentor.mentee_documents, name="mentee_documents"),
+    path("mentee-documents/download-all/", mentor.download_all_documents, name="download_all_documents"),
+    path("download-student-data/", mentor.download_student_data, name="download_student_data"),
+    path("clear-export-flag/", mentor.clear_export_flag, name="clear_export_flag"),
+    path('change-pass/<str:token>/' , mentor.ChangePass , name="change_pass"),
+    path('forget-pass/', mentor.ForgetPass, name="forget_pass"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

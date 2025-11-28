@@ -102,7 +102,7 @@ def register(request):
             user.save()
 
             registered = True
-            messages.success(request, f'Your account has been created! You are now able to log in')
+            messages.success(request, f'Your account has been created! You will now be able to log in')
             return redirect('login')
     else:
         form1 = MenteeRegisterForm()
@@ -152,7 +152,7 @@ def send_forget_password_email(email, token):
         If you did not request this, please ignore this email.
 
         Regards,
-        Your App Team
+        APSIT
         """
         email_from = settings.EMAIL_HOST_USER
         recipient_list = [email]
@@ -176,7 +176,7 @@ def ForgetPassword(request):
             profile_obj = Profile.objects.filter(moodle_id=moodle_id).first()
             if not profile_obj:
                 messages.error(request, 'No user found with this Moodle ID.')
-                return render(request, 'menti/forget-password.html')
+                return render(request, 'menti/forget-password.html', {"is_mentor_view": False})
 
             user_obj = profile_obj.user  # Get the related User
 
@@ -189,14 +189,14 @@ def ForgetPassword(request):
             send_forget_password_email(user_obj.email, token)
 
             messages.success(request, 'Password reset link has been sent to your email.')
-            return render(request, 'menti/forget-password.html')
+            return render(request, 'menti/forget-password.html', {"is_mentor_view": False})
 
     except Exception as e:
         print("Error in ForgetPassword:")
         traceback.print_exc()
         messages.error(request, 'Something went wrong. Please try again.')
 
-    return render(request, 'menti/forget-password.html')
+    return render(request, 'menti/forget-password.html', {"is_mentor_view": False})
 
 
 def ChangePassword(request, token):
@@ -209,7 +209,8 @@ def ChangePassword(request, token):
 
         context = {
             'user_id': profile_obj.user.id,
-            'token': token
+            'token': token,
+            "is_mentor_view": False
         }
 
         if request.method == 'POST':
@@ -1371,7 +1372,7 @@ def schedule_meeting_view(request, pk):
     else:
         form = MeetingForm(instance=existing_meeting)
 
-    return render(request, 'menti/schedule_meeting.html', {'mentor': mentor, 'form': form})
+    return render(request, 'menti/schedule_meeting.html', {'mentor': mentor, 'form': form, 'is_mentor_view': False})
 
 
 @login_required
