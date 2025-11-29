@@ -2,7 +2,9 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from .models import Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent, CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest, EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply
+from .models import (Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent,
+                     CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
+                     EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply, MentorMenteeInteraction)
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -365,4 +367,32 @@ class QueryForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'severity': forms.RadioSelect(choices=Query.severity),
+        }
+
+
+COMMON_AGENDAS = [
+    ("academic", "Academic Performance"),
+    ("75% Attendance compulsory", "75% Attendance compulsory"),
+    ("career", "Career Guidance"),
+    ("placement", "Placement Preparation"),
+    ("personal", "Personal Issues"),
+]
+
+class MentorInteractionForm(forms.ModelForm):
+    common_agenda = forms.MultipleChoiceField(
+        choices=COMMON_AGENDAS,
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
+    custom_agenda = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 30}),
+        required=False
+    )
+
+    class Meta:
+        model = MentorMenteeInteraction
+        fields = ["date", "semester"]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
         }

@@ -116,6 +116,10 @@ urlpatterns = [
     path("clear-export-flag/", mentor.clear_export_flag, name="clear_export_flag"),
     path('change-pass/<str:token>/' , mentor.ChangePass , name="change_pass"),
     path('forget-pass/', mentor.ForgetPass, name="forget_pass"),
+    path("interactions/", mentor.mentor_mentee_interactions, name="mentor_interaction"),
+    path("interactions/export/<str:export_type>/", mentor.export_interactions, name="export_interactions"),
+    path("interactions/edit/<int:pk>/", mentor.mentor_mentee_interactions, name="edit_interaction"),
+    path("interactions/delete/<int:pk>/", mentor.delete_interaction, name="delete_interaction"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

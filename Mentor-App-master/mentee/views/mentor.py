@@ -6,11 +6,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 import io
 from django.utils.decorators import method_decorator
 import os
-from reportlab.platypus import Table
+from reportlab.platypus import Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm
+from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, MentorInteractionForm
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
@@ -20,7 +20,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import TemplateView
-from ..models import Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL, PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project
+from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
+                      PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
+                      MentorMenteeInteraction)
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -59,7 +61,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib import colors
 from reportlab.lib.units import cm
-
+SEMESTER = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']       #used in Mentor-Mentee interaction function
 
 def home(request):
     """Landing page """
@@ -775,7 +777,7 @@ def download_student_data(request):
         heading_style = styles["Heading1"]
         heading_style.fontSize = 16
 
-        # logo (try static finder)
+        # logo
         logo_path = os.path.join(settings.MEDIA_ROOT, "logo.png")
         if os.path.exists(logo_path):
             try:
@@ -881,7 +883,7 @@ def download_student_data(request):
     if export_type == "pdf":
         request.session["export_done"] = True
         pdf_buf = build_pdf_bytes()
-        return FileResponse(pdf_buf, as_attachment=True, filename=f"{category}_{academic_year}_{branch}_student_data.pdf")
+        return FileResponse(pdf_buf, as_attachment=True, filename=f"{category}_AY-{academic_year}_{branch}-Dept_student_data.pdf")
 
     if export_type == "excel":
         request.session["export_done"] = True
@@ -889,7 +891,7 @@ def download_student_data(request):
         out = BytesIO()
         wb.save(out)
         out.seek(0)
-        return FileResponse(out, as_attachment=True, filename=f"Excel_{category}_{academic_year}_{branch}_student_data.xlsx", content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        return FileResponse(out, as_attachment=True, filename=f"Excel_{category}_AY-{academic_year}_{branch}-Dept_student_data.xlsx", content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     if export_type == "zip":
         request.session["export_done"] = True
@@ -902,12 +904,12 @@ def download_student_data(request):
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr(f"Excel_{category}_{academic_year}_{branch}_student_data.xlsx", excel_buf.getvalue())
-            zf.writestr(f"{category}_{academic_year}_{branch}_student_data.pdf", pdf_buf.getvalue())
+            zf.writestr(f"Excel_{category}_AY-{academic_year}_{branch}-Dept_student_data.xlsx", excel_buf.getvalue())
+            zf.writestr(f"{category}_AY-{academic_year}_{branch}-Dept_student_data.pdf", pdf_buf.getvalue())
             for name, data in csvs.items():
                 zf.writestr(name, data)
         zip_buffer.seek(0)
-        return FileResponse(zip_buffer, as_attachment=True, filename="student_data_bundle.zip")
+        return FileResponse(zip_buffer, as_attachment=True, filename=f"{category}_AY-{academic_year}_{branch}-Dept_student_data_bundle.zip")
 
     # fallback
     return render(request, "mentor/download_student_data.html", context)
@@ -1429,3 +1431,358 @@ def ChangePass(request, token):
         print("Error in ChangePass:", e)
         messages.error(request, "Something went wrong. Try again.")
         return redirect('forget_pass')
+
+
+COMMON_AGENDA_POINTS = [
+    "Academic performance review",
+    "75% Attendance compulsory",
+    "Internship / Project progress",
+    "Career guidance & higher studies",
+    "Personal or behavioural concerns",
+]
+
+
+@login_required
+def mentor_mentee_interactions(request):
+
+    mentor = get_object_or_404(Mentor, user=request.user)
+
+    # ✅ Get mentees under this mentor
+    mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
+    mentee_users = [m.mentee.user for m in mappings]
+    mentee_profiles = Profile.objects.filter(user__in=mentee_users)
+
+    # ✅ Filtering
+    semester_filter = request.GET.get("semester")
+    date_filter = request.GET.get("date")
+
+    interactions = MentorMenteeInteraction.objects.filter(mentor=request.user)
+
+    if semester_filter:
+        interactions = interactions.filter(semester=semester_filter)
+
+    if date_filter:
+        interactions = interactions.filter(date=date_filter)
+
+    # ✅ CREATE + UPDATE INTERACTION (SAME FORM)
+    if request.method == "POST":
+        interaction_id = request.POST.get("interaction_id")
+
+        date = request.POST.get("date")
+        mentee_ids = request.POST.getlist("mentees")
+        checked_points = request.POST.getlist("agenda_points")
+        extra_text = request.POST.get("agenda_extra", "").strip()
+
+        # ✅ FIXED: Auto semester from SELECTED mentees only
+        semester = ""
+        selected_profiles = Profile.objects.filter(user__id__in=mentee_ids)
+        if selected_profiles.exists():
+            semester = ", ".join(
+                selected_profiles.values_list("semester", flat=True).distinct()
+            )
+
+        # ✅ Build agenda safely
+        agenda_parts = checked_points[:]
+        if extra_text:
+            agenda_parts.append(extra_text)
+        agenda_text = "; ".join(agenda_parts)
+
+        # ✅ UPDATE EXISTING
+        if interaction_id:
+            interaction = get_object_or_404(
+                MentorMenteeInteraction, id=interaction_id, mentor=request.user
+            )
+            interaction.date = date
+            interaction.semester = semester
+            interaction.agenda = agenda_text
+            interaction.save()
+            interaction.mentees.set(User.objects.filter(id__in=mentee_ids))
+
+            messages.success(request, "Interaction updated successfully.")
+
+        # ✅ CREATE NEW
+        else:
+            interaction = MentorMenteeInteraction.objects.create(
+                mentor=request.user,
+                date=date,
+                semester=semester,
+                agenda=agenda_text,
+            )
+            interaction.mentees.set(User.objects.filter(id__in=mentee_ids))
+
+            messages.success(request, "Interaction saved successfully.")
+
+        return redirect("mentor_interaction")
+
+    # ✅ ATTENDANCE REPORT
+    attendance = []
+    total_interactions = interactions.count()
+
+    for p in mentee_profiles:
+        present = interactions.filter(mentees=p.user).count()
+        percent = round((present / total_interactions) * 100, 2) if total_interactions else 0
+
+        attendance.append({
+            "name": p.student_name,
+            "moodle": p.moodle_id,
+            "percent": percent
+        })
+
+    context = {
+        "mentor": mentor,
+        "mentees": mentee_profiles,
+        "interactions": interactions.order_by("-date"),
+        "common_agenda": COMMON_AGENDA_POINTS,
+        "attendance": attendance,
+        "semesters": [s for s in SEMESTER],
+    }
+
+    return render(request, "mentor/mentor_mentee_interactions.html", context)
+
+
+@login_required
+def delete_interaction(request, pk):
+    interaction = get_object_or_404(MentorMenteeInteraction, pk=pk, mentor=request.user)
+    interaction.delete()
+    messages.success(request, "Interaction deleted.")
+    return redirect("mentor_interaction")
+
+
+@login_required
+def export_interactions(request, export_type):
+    mentor = get_object_or_404(Mentor, user=request.user)
+    qs = MentorMenteeInteraction.objects.filter(mentor=request.user).prefetch_related("mentees__profile")
+
+    # ✅ EXCEL
+    if export_type == "excel":
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "Semester", "Agenda", "Mentees"])
+
+        for i in qs:
+            mentees = ", ".join([f"{u.profile.student_name} ({u.profile.moodle_id})" for u in i.mentees.all()])
+            ws.append([i.date, i.semester, i.agenda, mentees])
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return FileResponse(buf, as_attachment=True, filename="Mentor_Mentee_interactions.xlsx")
+
+    # ✅ PDF EXPORT (FIXED FORMATTING)
+    buffer = BytesIO()
+
+    # ✅ HIGH-RES PDF (Better Printing)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=110,
+        bottomMargin=90
+    )
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    # ✅ EXPORT DATE (TODAY)
+    export_date = datetime.now().strftime("%d-%m-%Y %I:%M %p")
+
+    # ✅ GET UNIQUE DEPARTMENTS & SEMESTERS FROM MENTEES
+    mentee_departments = set()
+    mentee_semesters = set()
+
+    for i in qs:
+        for u in i.mentees.all():
+            if hasattr(u, "profile"):
+                if u.profile.branch:
+                    mentee_departments.add(u.profile.branch)
+                if u.profile.semester:
+                    mentee_semesters.add(u.profile.semester)
+
+    department = ", ".join(sorted(mentee_departments)) if mentee_departments else "Not Available"
+    semester_filter = ", ".join(sorted(mentee_semesters)) if mentee_semesters else "Not Available"
+
+    # ✅ HEADER DETAILS
+    header_info = f"""
+    <b>Department:</b> {department} &nbsp;&nbsp;&nbsp;&nbsp;
+    <b>Semester:</b> {semester_filter} <br/>
+    <b>Generated on:</b> {export_date}
+    """
+
+    # ✅ TABLE DATA
+    data = [["Sr. No.", "Date", "Semester", "Agenda", "Mentees"]]
+
+    for idx, i in enumerate(qs, start=1):
+        mentee_lines = []
+
+        for u in i.mentees.all():
+            if hasattr(u, "profile"):
+                name = u.profile.student_name
+                dept = u.profile.branch if u.profile.branch else "N/A"
+                moodle = u.profile.moodle_id if u.profile.moodle_id else "N/A"
+
+                mentee_lines.append(f"{name} ({dept}, {moodle})")
+
+        mentees_formatted = "<br/>".join(mentee_lines)
+
+        data.append([
+            str(idx),
+            i.date.strftime("%d-%m-%Y"),
+            i.semester,
+            Paragraph(i.agenda.replace(";", "<br/>"), styles["Normal"]),
+            Paragraph(mentees_formatted, styles["Normal"]),
+        ])
+
+    # ✅ COLUMN WIDTHS (PRINT OPTIMIZED)
+    table = RLTable(data, colWidths=[40, 60, 70, 230, 180])
+
+    # ✅ TABLE STYLING
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTSIZE", (0, 0), (-1, 0), 10),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 1), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+    ]))
+
+    story.append(table)
+    story.append(Spacer(1, 40))
+    # ✅ ATTENDANCE SUMMARY TABLE (PER MENTEE)
+
+    # ✅ Get unique mentees from queryset
+    attendance_map = {}
+
+    total_interactions = qs.count()
+
+    for interaction in qs:
+        for u in interaction.mentees.all():
+            if hasattr(u, "profile"):
+                key = u.profile.moodle_id
+                if key not in attendance_map:
+                    attendance_map[key] = {
+                        "name": u.profile.student_name,
+                        "dept": u.profile.branch if u.profile.branch else "N/A",
+                        "moodle": u.profile.moodle_id,
+                        "present": 0,
+                    }
+                attendance_map[key]["present"] += 1
+
+    # ✅ Build Attendance Table Data
+    attendance_data = [["Sr. No.", "Name", "Department", "Moodle ID", "Present", "Attendance %"]]
+
+    for idx, v in enumerate(attendance_map.values(), start=1):
+        percent = round((v["present"] / total_interactions) * 100, 2) if total_interactions else 0
+        attendance_data.append([
+            str(idx),
+            v["name"],
+            v["dept"],
+            v["moodle"],
+            str(v["present"]),
+            f"{percent}%",
+        ])
+    story.append(Spacer(1, 25))
+
+    attendance_title = Paragraph("<b>Mentee Attendance Summary</b>", styles["Heading2"])
+    story.append(attendance_title)
+    story.append(Spacer(1, 10))
+
+    attendance_table = RLTable(attendance_data, colWidths=[40, 130, 100, 100, 70, 90])
+
+    attendance_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (3, 0), (-1, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+
+    story.append(attendance_table)
+
+    # ✅ SIGNATURE SECTION
+    sign_table = RLTable(
+        [
+            ["", ""],
+            ["______________________________", "______________________________"],
+            ["Mentor's Signature", "HOD / Coordinator Signature"]
+        ],
+        colWidths=[250, 250]
+    )
+
+    sign_table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("TOPPADDING", (0, 0), (-1, -1), 20),
+    ]))
+
+    story.append(sign_table)
+
+    # ✅ LOGO PATH
+    logo_path = os.path.join(settings.MEDIA_ROOT, "logo.png")
+
+    # ✅ FOOTER + PAGE NUMBER + LOGO
+    def add_footer_and_page_number(canvas, doc):
+        canvas.saveState()
+
+        width, height = A4
+
+        # ✅ WHITE BACKGROUND FOR LOGO
+        canvas.setFillColor(colors.white)
+        canvas.rect(30, height - 80, 90, 50, fill=1, stroke=0)
+
+        # ✅ LOGO (LEFT)
+        if os.path.exists(logo_path):
+            canvas.drawImage(
+                logo_path,
+                35,
+                height - 75,
+                width=80,
+                height=40,
+                preserveAspectRatio=True,
+                mask="auto"
+            )
+
+        # ✅ REPORT TITLE (RIGHT OF LOGO – SAME LINE)
+        canvas.setFont("Helvetica-Bold", 16)
+        canvas.setFillColor(colors.black)
+        canvas.drawString(130, height - 50, "Mentor–Mentee Interaction Report")
+
+        # ✅ HEADER DETAILS UNDER TITLE
+        canvas.setFont("Helvetica", 10)
+        header_y = height - 70
+
+        canvas.drawString(130, header_y, f"Department: {department}")
+        canvas.drawString(350, header_y, f"Semester: {semester_filter}")
+
+        canvas.drawString(130, header_y - 15, f"Generated On: {export_date}")
+
+        # ✅ FOOTER WITH MENTOR NAME (BOTTOM LEFT)
+        mentor_name = mentor.name if mentor.name else mentor.user.get_full_name() or mentor.user.username
+        canvas.setFont("Helvetica", 9)
+        canvas.drawString(36, 30, f"Generated by Mentor: {mentor_name}")
+
+        # ✅ PAGE NUMBER (BOTTOM RIGHT)
+        canvas.drawRightString(width - 36, 30, f"Page {doc.page}")
+
+        canvas.restoreState()
+
+    # ✅ BUILD DOCUMENT
+    doc.build(
+        story,
+        onFirstPage=add_footer_and_page_number,
+        onLaterPages=add_footer_and_page_number
+    )
+
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename="Mentor_Mentee_interactions.pdf")
+
+

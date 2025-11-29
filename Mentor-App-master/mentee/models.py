@@ -649,3 +649,22 @@ class Query(models.Model):
 
     def _str_(self):
         return f"Query by {self.mentee} to {self.mentor}"
+
+
+class MentorMenteeInteraction(models.Model):
+    mentor = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(null=True, blank=True)
+    semester = models.CharField(max_length=10, choices=Profile.SEMESTER_CHOICES, null=True, blank=True)
+    agenda = models.TextField(null=True, blank=True)
+    mentees = models.ManyToManyField(User, related_name="mentor_interactions")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.mentor.username} – {self.date}"
+
+    def mentee_list(self):
+        return ", ".join([m.username for m in self.mentees.all()])
+

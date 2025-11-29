@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest
+from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
+                     OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, MentorMenteeInteraction)
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -182,3 +183,29 @@ class MeetingAdmin(admin.ModelAdmin):
     def mentee_name(self, obj):
         return obj.mentee.user.get_full_name() or obj.mentee.user.username
     mentee_name.short_description = 'Mentee'
+
+
+@admin.register(MentorMenteeInteraction)
+class MentorMenteeInteractionAdmin(admin.ModelAdmin):
+    list_display = [
+        'mentor',     # Shows mentor username automatically
+        'mentee_list',
+        'date',
+        'semester',
+        'agenda',
+        'created_at',
+    ]
+
+    search_fields = [
+        'mentor__username',  # search by mentor username
+        'mentor__first_name',
+        'mentor__last_name',
+        'mentees__username',  # search by mentee username
+        'mentees__first_name',
+        'mentees__last_name',
+    ]
+
+    # Optional: make admin faster by prefetching M2M
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("mentees")
