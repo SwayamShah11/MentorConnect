@@ -105,7 +105,7 @@
                               class="btn btn-outline-primary btn-sm edit-btn"
                               data-id="{{ i.id }}"
                               data-date="{{ i.date|date:'Y-m-d' }}"
-                              data-agenda="{{ i.agenda|escapejs }}"
+                              data-agenda="{{ i.agenda }}"
                               data-mentees="{% for u in i.mentees.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                           <i class="bi bi-pencil-square"></i>
                       </button>
@@ -308,7 +308,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-  // Make bootstrap toasts auto-hide
+// Make bootstrap toasts auto-hide
   document.addEventListener("DOMContentLoaded", function () {
   if (window.bootstrap && bootstrap.Toast) {
     const toastElList = [].slice.call(document.querySelectorAll('.toast'));
@@ -319,44 +319,44 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-//Edit form
-function openEditModal(id, date, agenda, selectedMentees) {
-  const modalEl = document.getElementById("interactionModal");
+// SAFE JS DECODER (XSS + QUOTES SAFE)
+function safeDecode(str) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+}
 
-  // ✅ ALWAYS CREATE A NEW MODAL INSTANCE (SAFE FOR ALL BOOTSTRAP 5)
+//Edit form
+function openEditModal(id, date, agendaRaw, selectedMentees) {
+  const modalEl = document.getElementById("interactionModal");
   const modal = new bootstrap.Modal(modalEl);
 
-  // ✅ Set hidden ID
-  document.getElementById("interaction_id").value = id;
+  const agenda = safeDecode(agendaRaw); // ✅ FULL SAFETY LAYER
 
-  // ✅ Set date
+  document.getElementById("interaction_id").value = id;
   document.querySelector("input[name='date']").value = date;
 
-  // ✅ Reset all mentee checkboxes
+  // ✅ Reset mentees
   document.querySelectorAll(".mentee-checkbox").forEach(cb => {
     cb.checked = false;
   });
 
-  // ✅ Re-check saved mentees
   selectedMentees.forEach(mid => {
     const checkbox = document.getElementById("mentee_" + mid);
     if (checkbox) checkbox.checked = true;
   });
 
-  // ✅ Restore semester after mentees restored
   if (window.restoreSemester) restoreSemester();
 
-  // ✅ Reset agenda checkboxes + highlight
+  // ✅ Reset agendas
   document.querySelectorAll("input[name='agenda_points']").forEach(cb => {
     cb.checked = false;
     const label = document.querySelector(`label[for="${cb.id}"]`);
     if (label) label.classList.remove("agenda-active");
   });
 
-  // ✅ Split agenda text
   const agendaParts = agenda.split(";").map(p => p.trim()).filter(Boolean);
 
-  // ✅ Restore agenda checkboxes
   document.querySelectorAll("input[name='agenda_points']").forEach(cb => {
     if (agendaParts.includes(cb.value)) {
       cb.checked = true;
@@ -365,9 +365,8 @@ function openEditModal(id, date, agenda, selectedMentees) {
     }
   });
 
-  // ✅ Restore extra agenda but remove predefined ones
   const predefined = [...document.querySelectorAll("input[name='agenda_points']")]
-                      .map(cb => cb.value);
+    .map(cb => cb.value);
 
   const extraText = agendaParts.filter(p => !predefined.includes(p)).join("; ");
   document.querySelector("textarea[name='agenda_extra']").value = extraText;
@@ -375,28 +374,33 @@ function openEditModal(id, date, agenda, selectedMentees) {
   // ✅ Preview
   const previewBox = document.getElementById("agendaPreviewBox");
   const previewText = document.getElementById("agendaPreviewText");
+
   if (previewBox && previewText) {
     previewText.innerText = agenda;
     previewBox.classList.remove("d-none");
   }
 
-  // ✅ SHOW MODAL (NO VERSION ISSUES)
   modal.show();
 }
 
+// edit click listener
     document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-      const id = this.dataset.id;
-      const date = this.dataset.date;
-      const agenda = this.dataset.agenda;
-      const mentees = this.dataset.mentees
-        ? this.dataset.mentees.split(",").map(Number)
-        : [];
+      document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
 
-      openEditModal(id, date, agenda, mentees);
+          const id = this.dataset.id;
+          const date = this.dataset.date;
+
+          // ✅ SAFELY READ RAW TEXT
+          const agenda = this.getAttribute("data-agenda") || "";
+
+          const mentees = this.dataset.mentees
+            ? this.dataset.mentees.split(",").map(Number)
+            : [];
+
+          openEditModal(id, date, agenda, mentees);
+        });
+      });
     });
-  });
-});
 </script>
 {% endblock %}

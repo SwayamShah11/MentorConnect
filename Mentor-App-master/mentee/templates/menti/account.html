@@ -7,7 +7,7 @@
 <div class="d-flex">
   <div class="content flex-grow-1 p-4">
     <div class="row">
-      <div class="col-md-10">
+      <div class="col-md-12">
         <div class="content-section">
           <div class="d-flex align-items-center mb-3">
             <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
@@ -89,8 +89,209 @@
             {% endfor %}
           </ul>
         </div>
+        <hr class="my-4">
+        <h4 class="fw-bold mb-3"><i class="bi bi-journal-check"></i> Your Mentor–Mentee Interaction History</h4>
+        <div class="row mt-4">
+            <!-- ✅ LEFT: INTERACTION TABLE -->
+            <div class="col-lg-8">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                  <thead class="table-dark text-center">
+                    <tr>
+                      <th>Date of session</th>
+                      <th>Sem</th>
+                      <th>Moodle ID</th>
+                      <th>Student Name</th>
+                      <th>Agenda Discussed</th>
+                      <th>Mentor Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in interaction_rows %}
+                      <tr>
+                        <td>{{ row.date }}</td>
+                        <td>{{ row.semester }}</td>
+                        <td>{{ row.moodle_id }}</td>
+                        <td>{{ row.student_name }}</td>
+                        <td style="max-width: 420px;">{{ row.agenda }}</td>
+                        <td>{{ row.mentor_name }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-3">
+                          No mentor interactions recorded for you yet.
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+                <!-- ✅ MONTHLY ATTENDANCE BREAKDOWN -->
+                <hr>
+                <div class="card shadow-sm mt-3">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3">📅 Monthly Attendance Breakdown</h5>
+
+                        <table class="table table-bordered table-sm mb-0">
+                          <thead class="table-light text-center">
+                            <tr>
+                              <th>Month</th>
+                              <th>Present</th>
+                              <th>Total</th>
+                              <th>Attendance %</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for row in monthly_attendance %}
+                            <tr class="text-center">
+                              <td>{{ row.month }}</td>
+                              <td>{{ row.present }}</td>
+                              <td>{{ row.total }}</td>
+                              <td class="fw-bold {% if row.percent < 75 %}text-danger{% else %}text-success{% endif %}">
+                                {{ row.percent }}%
+                              </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                              <td colspan="4" class="text-center text-muted">No monthly data available</td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- ✅ RIGHT: ATTENDANCE VISUAL PANEL -->
+          <div class="col-lg-4">
+
+            <!-- ✅ ATTENDANCE PROGRESS -->
+            <div class="card shadow-sm mb-3">
+              <div class="card-body">
+                <h5 class="fw-bold mb-2">Overall Attendance</h5>
+
+                <div class="progress mb-2" style="height: 22px;">
+                  <div class="progress-bar
+                    {% if overall_percent < 75 %}bg-danger{% else %}bg-success{% endif %}"
+                    role="progressbar"
+                    style="width: {{ overall_percent }}%;">
+                    {{ overall_percent }}%
+                  </div>
+                </div>
+
+                {% if overall_percent < 75 %}
+                  <div class="alert alert-danger py-2 mb-0">
+                    ⚠ Low attendance! Minimum requirement is 75%.
+                  </div>
+                {% else %}
+                  <div class="alert alert-success py-2 mb-0">
+                    ✅ Attendance is above minimum requirement.
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- ✅ ATTENDANCE GRAPH -->
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="fw-bold mb-2">Attendance Trend</h5>
+                <canvas id="attendanceChart" height="260"></canvas>
+              </div>
+            </div>
+          </div>
+<!-- ✅ MONTHLY ATTENDANCE BREAKDOWN -->
+
+        <!-- ✅ AI-BASED PERFORMANCE INSIGHT -->
+        <div class="card shadow-sm mt-3 border-primary">
+          <div class="card-body">
+            <h5 class="fw-bold text-primary">🤖 AI Performance Insight</h5>
+            <p class="mb-0 fw-semibold">
+              {{ ai_insight }}
+            </p>
+          </div>
+        </div>
+        <!-- ✅ FUTURE ATTENDANCE PREDICTION -->
+        <div class="card shadow-sm mt-3 border-info">
+          <div class="card-body text-center">
+            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>
+
+            <div class="display-6 fw-bold my-2">
+              {{ prediction_percent }}%
+            </div>
+
+            <div class="
+              fw-semibold
+              {% if risk_level == 'Excellent' %}text-success
+              {% elif risk_level == 'Stable' %}text-primary
+              {% elif risk_level == 'Warning' %}text-warning
+              {% else %}text-danger
+              {% endif %}
+            ">
+              Predicted Status: {{ risk_level }}
+            </div>
+
+            {% if risk_level == "Critical" %}
+              <div class="alert alert-danger mt-3 py-2">
+                ⚠ High risk of falling below minimum attendance!
+              </div>
+            {% elif risk_level == "Warning" %}
+              <div class="alert alert-warning mt-3 py-2">
+                ⚠ Attendance may drop. Maintain consistency!
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+<script>
+const graphLabels = {{ attendance_graph_labels|safe }};
+const graphValues = {{ attendance_graph_values|safe }};
+const predictionValue = {{ prediction_percent }};
+
+const extendedLabels = [...graphLabels, "Prediction"];
+const extendedData = [...graphValues, predictionValue];
+
+const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: extendedLabels,
+    datasets: [
+      {
+        label: 'Attendance History',
+        data: graphValues,
+        tension: 0.3,
+        pointRadius: 5,
+        fill: false,
+      },
+      {
+        label: 'Predicted Attendance',
+        data: extendedData,
+        borderDash: [6, 6],
+        tension: 0.3,
+        pointRadius: 5,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        min: 0,
+        max: 100,
+        ticks: {
+          callback: function(value) {
+            return value + "%";
+          }
+        }
+      }
+    }
+  }
+});
+</script>
+
 {% endblock %}

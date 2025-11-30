@@ -9,7 +9,7 @@ from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, P
                      ReplyForm, ChatReplyForm)
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
-                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query)
+                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query, MentorMenteeInteraction)
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ from ..render import Render
 from django.http import HttpResponse, Http404
 from django.conf import settings
 import os
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
+from collections import defaultdict
+import calendar
 from PIL import Image
 import pypandoc
 from django.core.mail import EmailMultiAlternatives
@@ -80,11 +80,140 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             "feedback_exists": feedback_exists,
         }]
 
-        return render(request, "menti/account.html", {
+        # ✅ ✅ ✅ INTERACTIONS WHERE THIS MENTEE WAS PRESENT
+        present_interactions = MentorMenteeInteraction.objects.filter(
+            mentees=request.user
+        ).select_related("mentor").order_by("-date")
+
+        # ✅ Total interactions under this mentor (for % calculation)
+        total_interactions = MentorMenteeInteraction.objects.filter(
+            mentor=mentor.user
+        ).count()
+
+        interaction_rows = []
+
+        for idx, interaction in enumerate(present_interactions, start=1):
+
+            # ✅ Mentor Name (from Mentor model)
+            if hasattr(interaction.mentor, "mentor") and interaction.mentor.mentor.name:
+                mentor_name = interaction.mentor.mentor.name
+            else:
+                mentor_name = interaction.mentor.username
+
+            # ✅ Attendance %
+            percent = round((idx / total_interactions) * 100, 2) if total_interactions else 0
+
+            interaction_rows.append({
+                "sr_no": idx,
+                "date": interaction.date.strftime("%d-%m-%Y"),
+                "semester": interaction.semester,
+                "moodle_id": request.user.profile.moodle_id,
+                "student_name": request.user.profile.student_name,
+                "agenda": interaction.agenda,
+                "mentor_name": mentor_name,
+                "attendance_percent": percent,
+            })
+
+        # ✅ Overall attendance % for this mentee
+        present_count = present_interactions.count()
+        overall_percent = round((present_count / total_interactions) * 100, 2) if total_interactions else 0
+
+        # ✅ Graph data (date vs attendance point)
+        attendance_graph_labels = []
+        attendance_graph_values = []
+
+        for i in present_interactions.order_by("date"):
+            attendance_graph_labels.append(i.date.strftime("%d-%m"))
+            attendance_graph_values.append(100)  # Present = 100%
+
+        # ✅ MONTHLY ATTENDANCE BREAKDOWN
+        monthly_present = defaultdict(int)
+        monthly_total = defaultdict(int)
+
+        all_interactions = MentorMenteeInteraction.objects.filter(
+            mentor=mentor.user
+        )
+
+        for i in all_interactions:
+            key = i.date.strftime("%Y-%m")
+            monthly_total[key] += 1
+
+        for i in present_interactions:
+            key = i.date.strftime("%Y-%m")
+            monthly_present[key] += 1
+
+        monthly_attendance = []
+        for key in sorted(monthly_total.keys()):
+            year, month = key.split("-")
+            month_name = calendar.month_name[int(month)]
+            present = monthly_present.get(key, 0)
+            total = monthly_total.get(key, 0)
+            percent = round((present / total) * 100, 2) if total else 0
+
+            monthly_attendance.append({
+                "month": f"{month_name} {year}",
+                "present": present,
+                "total": total,
+                "percent": percent
+            })
+        # ✅ FUTURE ATTENDANCE PREDICTION (MOVING AVERAGE + TREND)
+
+        prediction_percent = 0
+        risk_level = "Safe"
+
+        if monthly_attendance:
+            # ✅ Take last 3 months (or fewer if not available)
+            recent_months = monthly_attendance[-3:]
+
+            values = [m["percent"] for m in recent_months]
+
+            # ✅ Moving Average Prediction
+            prediction_percent = round(sum(values) / len(values), 2)
+
+            # ✅ Trend adjustment
+            if len(values) >= 2:
+                trend = values[-1] - values[0]
+                prediction_percent = round(prediction_percent + (trend / 3), 2)
+
+            # ✅ Boundaries
+            prediction_percent = max(0, min(100, prediction_percent))
+
+            # ✅ Risk Label
+            if prediction_percent >= 85:
+                risk_level = "Excellent"
+            elif 75 <= prediction_percent < 85:
+                risk_level = "Stable"
+            elif 60 <= prediction_percent < 75:
+                risk_level = "Warning"
+            else:
+                risk_level = "Critical"
+
+        # ✅ AI-BASED PERFORMANCE INSIGHTS (RULE-BASED SMART LOGIC)
+        if overall_percent >= 85:
+            ai_insight = "✅ Excellent consistency! You are highly engaged with mentor interactions."
+        elif 75 <= overall_percent < 85:
+            ai_insight = "⚠ Good participation, but you can improve slightly for better academic tracking."
+        elif 60 <= overall_percent < 75:
+            ai_insight = "⚠ Attendance is moderate. Regular interactions will boost your performance."
+        else:
+            ai_insight = "❌ Critical attendance level. Immediate improvement is strongly recommended."
+
+        # ✅ ADD THESE TO CONTEXT
+        context = {
             "user_meeting_data": user_meeting_data,
+            "interaction_rows": interaction_rows,
+            "overall_percent": overall_percent,
+            "attendance_graph_labels": attendance_graph_labels,
+            "attendance_graph_values": attendance_graph_values,
+            "monthly_attendance": monthly_attendance,  # ✅ NEW
+            "ai_insight": ai_insight,  # ✅ NEW
+            "prediction_percent": prediction_percent,     # ✅ FUTURE PREDICTION
+            "risk_level": risk_level,
             "now": now,
             "is_mentor_view": False,
-        })
+        }
+
+        return render(request, "menti/account.html", context)
 
 
 def register(request):

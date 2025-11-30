@@ -657,6 +657,7 @@ class MentorMenteeInteraction(models.Model):
     semester = models.CharField(max_length=10, choices=Profile.SEMESTER_CHOICES, null=True, blank=True)
     agenda = models.TextField(null=True, blank=True)
     mentees = models.ManyToManyField(User, related_name="mentor_interactions")
+    ai_summary = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
