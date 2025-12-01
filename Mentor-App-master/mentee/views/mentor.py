@@ -1,14 +1,14 @@
 import traceback
 import uuid
-
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 import io
 from django.utils.decorators import method_decorator
 import os
+import re
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-# from django.contrib.auth.forms import UserCreationForm
+from html import escape
 from django.contrib import messages
 from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, MentorInteractionForm
 from django.views.generic import (View, TemplateView,
@@ -16,21 +16,24 @@ from django.views.generic import (View, TemplateView,
                                   CreateView, UpdateView,
                                   DeleteView)
 from django.utils.timezone import now
+from django.db.models.functions import TruncMonth
+from django.db.models import Count
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
                       MentorMenteeInteraction)
-from django.db.models import Count, Q
+from django.views.decorators.csrf import csrf_exempt
+from mentee.ai_utils import generate_ai_summary
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.urls import reverse_lazy
 from ..forms import ReplyForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
-
+from reportlab.lib.styles import ParagraphStyle
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -1524,10 +1527,29 @@ def mentor_mentee_interactions(request):
 
         attendance.append({
             "name": p.student_name,
+            "semester": p.semester,
+            "branch": p.branch,
             "moodle": p.moodle_id,
             "percent": percent
         })
+    #monthly attendance
+    monthly_raw = (
+        interactions
+        .annotate(month=TruncMonth("date"))
+        .values("month")
+        .annotate(total=Count("id"))
+        .order_by("month")
+    )
 
+    monthly_attendance = []
+
+    for row in monthly_raw:
+        month_name = row["month"].strftime("%b %Y")
+        percent = round((row["total"] / total_interactions) * 100, 2) if total_interactions else 0
+        monthly_attendance.append({
+            "month": month_name,
+            "percent": percent
+        })
     context = {
         "mentor": mentor,
         "mentees": mentee_profiles,
@@ -1535,6 +1557,7 @@ def mentor_mentee_interactions(request):
         "common_agenda": COMMON_AGENDA_POINTS,
         "attendance": attendance,
         "semesters": [s for s in SEMESTER],
+        "monthly_attendance": monthly_attendance,
     }
 
     return render(request, "mentor/mentor_mentee_interactions.html", context)
@@ -1549,6 +1572,22 @@ def delete_interaction(request, pk):
 
 
 @login_required
+def regenerate_ai_summary(request, pk):
+    interaction = get_object_or_404(MentorMenteeInteraction, id=pk, mentor=request.user)
+
+    # ✅ Call your AI generator here
+    summary = generate_ai_summary(interaction.agenda)
+
+    interaction.ai_summary = summary
+    interaction.save()
+
+    return JsonResponse({
+        "success": True,
+        "summary": interaction.ai_summary
+    })
+
+
+@login_required
 def export_interactions(request, export_type):
     mentor = get_object_or_404(Mentor, user=request.user)
     qs = MentorMenteeInteraction.objects.filter(mentor=request.user).prefetch_related("mentees__profile")
@@ -1557,11 +1596,21 @@ def export_interactions(request, export_type):
     if export_type == "excel":
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Date", "Semester", "Agenda", "Mentees"])
+        ws.append(["Date", "Semester", "Agenda", "AI Summary", "Mentees"])
 
         for i in qs:
-            mentees = ", ".join([f"{u.profile.student_name} ({u.profile.moodle_id})" for u in i.mentees.all()])
-            ws.append([i.date, i.semester, i.agenda, mentees])
+            mentees = ", ".join([
+                f"{u.profile.student_name} ({u.profile.moodle_id})"
+                for u in i.mentees.all()
+            ])
+
+            ws.append([
+                i.date.strftime("%d-%m-%Y"),
+                i.semester,
+                i.agenda,
+                i.ai_summary or "Not Generated",
+                mentees
+            ])
 
         buf = BytesIO()
         wb.save(buf)
@@ -1570,6 +1619,61 @@ def export_interactions(request, export_type):
 
     # ✅ PDF EXPORT (FIXED FORMATTING)
     buffer = BytesIO()
+
+    # ✅ Convert Agenda & AI Summary into Bullet List
+    def bulletize(text):
+        if not text:
+            return ""
+
+        text = text.strip()
+
+        # ✅ REMOVE any existing <link> tags (prevents duplication)
+        text = re.sub(r"<link[^>]*>|</link>", "", text)
+
+        # ✅ 1. Protect URLs with tokens
+        url_pattern = r"(https?://[^\s]+)"
+        urls = re.findall(url_pattern, text)
+
+        url_map = {}
+        for i, url in enumerate(urls):
+            token = f"[[URL_{i}]]"
+            url_map[token] = url
+            text = text.replace(url, token)
+
+        # ✅ 2. Normalize separators
+        text = text.replace("•", ".")
+        text = text.replace("\n", ".")
+        text = text.replace(";", ".")
+
+        # ✅ 3. Split into sentences safely
+        sentences = re.split(r"\.(?=\s|$)", text)
+
+        bullets = []
+
+        for s in sentences:
+            s = s.strip()
+            if not s:
+                continue
+
+            # ✅ 4. Restore each URL as BLUE + UNDERLINED clickable link
+            for token, url in url_map.items():
+                s = s.replace(
+                    token,
+                    f'<font color="blue"><u><link href="{url}">{url}</link></u></font>'
+                )
+
+            # ✅ 5. Escape only normal text
+            s = escape(s, quote=False)
+
+            # ✅ Un-escape the tags we intentionally inserted
+            s = s.replace("&lt;font", "<font").replace("&lt;/font&gt;", "</font>")
+            s = s.replace("&lt;u&gt;", "<u>").replace("&lt;/u&gt;", "</u>")
+            s = s.replace("&lt;link", "<link").replace("&lt;/link&gt;", "</link>")
+            s = s.replace("&gt;", ">")
+
+            bullets.append("• " + s)
+
+        return "<br/>".join(bullets)
 
     # ✅ HIGH-RES PDF (Better Printing)
     doc = SimpleDocTemplate(
@@ -1582,6 +1686,12 @@ def export_interactions(request, export_type):
     )
 
     styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="BlueLink",
+        parent=styles["Normal"],
+        textColor=colors.blue,
+        underline=True
+    ))
     story = []
 
     # ✅ EXPORT DATE (TODAY)
@@ -1610,7 +1720,7 @@ def export_interactions(request, export_type):
     """
 
     # ✅ TABLE DATA
-    data = [["Sr. No.", "Date", "Semester", "Agenda", "Mentees"]]
+    data = [["Sr. No.", "Date", "Sem", "Agenda", "AI Summary", "Mentees"]]
 
     for idx, i in enumerate(qs, start=1):
         mentee_lines = []
@@ -1625,16 +1735,27 @@ def export_interactions(request, export_type):
 
         mentees_formatted = "<br/>".join(mentee_lines)
 
+        agenda_paragraph = Paragraph(bulletize(i.agenda), styles["Normal"])
+        ai_summary_paragraph = Paragraph(
+            bulletize(i.ai_summary or "Not Generated"),
+            styles["Normal"]
+        )
+
         data.append([
             str(idx),
             i.date.strftime("%d-%m-%Y"),
             i.semester,
-            Paragraph(i.agenda.replace(";", "<br/>"), styles["Normal"]),
+            agenda_paragraph,
+            ai_summary_paragraph,
             Paragraph(mentees_formatted, styles["Normal"]),
         ])
 
     # ✅ COLUMN WIDTHS (PRINT OPTIMIZED)
-    table = RLTable(data, colWidths=[40, 60, 70, 230, 180])
+    table = RLTable(
+        data,
+        colWidths=[33, 56, 28, 160, 160, 150],  # ✅ wider AI + Agenda
+        repeatRows=1
+    )
 
     # ✅ TABLE STYLING
     table.setStyle(TableStyle([
@@ -1642,13 +1763,22 @@ def export_interactions(request, export_type):
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+
+        # ✅ Vertical alignment
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
+
+        # ✅ AUTO WORD WRAP (CRITICAL FIX)
+        ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
+
+        # ✅ Font control
         ("FONTSIZE", (0, 0), (-1, 0), 10),
         ("FONTSIZE", (0, 1), (-1, -1), 9),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 1), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+
+        # ✅ Padding (PREVENT OVERLAP)
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
 
     story.append(table)
@@ -1739,38 +1869,40 @@ def export_interactions(request, export_type):
         canvas.setFillColor(colors.white)
         canvas.rect(30, height - 80, 90, 50, fill=1, stroke=0)
 
-        # ✅ LOGO (LEFT)
+        # ✅ LOGO
         if os.path.exists(logo_path):
             canvas.drawImage(
                 logo_path,
                 35,
-                height - 75,
-                width=80,
-                height=40,
+                height - 85,
+                width=100,
+                height=60,
                 preserveAspectRatio=True,
                 mask="auto"
             )
 
-        # ✅ REPORT TITLE (RIGHT OF LOGO – SAME LINE)
+        # ✅ MAIN TITLE (FIRST PAGE)
         canvas.setFont("Helvetica-Bold", 16)
         canvas.setFillColor(colors.black)
-        canvas.drawString(130, height - 50, "Mentor–Mentee Interaction Report")
 
-        # ✅ HEADER DETAILS UNDER TITLE
+        if doc.page == 1:
+            canvas.drawString(130, height - 50, "Mentor–Mentee Interaction Report")
+        else:
+            canvas.drawString(130, height - 50, "Mentor–Mentee Interaction Report")
+
+        # ✅ HEADER DETAILS
         canvas.setFont("Helvetica", 10)
         header_y = height - 70
-
         canvas.drawString(130, header_y, f"Department: {department}")
         canvas.drawString(350, header_y, f"Semester: {semester_filter}")
-
         canvas.drawString(130, header_y - 15, f"Generated On: {export_date}")
 
-        # ✅ FOOTER WITH MENTOR NAME (BOTTOM LEFT)
+        # ✅ FOOTER WITH MENTOR NAME
         mentor_name = mentor.name if mentor.name else mentor.user.get_full_name() or mentor.user.username
         canvas.setFont("Helvetica", 9)
         canvas.drawString(36, 30, f"Generated by Mentor: {mentor_name}")
 
-        # ✅ PAGE NUMBER (BOTTOM RIGHT)
+        # ✅ PAGE NUMBER
         canvas.drawRightString(width - 36, 30, f"Page {doc.page}")
 
         canvas.restoreState()
@@ -1784,5 +1916,3 @@ def export_interactions(request, export_type):
 
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename="Mentor_Mentee_interactions.pdf")
-
-

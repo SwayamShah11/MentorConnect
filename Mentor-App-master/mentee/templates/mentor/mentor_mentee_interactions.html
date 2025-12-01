@@ -9,7 +9,7 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
       <h3 class="fw-bold mb-0">Mentor–Mentee Interaction</h3>
-      <small class="text-muted">Record meetings and attendance for your mentees.</small>
+      <small class="text-muted">Record interactions and attendance for your mentees.</small>
     </div>
     <button class="btn btn-warning fw-semibold mt-3 mt-md-0"
             data-bs-toggle="modal" data-bs-target="#interactionModal">
@@ -71,13 +71,13 @@
   <div class="card shadow-sm border-0">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
+        <table class="table table-bordered table-hover mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Semester</th>
-              <th scope="col">Agenda Discussed</th>
-              <th scope="col">Mentees Present</th>
+              <th scope="col" class="text-center">Date</th>
+              <th scope="col" class="text-center">Semester</th>
+              <th scope="col" class="text-center">Agenda Discussed</th>
+              <th scope="col" class="text-center">Mentees Present</th>
               <th scope="col" class="text-center">Actions</th>
             </tr>
           </thead>
@@ -85,12 +85,45 @@
             {% if interactions %}
               {% for i in interactions %}
                 <tr>
-                  <td>{{ i.date|date:"d-m-Y" }}</td>
-                  <td>{{ i.semester }}</td>
+                  <td class="text-center">{{ i.date|date:"d-m-Y" }}</td>
+                  <td class="text-center">{{ i.semester }}</td>
                   <td style="max-width: 350px;">
+                    <!-- ✅ Original Agenda -->
                     <div class="small text-wrap">{{ i.agenda }}</div>
+                    <textarea id="agenda_text_{{ i.id }}" class="d-none">
+                    {{ i.agenda }}
+                    </textarea>
+                    <!-- ✅ AI Summary Toggle -->
+                      {% if i.ai_summary %}
+                        <button class="btn btn-sm btn-outline-warning mt-2"
+                                onclick="toggleSummary('{{ i.id }}')">
+                          View AI Summary
+                        </button>
+
+                        <div id="ai_summary_{{ i.id }}"
+                             class="alert alert-warning small mt-2 text-start d-none">
+                          <b>AI Summary:</b>
+                            <ul class="mb-0 mt-1">
+                              {% for line in i.ai_summary.splitlines %}
+                                <li>{{ line|cut:"• " }}</li>
+                              {% endfor %}
+                            </ul>
+                        </div>
+                      {% endif %}
+                        <div class="progress mt-2 d-none" id="ai_progress_wrap_{{ i.id }}">
+                          <div class="progress-bar progress-bar-striped progress-bar-animated"
+                               id="ai_progress_{{ i.id }}"
+                               role="progressbar"
+                               style="width: 0%">0%</div>
+                        </div>
+
+                      <!-- ✅ Regenerate Button -->
+                      <button class="btn btn-sm btn-outline-dark mt-2"
+                              onclick="regenerateAISummary('{{ i.id }}')">
+                        🔄 Regenerate
+                      </button>
                   </td>
-                  <td style="max-width: 260px;">
+                  <td style="max-width: 260px;" class="text-center">
                     <ul class="list-unstyled mb-0 small">
                       {% for u in i.mentees.all %}
                         <li>
@@ -129,21 +162,26 @@
     </div>
   </div>
     <!-- Attendance Percentage -->
+    <hr>
 <div class="card mt-4 shadow-sm border-0">
   <div class="card-header fw-bold">
     <i class="bi bi-person-check"></i> Attendance Percentage
   </div>
-  <div class="table-responsive">
+  <div class="table-responsive table-bordered">
     <table class="table mb-0">
       <tr>
+        <th>Moodle ID</th>
         <th>Name</th>
-        <th>Moodle</th>
+        <th>Semester</th>
+        <th>Department</th>
         <th>Attendance %</th>
       </tr>
       {% for a in attendance %}
       <tr>
-        <td>{{ a.name }}</td>
         <td>{{ a.moodle }}</td>
+        <td>{{ a.name }}</td>
+        <td>{{ a.semester }}</td>
+        <td>{{ a.branch }}</td>
         <td>{{ a.percent }}%</td>
       </tr>
       {% empty %}
@@ -154,6 +192,26 @@
       </tr>
       {% endfor %}
     </table>
+  </div>
+</div>
+<!-- ✅ Attendance Bar Graph -->
+    <hr>
+<div class="card mt-3 shadow-sm border-0">
+  <div class="card-header fw-bold">
+    <i class="bi bi-bar-chart"></i> Mentee Attendance Graph
+  </div>
+  <div class="card-body">
+    <canvas id="attendanceChart" height="120"></canvas>
+  </div>
+</div>
+    <!-- ✅ Monthly Attendance Graph -->
+    <hr>
+<div class="card mt-4 shadow-sm border-0">
+  <div class="card-header fw-bold">
+    <i class="bi bi-graph-up"></i> Monthly Attendance Trend
+  </div>
+  <div class="card-body">
+    <canvas id="monthlyChart" height="120"></canvas>
   </div>
 </div>
 
@@ -188,13 +246,6 @@
               <input type="text" id="autoSemester" class="form-control" readonly
                      placeholder="Select mentees to auto-fill">
             </div>
-
-            <!-- Duration (optional) -->
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Duration (optional)</label>
-              <input type="text" name="duration" class="form-control"
-                     placeholder="e.g. 1 hour 30 min">
-            </div>
           </div>
 
           <hr class="my-3">
@@ -206,11 +257,11 @@
               {% for p in mentees %}
                 <div class="form-check">
                   <input class="form-check-input mentee-checkbox"
-       type="checkbox"
-       value="{{ p.user.id }}"
-       name="mentees"
-       data-semester="{{ p.semester }}"
-       id="mentee_{{ p.user.id }}">
+                   type="checkbox"
+                   value="{{ p.user.id }}"
+                   name="mentees"
+                   data-semester="{{ p.semester }}"
+                   id="mentee_{{ p.user.id }}">
 
                   <label class="form-check-label" for="mentee_{{ p.user.id }}">
                     {{ p.student_name }} ({{ p.moodle_id }}) – {{ p.branch }}
@@ -257,8 +308,13 @@
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                 Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
-                <span class="me-1"><i class="bi bi-send"></i></span> Save Interaction
+            <button type="submit" class="btn btn-primary" id="saveInteractionBtn">
+              <span id="saveBtnText">
+                <i class="bi bi-send me-1"></i> Save Interaction
+              </span>
+
+              <span id="saveBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"
+                    role="status" aria-hidden="true"></span>
             </button>
         </div>
       </form>
@@ -291,7 +347,6 @@
   color: #fff !important;
 }
 </style>
-
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -392,7 +447,7 @@ function openEditModal(id, date, agendaRaw, selectedMentees) {
           const date = this.dataset.date;
 
           // ✅ SAFELY READ RAW TEXT
-          const agenda = this.getAttribute("data-agenda") || "";
+          const agenda = document.getElementById("agenda_text_" + id).value;
 
           const mentees = this.dataset.mentees
             ? this.dataset.mentees.split(",").map(Number)
@@ -402,5 +457,200 @@ function openEditModal(id, date, agendaRaw, selectedMentees) {
         });
       });
     });
+
+// AI Summary toggle
+function toggleSummary(id) {
+  const box = document.getElementById("ai_summary_" + id);
+  box.classList.toggle("d-none");
+}
+
+// ✅ AJAX AI Summary Regenerator
+function regenerateAISummary(id) {
+  if (!confirm("Regenerate AI Summary?")) return;
+
+  const progressWrap = document.getElementById("ai_progress_wrap_" + id);
+  const progressBar = document.getElementById("ai_progress_" + id);
+
+  progressWrap.classList.remove("d-none");
+  progressBar.style.width = "5%";
+  progressBar.innerText = "5%";
+
+  let fakeProgress = 5;
+
+  // ✅ Simulated live progress while AI runs
+  const progressTimer = setInterval(() => {
+    if (fakeProgress < 90) {
+      fakeProgress += Math.floor(Math.random() * 6) + 3;
+      progressBar.style.width = fakeProgress + "%";
+      progressBar.innerText = fakeProgress + "%";
+    }
+  }, 500);
+
+  fetch(`/mentor/regenerate-ai-summary/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}"
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    clearInterval(progressTimer);
+
+    if (data.success) {
+      progressBar.style.width = "100%";
+      progressBar.innerText = "100%";
+
+      document.getElementById("ai_summary_" + id).innerHTML =
+        "<b>AI Summary:</b> " + data.summary;
+
+      document.getElementById("ai_summary_" + id).classList.remove("d-none");
+
+      setTimeout(() => {
+        progressWrap.classList.add("d-none");
+      }, 800);
+    }
+    else {
+      progressBar.classList.add("bg-danger");
+      progressBar.innerText = "Failed";
+    }
+  })
+  .catch(() => {
+    clearInterval(progressTimer);
+    progressBar.classList.add("bg-danger");
+    progressBar.innerText = "Error";
+  });
+}
+
+
+// ✅ Spinner Loader on Save Interaction
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("interactionForm");
+  const btn = document.getElementById("saveInteractionBtn");
+  const btnText = document.getElementById("saveBtnText");
+  const spinner = document.getElementById("saveBtnSpinner");
+
+  form.addEventListener("submit", function () {
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+    btnText.innerHTML = "Saving...";
+  });
+});
+
+// If You Want Cancel to Reset Spinner
+document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+  btn.addEventListener("click", function () {
+    const saveBtn = document.getElementById("saveInteractionBtn");
+    const spinner = document.getElementById("saveBtnSpinner");
+    const text = document.getElementById("saveBtnText");
+
+    saveBtn.disabled = false;
+    spinner.classList.add("d-none");
+    text.innerHTML = '<i class="bi bi-send me-1"></i> Save Interaction';
+  });
+});
+
+//Attendance % bar graph
+document.addEventListener("DOMContentLoaded", function () {
+  const labels = [
+    {% for a in attendance %}
+      "{{ a.name }}",
+    {% endfor %}
+  ];
+
+  const values = [
+    {% for a in attendance %}
+      {{ a.percent }},
+    {% endfor %}
+  ];
+
+  // ✅ Dynamic colors (RED if < 75)
+  const barColors = values.map(v => v < 75 ? "rgba(220,53,69,0.8)" : "rgba(13,110,253,0.8)");
+
+  // ✅ Calculate average
+  const avg =
+    values.reduce((a, b) => a + b, 0) / (values.length || 1);
+
+  const avgLine = new Array(values.length).fill(avg.toFixed(2));
+
+  const ctx = document.getElementById("attendanceChart").getContext("2d");
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Attendance %",
+          data: values,
+          backgroundColor: barColors,
+          borderRadius: 6
+        },
+        {
+          label: "Average",
+          data: avgLine,
+          type: "line",
+          borderColor: "green",
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.raw + "%";
+            }
+          }
+        }
+      }
+    }
+  });
+});
+
+// Monthly attendance graph
+document.addEventListener("DOMContentLoaded", function () {
+  const monthLabels = [
+    {% for m in monthly_attendance %}
+      "{{ m.month }}",
+    {% endfor %}
+  ];
+
+  const monthValues = [
+    {% for m in monthly_attendance %}
+      {{ m.percent }},
+    {% endfor %}
+  ];
+
+  const ctx2 = document.getElementById("monthlyChart").getContext("2d");
+
+  new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: "Monthly Attendance %",
+        data: monthValues,
+        backgroundColor: "rgba(25,135,84,0.8)",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+});
 </script>
 {% endblock %}

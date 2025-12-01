@@ -120,6 +120,7 @@ urlpatterns = [
     path("interactions/export/<str:export_type>/", mentor.export_interactions, name="export_interactions"),
     path("interactions/edit/<int:pk>/", mentor.mentor_mentee_interactions, name="edit_interaction"),
     path("interactions/delete/<int:pk>/", mentor.delete_interaction, name="delete_interaction"),
+    path("mentor/regenerate-ai-summary/<int:pk>/", mentor.regenerate_ai_summary, name="regenerate_ai_summary"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

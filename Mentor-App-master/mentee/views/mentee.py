@@ -123,7 +123,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         attendance_graph_values = []
 
         for i in present_interactions.order_by("date"):
-            attendance_graph_labels.append(i.date.strftime("%d-%m"))
+            attendance_graph_labels.append(i.date.strftime("%d-%m-%y"))
             attendance_graph_values.append(100)  # Present = 100%
 
         # ✅ MONTHLY ATTENDANCE BREAKDOWN
@@ -1204,6 +1204,11 @@ class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageM
     def get_success_url(self):
         return reverse('list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
+
 
 class ProfileDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """view details of a user in the profile"""
@@ -1214,6 +1219,11 @@ class ProfileDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         return self.request.user.is_mentee
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_mentor_view'] = False
+        return context
 
 
 class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):

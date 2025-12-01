@@ -668,4 +668,3 @@ class MentorMenteeInteraction(models.Model):
 
     def mentee_list(self):
         return ", ".join([m.username for m in self.mentees.all()])
-
