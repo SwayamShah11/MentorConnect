@@ -4,7 +4,8 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
 from .models import (Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent,
                      CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
-                     EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply, MentorMenteeInteraction)
+                     EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply, MentorMenteeInteraction,
+                     StudentProfileOverview)
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -123,6 +124,7 @@ class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
+            "certificate": forms.FileInput(attrs={"required":"required"}),
         }
 
 
@@ -134,7 +136,7 @@ class ProjectForm(forms.ModelForm):
             "title": forms.TextInput(attrs={"placeholder": "Project Title"}),
             "guide_name": forms.TextInput(attrs={"placeholder": "Guide Name"}),
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
-            "link": forms.URLInput(attrs={"placeholder": "Enter project link (e.g. GitHub, Google Drive, etc.)"}),
+            "link": forms.URLInput(attrs={"placeholder": "Enter project link (e.g. GitHub, Google Drive, etc.)", "required":"required"}),
         }
 
 
@@ -148,6 +150,7 @@ class SportsCulturalForm(PDFValidationMixin, forms.ModelForm):
         widgets = {
             "name_of_event": forms.TextInput(attrs={"placeholder": "Name of Event"}),
             "venue": forms.TextInput(attrs={"placeholder": "Venue"}),
+            "certificate": forms.FileInput(attrs={"required": "required"})
         }
 
 
@@ -163,6 +166,7 @@ class OtherEventForm(PDFValidationMixin, forms.ModelForm):
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
             "amount_won": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
             "team_members": forms.Textarea(attrs={"placeholder": "Name of all members (separated by commas). In case of individual participation write only your name."}),
+            "certificate": forms.FileInput(attrs={"required": "required"})
         }
 
 
@@ -184,6 +188,7 @@ class CertificationCourseForm(PDFValidationMixin, forms.ModelForm):
             "domain": forms.TextInput(attrs={"placeholder": "Domain"}),
             "level": forms.TextInput(attrs={"placeholder": "eg. global, entry, foundation, expert, etc."}),
             "amount_reimbursed": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
+            "certificate": forms.FileInput(attrs={"required": "required"})
         }
 
 
@@ -196,6 +201,7 @@ class PaperPublicationForm(PDFValidationMixin, forms.ModelForm):
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Details (max 500 words)"}),
             "amount_reimbursed": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
             "authors": forms.Textarea(attrs={"placeholder": "Name of all authors (separated by commas)."}),
+            "certificate": forms.FileInput(attrs={"required": "required"})
         }
 
 
@@ -221,13 +227,15 @@ class LongTermGoalForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=True
     )
+    custom_plan = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control mt-2', 'placeholder': 'Enter your goal'})
+    )
 
     class Meta:
         model = LongTermGoal
-        fields = ['plan', 'reason']
-        widgets = {
-            'reason': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Reason', 'rows': 2}),
-        }
+        fields = ['plan', 'custom_plan', 'reason']
+
 
 
 class SubjectOfInterestForm(forms.ModelForm):
@@ -259,6 +267,7 @@ class SemesterResultForm(forms.ModelForm):
             "semester": forms.Select(attrs={"class": "form-control"}),
             "pointer": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 9.05"}),
             "no_of_kt": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 2 (If none enter 0)"}),
+            "marksheet": forms.FileInput(attrs={"required": "required"})
         }
 
 
@@ -395,4 +404,19 @@ class MentorInteractionForm(forms.ModelForm):
         fields = ["date", "semester"]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class StudentProfileOverviewForm(forms.ModelForm):
+    class Meta:
+        model = StudentProfileOverview
+        fields = ["profile_summary", "key_skills", "is_public"]
+        widgets = {
+            "profile_summary": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+            "key_skills": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        }
+        labels = {
+            "profile_summary": "Professional Summary",
+            "key_skills": "Key Skills (comma separated)",
+            "is_public": "Make my portfolio public (sharable link)",
         }

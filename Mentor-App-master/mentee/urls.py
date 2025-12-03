@@ -1,4 +1,4 @@
-from .views import mentee, mentor
+from .views import mentee, mentor, hod
 from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
 from django.conf import settings
@@ -7,26 +7,35 @@ from django.conf.urls.static import static
 """Mentor and Mentee URLs"""
 urlpatterns = [
     path('', mentee.home, name="home"),
+    path("admin-hod-dashboard/", hod.HODDashboardView.as_view(), name="hod_dashboard"),
+    path("admin-hod-dashboard/export/excel/", hod.hod_export_excel, name="hod_export_excel"),
+    path("admin-hod-dashboard/export/pdf/", hod.hod_export_pdf, name="hod_export_pdf"),
 
     #mentee url
     path('mentee-home/', mentee.mentee_home, name="mentee-home"),
+    path("mark-notification-read/<int:notification_id>/", mentee.mark_notification_read, name="mark_notification_read"),
     path('account/', mentee.AccountList.as_view(), name="account"),
     path('register/', mentee.register, name="register"),
     path('profile/', mentee.profile, name="profile"),
     path('internship-pbl-list/', mentee.internship_pbl_list, name="internship-pbl-list"),
+    path('internships/download-all/', mentee.download_all_certificates, name='download_all_certificates'),
     path("internships/<int:pk>/edit/", mentee.internship_pbl_list, name="edit_internship"),
     path("delete/<int:pk>/", mentee.delete_internship, name="delete_internship"),
     path("projects-list/", mentee.projects_view, name="projects-list"),
     path("sports-and-cultural/", mentee.sports_cultural_list, name="sports-and-cultural"),
+    path('sports-and-cultural/download-all/', mentee.download_all_sports_cultural, name='download_all_sports_cultural'),
     path("sports-and-cultural/edit/<int:pk>/", mentee.edit_sports_cultural, name="edit_sports_cultural"),
     path("sports-and-cultural/delete/<int:pk>/", mentee.delete_sports_cultural, name="delete_sports_cultural"),
     path("other-events/", mentee.other_event_list, name="other-events"),
+    path('other-events/download-all/', mentee.download_all_other_events, name='download_all_other_events'),
     path("other-events/<int:pk>/", mentee.other_event_list, name="other-events"),
     path("other-events/delete/<int:pk>/", mentee.delete_other_event, name="delete_other_event"),
     path("certifications/", mentee.certification_list, name="certifications"),
+    path('certifications/download-all/', mentee.download_all_certifications, name='download_all_certifications'),
     path("certifications/<int:pk>/edit/", mentee.certification_list, name="edit_certification"),
     path("certifications/<int:pk>/delete/", mentee.delete_certification, name="delete_certification"),
     path("publications/", mentee.publications_list, name="publications"),
+    path('publications/download-all/', mentee.download_all_publications, name='download_all_publications'),
     path("publications/<int:pk>/edit/", mentee.publications_list, name="edit_publication"),
     path("publications/<int:pk>/delete/", mentee.delete_publication, name="delete_publication"),
     path("self-assessment/", mentee.self_assessment, name="self_assessment"),
@@ -37,10 +46,12 @@ urlpatterns = [
     path("delete-subject/<int:pk>/", mentee.delete_subject, name="delete_subject"),
     path("educational-details/", mentee.educational_details, name="educational-details"),
     path("semester-results/", mentee.semester_results, name="semester_results"),
+    path('semester-results/download-all/', mentee.download_all_semester_marksheets, name='download_all_semester_marksheets'),
     path("semester-results/edit/<int:pk>/", mentee.edit_semester, name="edit_semester"),
     path("semester-results/delete/<int:pk>/", mentee.delete_semester, name="delete_semester"),
     path("student-interests/", mentee.student_interests, name="student_interests"),
     path("uploaded-documents/", mentee.uploaded_documents, name="uploaded_documents"),
+    path("uploaded-documents/download-all/", mentee.download_all_uploaded_documents_aggregated, name="download_all_uploaded_documents"),
     path("credits/", mentee.credits_view, name="credits"),
     path('message-module/', mentee.MessageView.as_view(), name="module-message"),
     #path('message-module/', mentee.messege_view, name="module-message"),
@@ -76,6 +87,9 @@ urlpatterns = [
     path('change-password/<str:token>/' , mentee.ChangePassword , name="change_password"),
     path('query_suggestion/<int:pk>', mentee.query_suggestion, name='query_suggestion'),
     path('mentee_queries/', mentee.mentee_queries, name="mentee_queries"),
+    path("student-profile-overview/", mentee.student_profile_overview, name="student_profile_overview"),
+    path("student-profile-overview/pdf/", mentee.export_resume_pdf, name="export_resume_pdf"),
+    path("portfolio/<slug:slug>/", mentee.public_portfolio_view, name="public_portfolio"),
 
 
     #mentor urls
@@ -121,6 +135,9 @@ urlpatterns = [
     path("interactions/edit/<int:pk>/", mentor.mentor_mentee_interactions, name="edit_interaction"),
     path("interactions/delete/<int:pk>/", mentor.delete_interaction, name="delete_interaction"),
     path("mentor/regenerate-ai-summary/<int:pk>/", mentor.regenerate_ai_summary, name="regenerate_ai_summary"),
+    path("remind-mentee/<int:mentee_id>/", mentor.remind_mentee, name="remind_mentee"),
+    path("student-visualization/", mentor.student_visualization, name="student_visualization"),
+    path("get-chart-data/", mentor.get_chart_data, name="get_chart_data"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

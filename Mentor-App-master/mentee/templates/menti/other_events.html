@@ -21,65 +21,83 @@
                     Other Achievements/Prizes/Hackathons
                 </h2>
             </div>
-
-            <!-- Table -->
-            <table class="table table-bordered table-hover align-middle shadow-sm rounded">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="text-center">Sr. No</th>
-                        <th class="text-center">Name of Event</th>
-                        <th class="text-center">Academic Year</th>
-                        <th class="text-center">Semester</th>
-                        <th class="text-center">Level</th>
-                        <th class="text-center">Details</th>
-                        <th class="text-center">Prize Won</th>
-                        <th class="text-center">Amount Won</th>
-                        <th class="text-center">Team Members</th>
-                        <th class="text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in events %}
+            <div class="card shadow-sm bg-dark border-0">
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h5 class="mb-0 fw-semibold" style="color: #fff;">Uploaded Documents</h5>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mt-2 mt-md-0">
+                        {% if is_mentor_view == False %}
+                            {% if events %}
+                            <a href="{% url 'download_all_other_events' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-download"></i> Download All
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                        <span class="badge bg-primary-subtle text-primary">
+                            {{ events|length }} document{{ events|length|pluralize }}
+                        </span>
+                    </div>
+                </div>
+                <!-- Table -->
+                <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                    <thead class="table-dark">
                         <tr>
-                            <td class="text-center">{{ forloop.counter }}</td>
-                            <td class="text-center">{{ item.name_of_event }}</td>
-                            <td class="text-center">{{ item.academic_year }}</td>
-                            <td class="text-center">{{ item.semester }}</td>
-                            <td class="text-center">{{ item.level }}</td>
-                            <td class="text-center">{{ item.details }}</td>
-                            <td class="text-center">{{ item.prize_won }}</td>
-                            <td class="text-center">{{ item.amount_won }}</td>
-                            <td class="text-center">{{ item.team_members }}</td>
-                            <td class="text-center">
-                                {% if is_mentor_view == False %}
-                                    {% if item.certificate %}
-                                        <a href="{{ item.certificate.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
-                                        <a href="{% url 'other-events' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
-                                        <a href="{{ item.certificate.url }}" class="btn btn-success btn-sm mt-1" download><i class="bi bi-box-arrow-down"></i></a>
-                                        <a href="{% url 'delete_other_event' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
-                                    {% else %}
-                                        <a href="{% url 'other-events' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
-                                        <a href="{% url 'delete_other_event' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
-                                    {% endif %}
-                                {% else %}
-                                        <a href="{{ item.certificate.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
-                                        <a href="{{ item.certificate.url }}" class="btn btn-success btn-sm mt-1" download><i class="bi bi-box-arrow-down"></i></a>
-                                {% endif %}
-                            </td>
+                            <th class="text-center">Sr. No</th>
+                            <th class="text-center">Name of Event</th>
+                            <th class="text-center">Academic Year</th>
+                            <th class="text-center">Semester</th>
+                            <th class="text-center">Level</th>
+                            <th class="text-center">Details</th>
+                            <th class="text-center">Prize Won</th>
+                            <th class="text-center">Amount Won</th>
+                            <th class="text-center">Team Members</th>
+                            <th class="text-center">Action</th>
                         </tr>
-                    {% empty %}
-                        <tr><td colspan="11" class="text-center">No records yet</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for item in events %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td class="text-center">{{ item.name_of_event }}</td>
+                                <td class="text-center">{{ item.academic_year }}</td>
+                                <td class="text-center">{{ item.semester }}</td>
+                                <td class="text-center">{{ item.level }}</td>
+                                <td class="text-center">{{ item.details }}</td>
+                                <td class="text-center">{{ item.prize_won }}</td>
+                                <td class="text-center">{{ item.amount_won }}</td>
+                                <td class="text-center">{{ item.team_members }}</td>
+                                <td class="text-center">
+                                    {% if is_mentor_view == False %}
+                                        {% if item.certificate %}
+                                            <a href="{{ item.certificate.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
+                                            <a href="{% url 'other-events' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
+                                            <a href="{{ item.certificate.url }}" class="btn btn-success btn-sm mt-1" download><i class="bi bi-box-arrow-down"></i></a>
+                                            <a href="{% url 'delete_other_event' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
+                                        {% else %}
+                                            <a href="{% url 'other-events' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
+                                            <a href="{% url 'delete_other_event' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
+                                        {% endif %}
+                                    {% else %}
+                                            <a href="{{ item.certificate.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
+                                            <a href="{{ item.certificate.url }}" class="btn btn-success btn-sm mt-1" download><i class="bi bi-box-arrow-down"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="11" class="text-center">No records yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% if is_mentor_view == False %}
             <!-- Add / Edit Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
-                    <button class="btn btn-danger mb-3" id="showFormBtn">
+                    <button class="btn btn-danger" id="showFormBtn">
                         Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
                     </button>
-
+                    <hr>
                     <div class="card shadow-lg rounded-3 {% if editing %}border-primary{% endif %}">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
                             <h4 class="mb-0 fw-semibold">{% if editing %} Edit Achievement {% else %} Add Achievement {% endif %}</h4>

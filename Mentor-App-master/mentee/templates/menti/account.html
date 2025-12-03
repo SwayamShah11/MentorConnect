@@ -15,7 +15,6 @@
             </a>
             <h2 class="mb-0">Mentor-Mentee Interaction</h2>
           </div>
-
           <ul class="list-group">
             {% for item in user_meeting_data %}
               {% with user=item.user meeting=item.meeting can_join=item.can_join %}
@@ -337,5 +336,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
-
 {% endblock %}

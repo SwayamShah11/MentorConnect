@@ -1,0 +1,425 @@
+{% extends "mentor/base1.html" %}
+{% load static %}
+{% block title %} Visualize Student's Data {% endblock %}
+
+{% block content %}
+<div class="d-flex">
+    <div class="content flex-grow-1 p-4">
+        <div class="container">
+          <!-- ✅ PAGE HEADER -->
+          <div class="d-flex align-items-center mb-3">
+              <h3 class="text-white p-3 bg-black rounded">
+                  <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2"><i id="sidebarIcon" class="bi bi-list"></i></a>
+                  Visualize Student's Data
+              </h3>
+          </div>
+
+          <!-- ✅ CATEGORY SELECTION -->
+          <div class="card p-3 mb-4" style="background:#7c8bd6;">
+            <div class="row align-items-center">
+
+              <div class="col-md-4 text-white fw-bold">
+                Select Category
+              </div>
+
+              <div class="col-md-5">
+                <select class="form-select" id="categorySelect">
+                  <option value="">-- Select Category --</option>
+                  <option value="internship">Department Wise Internships / PBL</option>
+                  <option value="project">Department Wise Projects</option>
+                  <option value="sports">Department Wise Sports / Cultural</option>
+                  <option value="course">Department Wise Courses / Certifications</option>
+                  <option value="other">Department Wise Other Achievements / Hackathons</option>
+                  <option value="paper">Department Wise Paper Publications</option>
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <button class="btn btn-warning w-100 fw-bold" onclick="loadCharts()">
+                  View Chart 📊
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ GRAPH CONTROL BUTTONS -->
+          <div class="text-center mb-3 d-none" id="graphButtons">
+              <button class="btn btn-light me-2" onclick="showChart('pie')"><i class="bi bi-pie-chart-fill"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('bar')"><i class="bi bi-bar-chart-fill"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('area')"><i class="fa fa-chart-area"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('line')"><i class="bi bi-graph-up-arrow"></i></button>
+          </div>
+
+          <!-- ✅ CHART DISPLAY AREA -->
+          <div class="row justify-content-center">
+            <div class="col-lg-7">
+
+              <div class="card shadow-sm p-4">
+
+                <canvas id="barChart" class="chartBox d-none"></canvas>
+                <canvas id="pieChart" class="chartBox d-none"></canvas>
+                <canvas id="areaChart" class="chartBox d-none"></canvas>
+                <canvas id="lineChart" class="chartBox d-none"></canvas>
+
+              </div>
+
+            </div>
+              <div class="text-center mt-3 d-none" id="exportBtnBox">
+                  <button class="btn btn-danger fw-bold me-2" onclick="exportSingleChartPDF()">
+                    📄 Export Current Chart (PDF)
+                  </button>
+
+                  <button class="btn btn-success fw-bold ms-2" onclick="exportChartJPG()">
+                    🖼 Download Current Chart (JPG)
+                  </button>
+                </div>
+          </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+.chartBox {
+  max-height: 600px;
+}
+</style>
+
+<script>
+// ✅ Institute Logo (Base64 OR Direct URL)
+const instituteLogoURL = "/media/logo.png";
+
+const internshipData = {{ internship_data|safe }};
+const projectData = {{ project_data|safe }};
+const sportsData = {{ sports_data|safe }};
+const courseData = {{ course_data|safe }};
+const hackathonData = {{ hackathon_data|safe }};
+const paperData = {{ paper_data|safe }};
+
+let labels = [];
+let values = [];
+
+let barChart, pieChart, areaChart, lineChart;
+
+//Chart title
+function getChartTitle(type) {
+  const categoryMap = {
+    "internship": "Dept Wise Internships / PBL",
+    "project": "Dept Wise Projects",
+    "sports": "Dept Wise Sports / Cultural",
+    "course": "Dept Wise Courses / Certifications",
+    "other": "Dept Wise Other Achievements / Hackathons",
+    "paper": "Dept Wise Paper Publications"
+  };
+
+  const chartMap = {
+    "bar": "Bar Chart",
+    "pie": "Pie Chart",
+    "area": "Stepped Area Chart",
+    "line": "Line Chart"
+  };
+
+  const selectedCategory = document.getElementById("categorySelect").value;
+
+  return categoryMap[selectedCategory] + " " + chartMap[type];
+}
+
+// ✅ VIEW CHART BUTTON
+function loadCharts() {
+
+  const category = document.getElementById("categorySelect").value;
+  if (!category) {
+    alert("Please select a category first!");
+    return;
+  }
+
+  if (category === "internship") {
+    labels = internshipData.map(i => i.user__profile__branch || "N/A");
+    values = internshipData.map(i => i.total);
+  }
+
+  if (category === "project") {
+    labels = projectData.map(i => i.user__profile__branch || "N/A");
+    values = projectData.map(i => i.total);
+  }
+
+  if (category === "sports") {
+    labels = sportsData.map(i => i.user__profile__branch || "N/A");
+    values = sportsData.map(i => i.total);
+  }
+
+  if (category === "course") {
+    labels = courseData.map(i => i.user__profile__branch || "N/A");
+    values = courseData.map(i => i.total);
+  }
+
+  if (category === "other") {
+    labels = hackathonData.map(i => i.user__profile__branch || "N/A");
+    values = hackathonData.map(i => i.total);
+  }
+
+  if (category === "paper") {
+    labels = paperData.map(i => i.user__profile__branch || "N/A");
+    values = paperData.map(i => i.total);
+  }
+
+  document.getElementById("graphButtons").classList.remove("d-none");
+  document.getElementById("exportBtnBox").classList.remove("d-none");
+
+  showChart("bar"); // ✅ Default
+}
+
+
+// ✅ DESTROY ALL CHARTS SAFELY
+function destroyCharts() {
+  if (barChart) barChart.destroy();
+  if (pieChart) pieChart.destroy();
+  if (areaChart) areaChart.destroy();
+  if (lineChart) lineChart.destroy();
+}
+
+// ✅ SHOW ONLY ONE CHART
+function showChart(type) {
+
+  document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+
+  if (barChart) barChart.destroy();
+  if (pieChart) pieChart.destroy();
+  if (areaChart) areaChart.destroy();
+  if (lineChart) lineChart.destroy();
+
+  const chartTitle = getChartTitle(type);
+
+  const commonOptions = {
+    responsive: true,
+    plugins: {
+      title: {
+        display: true,
+        text: chartTitle,
+        font: { size: 18 },
+        padding: { top: 10, bottom: 20 }
+      },
+      legend: {
+        display: true,
+        position: "right"
+      }
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Departments"
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Count"
+        },
+        beginAtZero: true
+      }
+    }
+  };
+
+  if (type === "bar") {
+    const ctx = document.getElementById("barChart");
+    ctx.classList.remove("d-none");
+
+    barChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Count",
+          data: values,
+          backgroundColor: [
+            "#0d6efd","#198754","#dc3545","#ffc107",
+            "#6610f2","#20c997","#fd7e14"
+          ]
+        }]
+      },
+      options: commonOptions
+    });
+  }
+
+  if (type === "pie") {
+    const ctx = document.getElementById("pieChart");
+    ctx.classList.remove("d-none");
+
+    pieChart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: [
+            "#0d6efd","#198754","#dc3545","#ffc107",
+            "#6610f2","#20c997","#fd7e14"
+          ]
+        }]
+      },
+      options: commonOptions
+    });
+  }
+
+  if (type === "area") {
+    const ctx = document.getElementById("areaChart");
+    ctx.classList.remove("d-none");
+
+    areaChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Count",
+          data: values,
+          fill: true,
+          stepped: true,
+          backgroundColor: "rgba(13,110,253,0.2)",
+          borderColor: "#0d6efd"
+        }]
+      },
+      options: commonOptions
+    });
+  }
+
+  if (type === "line") {
+    const ctx = document.getElementById("lineChart");
+    ctx.classList.remove("d-none");
+
+    lineChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Count",
+          data: values,
+          fill: false,
+          borderColor: "#dc3545",
+          tension: 0.3
+        }]
+      },
+      options: commonOptions
+    });
+  }
+}
+
+//TITLE + TIMESTAMP
+function getChartMeta() {
+
+  const categoryText =
+    document.getElementById("categorySelect")
+    .options[document.getElementById("categorySelect").selectedIndex]
+    .text;
+
+  let chartType = "Chart";
+
+  if (!document.getElementById("barChart").classList.contains("d-none")) chartType = "Bar Chart";
+  if (!document.getElementById("pieChart").classList.contains("d-none")) chartType = "Pie Chart";
+  if (!document.getElementById("areaChart").classList.contains("d-none")) chartType = "Stepped Area Chart";
+  if (!document.getElementById("lineChart").classList.contains("d-none")) chartType = "Line Chart";
+
+  const now = new Date();
+  const ts = now.toLocaleString();
+
+  return {
+    title: `${categoryText} - ${chartType}`,
+    timestamp: ts
+  };
+}
+
+
+//Export Single Chart to PDF
+function exportSingleChartPDF() {
+
+  const activeCanvas = document.querySelector(".chartBox:not(.d-none)");
+
+  if (!activeCanvas) {
+    alert("No chart visible to export!");
+    return;
+  }
+
+  const { title, timestamp } = getChartMeta();
+
+  const chartImage = activeCanvas.toDataURL("image/png", 1.0);
+
+  const pdf = new jspdf.jsPDF("landscape");
+
+  const logoImg = new Image();
+  logoImg.src = instituteLogoURL;
+
+  logoImg.onload = function () {
+
+    // ✅ LOGO
+    pdf.addImage(logoImg, "PNG", 10, 8, 35, 20);
+
+    // ✅ TITLE
+    pdf.setFontSize(16);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(title, 50, 20);
+
+    // ✅ TIMESTAMP
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Generated on: " + timestamp, 50, 30);
+
+    // ✅ CHART
+    pdf.addImage(chartImage, "PNG", 10, 40, 270, 140);
+
+    const cleanName = title.replace(/[^a-zA-Z0-9 ]/g, "_");
+
+    pdf.save(cleanName + ".pdf");
+  };
+}
+
+
+// Export to JPG
+function exportChartJPG() {
+
+  let activeCanvas = document.querySelector(".chartBox:not(.d-none)");
+
+  if (!activeCanvas) {
+    alert("No chart visible to download!");
+    return;
+  }
+
+  const { title, timestamp } = getChartMeta();
+
+  const tempCanvas = document.createElement("canvas");
+  const ctx = tempCanvas.getContext("2d");
+
+  tempCanvas.width = activeCanvas.width;
+  tempCanvas.height = activeCanvas.height + 90;
+
+  // ✅ Background
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+  // ✅ TITLE
+  ctx.fillStyle = "black";
+  ctx.font = "bold 22px Arial";
+  ctx.fillText(title, 20, 30);
+
+  // ✅ TIMESTAMP
+  ctx.font = "14px Arial";
+  ctx.fillText("Generated on: " + timestamp, 20, 55);
+
+  // ✅ DRAW CHART
+  ctx.drawImage(activeCanvas, 0, 90);
+
+  const imageData = tempCanvas.toDataURL("image/jpeg", 1.0);
+
+  const cleanTitle = title.replace(/[^a-zA-Z0-9 ]/g, "_");
+
+  const link = document.createElement("a");
+  link.href = imageData;
+  link.download = cleanTitle + ".jpg";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>
+{% endblock %}

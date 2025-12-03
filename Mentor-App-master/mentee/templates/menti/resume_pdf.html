@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+{% load static %}
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Resume</title>
+  <style>
+    body { font-family: DejaVu Sans, sans-serif; font-size: 11pt; }
+    h1, h2, h3, h4 { margin-bottom: 4px; }
+    .section { margin-top: 10px; }
+    .item { margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  {% if profile.image %}
+        <img src="{{ profile.image.url }}" width="120" height="120" style="border-radius:50%; margin-bottom:10px;">
+  {% endif %}
+  <h1>{{ profile.student_name }}</h1>
+  <p>{{ profile.branch }} | {{ profile.year }} | Sem {{ profile.semester }}</p>
+  <p>Email: {{ profile.email }} | Contact: {{ profile.contact_number }}</p>
+  <hr>
+
+  <div class="section">
+    <h2>Professional Summary</h2>
+    <p>{{ overview.profile_summary }}</p>
+  </div>
+
+  <div class="section">
+    <h2>Key Skills</h2>
+    {% if overview.key_skills %}
+      <ul>
+      {% for skill in overview.key_skills|split:"," %}
+        <li>{{ skill }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h2>Education</h2>
+    {% for edu in education %}
+      <div class="item">
+        <strong>{{ edu.examination }}</strong> - {{ edu.percentage }}% ({{ edu.university_board }}, {{ edu.year_of_passing }})
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Semester Performance</h2>
+    {% for s in semester_results %}
+      <div class="item">
+        Sem {{ s.semester }} - Pointer: {{ s.pointer }}, KT's: {{ s.no_of_kt }}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Internships / PBL</h2>
+    {% for i in internships %}
+      <div class="item">
+        <strong>{{ i.title }}</strong> at {{ i.company_name }} ({{ i.no_of_days }} days)
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Projects</h2>
+    {% for p in projects %}
+      <div class="item">
+        <strong>{{ p.title }}</strong> ({{ p.project_type }}) - {{ p.details|truncatewords:25 }}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Certifications</h2>
+    {% for c in certifications %}
+      <div class="item">
+        <strong>{{ c.title }}</strong> - {{ c.certifying_authority }}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Publications</h2>
+    {% for pub in publications %}
+      <div class="item">
+        <strong>{{ pub.title }}</strong> ({{ pub.type }} - {{ pub.level }})
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section">
+    <h2>Achievements</h2>
+    {% for s in sports %}
+      <div class="item">
+        Sports/Cultural: <strong>{{ s.name_of_event }}</strong> - {{ s.prize_won }}
+      </div>
+    {% endfor %}
+    {% for o in other_events %}
+      <div class="item">
+        Other: <strong>{{ o.name_of_event }}</strong> - {{ o.prize_won }}
+      </div>
+    {% endfor %}
+  </div>
+
+</body>
+</html>

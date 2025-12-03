@@ -3,11 +3,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 
-admin.site.site_header = "Mentor Application"
+admin.site.site_header = "MentorConnect Application"
 admin.site.index_title = "Mentorship Modules"
-
-
-
 
 urlpatterns = [
     path('', include('mentee.urls')),

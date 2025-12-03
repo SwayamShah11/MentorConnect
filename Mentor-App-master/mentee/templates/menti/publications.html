@@ -20,7 +20,24 @@
                     Paper Publications
                 </h2>
             </div>
-
+            <div class="card shadow-sm bg-dark border-0">
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h5 class="mb-0 fw-semibold" style="color: #fff;">Uploaded Publications</h5>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mt-2 mt-md-0">
+                        {% if is_mentor_view == False %}
+                            {% if publications %}
+                            <a href="{% url 'download_all_publications' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-download"></i> Download All
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                        <span class="badge bg-primary-subtle text-primary">
+                            {{ publications|length }} document{{ publications|length|pluralize }}
+                        </span>
+                    </div>
+                </div>
             <!-- Table -->
             <table class="table table-bordered table-hover align-middle shadow-sm rounded">
                 <thead class="table-dark">
@@ -71,14 +88,15 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
             {% if is_mentor_view == False %}
             <!-- Add / Edit Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
-                    <button class="btn btn-danger mb-3" id="showFormBtn">
+                    <button class="btn btn-danger" id="showFormBtn">
                         Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
                     </button>
-
+                    <hr>
                     <div class="card shadow-lg rounded-3 {% if editing %}border-primary{% endif %}">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
                             <h4 class="mb-0 fw-semibold">{% if editing %} Edit Publications  {% else %} Add Publications {% endif %}</h4>

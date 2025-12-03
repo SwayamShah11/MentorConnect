@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
-                     OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, MentorMenteeInteraction)
+                     OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, SemesterResult,
+                     MentorMenteeInteraction)
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -20,7 +21,7 @@ class InternshipPBLAdmin(admin.ModelAdmin):
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ("user", "title", "academic_year", "semester", "project_type", "guide_name", "uploaded_at")
-    search_fields = ("title", "guide_name", "user__username")
+    search_fields = ("title", "guide_name", "user__username", "project_type")
     list_filter = ("user", "academic_year", "semester", "project_type")
     ordering = ("-uploaded_at",)
 
@@ -60,33 +61,24 @@ class StudentInterestAdmin(admin.ModelAdmin):
     get_interests.short_description = "Interests"
 
 
+@admin.register(SemesterResult)
+class SemesterResultAdmin(admin.ModelAdmin):
+    list_display = ("user", "semester", "pointer", "no_of_kt", "created_at")
+
 
 class ConversationAdmin(admin.ModelAdmin):
-
     search_fields = ("conversation",)
-
     list_display = ("sender", "receipient", "sent_at", "conversation", "reply", "replied_at",)
-
     list_display_links = ("conversation",)
-
     list_per_page = 10
 
 
-
-
 class MsgAdmin(admin.ModelAdmin):
-
-
     search_fields = ("msg_content",)
-
     list_filter = ("is_approved",)
-
     list_display = ("sender", "receipient", "sent_at", "msg_content", "comment", "comment_at", "is_approved", "date_approved")
-
     list_editable = ("is_approved",)
-
     list_display_links = ("msg_content",)
-
     list_per_page = 10
 
 
@@ -95,19 +87,11 @@ class MentorAdmin(admin.ModelAdmin):
 
 
 class UserAdmin(admin.ModelAdmin):
-
     list_display = ("username", "email", "is_mentor", "is_mentee",)
-
     list_display_links = ("username", "email",  "is_mentor", "is_mentee",)
-
     list_filter = ("username", "is_mentor", "is_mentee",)
-
     search_fields = ("username",)
-
     list_per_page = 10
-
-
-
 
 
 admin.site.register(Reply)
@@ -123,9 +107,6 @@ admin.site.register(Profile)
 admin.site.register(Msg, MsgAdmin)
 
 admin.site.register(Conversation)
-
-
-
 
 
 class CustomUserCreationForm(UserCreationForm):

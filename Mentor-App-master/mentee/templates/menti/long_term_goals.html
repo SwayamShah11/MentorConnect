@@ -33,9 +33,11 @@
                         <tr class="table-primary">
                             <th class="w-25">Post BE</th>
                             <td>
-                                {% for p in item.plan %}
-                                    {{ p }}
-                                {% endfor %}
+                                {% if item.plan == "Other" %}
+                                    {{ item.custom_plan }}
+                                {% else %}
+                                    {{ item.get_plan_display }}
+                                {% endif %}
                             </td>
                         </tr>
                         <tr class="table-primary mb-3">
@@ -57,9 +59,9 @@
             <!-- Add Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
-                    <button class="btn btn-danger mb-3" id="showFormBtn">
+                    <button class="btn btn-danger" id="showFormBtn">
                         Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
-                    </button>
+                    </button><hr>
                     <div class="card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
                             <h4 class="mb-0 fw-semibold">Add Long Term Goals</h4>
@@ -77,6 +79,11 @@
                                             <label class="form-label">Post BE <span style="color:#ff0000 !important;">*</span></label>
                                             <div class="form-control p-2" style="height:auto;">
                                                 {{ goal_form.plan }}
+
+                                                <!-- Dynamic "Other" text field -->
+                                                <div id="otherInput" style="display:none;" class="mt-2">
+                                                    {{ goal_form.custom_plan }}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -135,10 +142,11 @@
             {% if is_mentor_view == False %}
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
-                    <button class="btn btn-danger mb-3" id="toggleSubjectBtn">
+                    <button class="btn btn-danger" id="toggleSubjectBtn">
                         {% if edit_id %} Edit {% else %} Add {% endif %}
                         <i id="subjectIcon" class="bi {% if edit_id %}bi-pencil{% else %}bi-plus-lg{% endif %}"></i>
                     </button>
+                    <hr>
                     <div class="card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
                             <h4 class="mb-0 fw-semibold">
@@ -154,9 +162,14 @@
                                         {{ subject_form.subject|add_class:"form-control" }}
                                     </div>
                                     <div class="d-flex justify-content-center gap-3 mt-4">
-                                        <button type="submit" name="save_subject" class="btn btn-success">
+                                        <button type="submit" name="save_subject" class="btn btn-success btn-lg w-100 w-md-50">
                                             {% if edit_id %} Update {% else %} Submit {% endif %}
                                         </button>
+                                        {% if edit_id %}
+                                            <a href="{% url 'long_term_goals' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </form>
                             </div>
@@ -215,6 +228,18 @@ document.getElementById("toggleSubjectBtn").addEventListener("click", function()
         icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
         btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
     }
+});
+
+//Long term goal
+document.addEventListener("DOMContentLoaded", function () {
+    const radios = document.querySelectorAll("input[name='plan']");
+    const otherInput = document.getElementById("otherInput");
+
+    radios.forEach(radio => {
+        radio.addEventListener("change", () => {
+            otherInput.style.display = (radio.value === "Other") ? "block" : "none";
+        });
+    });
 });
 </script>
 

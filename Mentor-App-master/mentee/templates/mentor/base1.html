@@ -39,7 +39,12 @@
           <div class="collapse navbar-collapse" id="navbarToggle">
             <div class="navbar-nav mr-auto">
                 <div class="navbar-nav mx-5">
-                    {% if user.is_authenticated %}
+                    {% if user.is_authenticated and request.user.is_superuser %}
+                          <a class="nav-link" href="{% url 'admin:index' %}">
+                            <i class="bi bi-house-fill"></i> Home
+                          </a>
+                        {% endif %}
+                    {% if user.is_authenticated and request.user.is_mentor %}
                     <a class="nav-item nav-link" href="{% url 'account1' %}">Home</a>
                     <a class="nav-item nav-link" href="{% url 'profile1' %}">Profile</a>
                     <a class="nav-item nav-link" href="{% url 'module-message1' %}">Message</a>
@@ -59,11 +64,11 @@
                       </a>
                       <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url 'download_student_data' %}">Download Excel Data</a></li>
-                        <li><a class="dropdown-item" href="{% url 'mentee_documents' %}">Visualize Data</a></li>
+                        <li><a class="dropdown-item" href="{% url 'student_visualization' %}">Visualize Data</a></li>
                       </ul>
                     </li>
                     </ul>
-                    {% else %}
+                    {% elif request.user.not_authenticated %}
                     <a class="nav-item nav-link" href="{% url 'home' %}">Home</a>
                     <a class="nav-item nav-link" href="{% url 'login1' %}">Login</a>
                     <a class="nav-item nav-link" href="{% url 'register1' %}">Register</a>
@@ -72,17 +77,17 @@
             </div>
             <!-- Navbar Right Side -->
             <ul class="navbar-nav mx-5">
-              {% if user.is_authenticated %}
+              {% if user.is_authenticated and request.user.is_mentor %}
                 <li class="nav-item dropdown mx-3">
                   <a class="nav-item nav-link text-white dropdown-toggle" href="#" id="profDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      {% if user.mentor.image %}
-                        <img src="{{ user.mentor.image.url }}"
-                             class="rounded-circle shadow-sm border border-3 border-light"
-                             style="width: 36px; height:36px; object-fit: cover;">
-                      {% else %}
-                        <img src="/media/default.png"
-                             class="rounded-circle shadow-sm border border-3 border-light"
-                             style="width: 36px; height:36px; object-fit: cover;">
+                          {% if user.mentor.image %}
+                            <img src="{{ user.mentor.image.url }}"
+                                 class="rounded-circle shadow-sm border border-3 border-light"
+                                 style="width: 36px; height:36px; object-fit: cover;">
+                          {% else %}
+                            <img src="/media/default.png"
+                                 class="rounded-circle shadow-sm border border-3 border-light"
+                                 style="width: 36px; height:36px; object-fit: cover;">
                       {% endif %}
                       {{request.user}}
                   </a>

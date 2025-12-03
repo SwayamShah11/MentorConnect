@@ -24,7 +24,8 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
-                      MentorMenteeInteraction)
+                      MentorMenteeInteraction, Notification, ReminderLog)
+from ..utils import get_document_progress
 from django.views.decorators.csrf import csrf_exempt
 from mentee.ai_utils import generate_ai_summary
 from datetime import datetime, timedelta
@@ -91,18 +92,39 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
         mentor = get_object_or_404(Mentor, user=request.user)
 
         mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
+
         mentees = []
+        no_document_mentees = []
+
         for mapping in mentee_mappings:
-            profile = Profile.objects.filter(user=mapping.mentee.user).first()
-            mentees.append({
+            user = mapping.mentee.user
+            profile = Profile.objects.filter(user=user).first()
+
+            completed_count, total_required, has_pending = get_document_progress(user)
+            progress_percent = int((completed_count / total_required) * 100)
+
+            mentee_data = {
                 "id": mapping.mentee.pk,
                 "moodle_id": profile.moodle_id if profile else "",
-                "name": profile.student_name if profile else mapping.mentee.user.username,
+                "name": profile.student_name if profile else user.username,
                 "semester": profile.semester if profile else "",
                 "contact": profile.contact_number if profile else "",
-            })
+                "progress": f"{completed_count}/{total_required}",
+                "progress_percent": progress_percent,
+                "has_any_document": completed_count > 0,
+                "has_pending": has_pending,
+            }
 
-        return render(request, "mentor/account1.html", {"form": form, "mentees": mentees})
+            mentees.append(mentee_data)
+
+            if completed_count < 7:
+                no_document_mentees.append(mentee_data)
+
+        return render(request, "mentor/account1.html", {
+            "form": form,
+            "mentees": mentees,
+            "no_document_mentees": no_document_mentees,
+        })
 
     def post(self, request):
         form = MoodleIdForm(request.POST)
@@ -121,11 +143,65 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
                 mentee = Mentee.objects.create(user=profile.user)
 
             # Prevent duplicates
-            MentorMentee.objects.get_or_create(mentor=mentor, mentee=mentee)
+            # ✅ PREVENT MULTIPLE MENTORS ASSIGNING SAME MENTEE
+            existing_mapping = MentorMentee.objects.filter(mentee=mentee).first()
+
+            if existing_mapping:
+                messages.error(
+                    request,
+                    f"{profile.student_name} is already assigned to Mentor: {existing_mapping.mentor.name}"
+                )
+                return redirect("account1")
+
+            MentorMentee.objects.create(mentor=mentor, mentee=mentee)
             messages.success(request, f"{profile.student_name} added as your mentee!")
 
         return redirect("account1")
 
+
+@login_required
+def remind_mentee(request, mentee_id):
+    mentor = get_object_or_404(Mentor, user=request.user)
+    mentee = get_object_or_404(Mentee, pk=mentee_id)
+    user = mentee.user
+
+    completed_count, total_required, has_pending = get_document_progress(user)
+
+    if not has_pending:
+        messages.info(request, f"{user.username} - {user.profile.student_name} has already completed all required documents.")
+        return redirect("account1")
+
+    # ✅ 1. Save Notification
+    Notification.objects.create(
+        user=user,
+        message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile.\n"
+        f"Pending documents: {has_pending}"
+    )
+
+    # ✅ 2. Send Email
+    if user.email:
+        send_mail(
+            subject="Reminder to Upload Your Documents and Complete the Profile",
+            message=(
+                f"Dear {user.profile.student_name}({user.username}),\n\n"
+                f"Your mentor {mentor.name} has reminded you to upload your pending documents.\n"
+                f"You need to complete the following pending items:\n"
+                f"- {has_pending}\n\n"
+                f"Please log in to MentorConnect and upload them as soon as possible.\n\n"
+                f"Regards,\nMentorConnect Team"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    # 3️⃣ Log this reminder
+    ReminderLog.objects.create(
+        mentor=mentor,
+        mentee=mentee,
+        is_auto=False,
+    )
+    messages.success(request, f"Reminder sent to {user.username} - {user.profile.student_name} for: {has_pending}!")
+    return redirect("account1")
 
 
 def register1(request):
@@ -1916,3 +1992,78 @@ def export_interactions(request, export_type):
 
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename="Mentor_Mentee_interactions.pdf")
+
+
+@login_required
+def student_visualization(request):
+    internship_data = list(
+        InternshipPBL.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    project_data = list(
+        Project.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    sports_data = list(
+        SportsCulturalEvent.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    course_data = list(
+        CertificationCourse.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    hackathon_data = list(
+        OtherEvent.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    paper_data = list(
+        PaperPublication.objects.values("user__profile__branch")
+        .annotate(total=Count("id"))
+    )
+
+    return render(request, "mentor/student_visualization.html", {
+        "internship_data": internship_data,
+        "project_data": project_data,
+        "sports_data": sports_data,
+        "course_data": course_data,
+        "hackathon_data": hackathon_data,
+        "paper_data": paper_data,
+    })
+
+
+@login_required
+def get_chart_data(request):
+    category = request.GET.get("category")
+
+    model_map = {
+        "internship": InternshipPBL,
+        "project": Project,
+        "sports": SportsCulturalEvent,
+        "course": CertificationCourse,
+        "other": OtherEvent,
+        "paper": PaperPublication,
+    }
+
+    model = model_map.get(category)
+    if not model:
+        return JsonResponse({"labels": [], "data": []})
+
+    data = (
+        model.objects
+        .values("user__profile__branch")
+        .annotate(count=Count("id"))
+        .order_by("user__profile__branch")
+    )
+
+    labels = [d["user__profile__branch"] or "Unknown" for d in data]
+    counts = [d["count"] for d in data]
+
+    return JsonResponse({
+        "labels": labels,
+        "data": counts,
+    })

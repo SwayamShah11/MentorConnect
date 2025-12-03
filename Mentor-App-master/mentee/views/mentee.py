@@ -1,15 +1,17 @@
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
                      OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm,
-                     LongTermGoalForm,
-                     SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm, QueryForm, SendForm,
-                     ReplyForm, ChatReplyForm)
+                     LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm,
+                     QueryForm, SendForm,ReplyForm, ChatReplyForm, StudentProfileOverviewForm)
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
-                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query, MentorMenteeInteraction)
+                      EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
+                      MentorMenteeInteraction, StudentProfileOverview, Notification)
+from ..utils import compute_profile_completeness
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ from django.db.models import Count, Q
 from ..render import Render
 from django.http import HttpResponse, Http404
 from django.conf import settings
-import os
+import zipfile
 from collections import defaultdict
 import calendar
 from PIL import Image
@@ -37,6 +39,8 @@ import pypandoc
 from django.core.mail import EmailMultiAlternatives
 import uuid
 from django.template.loader import render_to_string
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 
 def home(request):
     """Home landing page"""
@@ -378,7 +382,17 @@ def ChangePassword(request, token):
 @login_required
 def mentee_home(request):
     profile = Profile.objects.get(user=request.user)
-    return render(request, "menti/mentee_home.html", {"profile": profile, "is_mentor_view": False,})
+    notifications = Notification.objects.filter(user=request.user, is_read=False)
+
+    return render(request, "menti/mentee_home.html", {"profile": profile, "notifications": notifications, "is_mentor_view": False,})
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    note = get_object_or_404(Notification, pk=notification_id, user=request.user)
+    note.is_read = True
+    note.save()
+    return redirect("mentee-home")
 
 
 @login_required
@@ -513,6 +527,30 @@ def download_certificate(request, pk):
 
 
 @login_required
+def download_all_certificates(request):
+    internships = InternshipPBL.objects.filter(user=request.user, certificate__isnull=False)
+
+    if not internships.exists():
+        return HttpResponse("No certificates available.")
+
+    zip_filename = f"{request.user.username}_internship_certificates.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in internships:
+            if item.certificate:
+                file_path = item.certificate.path
+                file_name = os.path.basename(file_path)
+                zipf.write(file_path, file_name)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
+
+@login_required
 def delete_internship(request, pk):
     internship = get_object_or_404(InternshipPBL, pk=pk, user=request.user)
 
@@ -603,6 +641,31 @@ def sports_cultural_list(request):
 
 
 @login_required
+def download_all_sports_cultural(request):
+    events = SportsCulturalEvent.objects.filter(user=request.user, certificate__isnull=False)
+
+    if not events.exists():
+        return HttpResponse("No sports & cultural certificates available.")
+
+    zip_filename = f"{request.user.username}_sports_cultural_certificates.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in events:
+            if item.certificate:
+                file_path = item.certificate.path
+                file_name = os.path.basename(file_path)
+                zipf.write(file_path, file_name)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
+
+
+@login_required
 def edit_sports_cultural(request, pk):
     event = get_object_or_404(SportsCulturalEvent, pk=pk, user=request.user)
     editing = True
@@ -676,6 +739,31 @@ def other_event_list(request, pk=None):
 
 
 @login_required
+def download_all_other_events(request):
+    events = OtherEvent.objects.filter(user=request.user, certificate__isnull=False)
+
+    if not events.exists():
+        return HttpResponse("No other event certificates available.")
+
+    zip_filename = f"{request.user.username}_other_events_certificates.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in events:
+            if item.certificate:
+                file_path = item.certificate.path
+                file_name = os.path.basename(file_path)
+                zipf.write(file_path, file_name)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
+
+
+@login_required
 def delete_other_event(request, pk):
     event = get_object_or_404(OtherEvent, pk=pk, user=request.user)
 
@@ -722,6 +810,31 @@ def certification_list(request, pk=None):
         "edit_id": edit_id,
         "is_mentor_view": False,
     })
+
+
+@login_required
+def download_all_certifications(request):
+    certifications = CertificationCourse.objects.filter(user=request.user, certificate__isnull=False)
+
+    if not certifications.exists():
+        return HttpResponse("No certification certificates available.")
+
+    zip_filename = f"{request.user.username}_certifications_certificates.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in certifications:
+            if item.certificate:
+                file_path = item.certificate.path
+                file_name = os.path.basename(file_path)
+                zipf.write(file_path, file_name)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
 
 
 @login_required
@@ -772,6 +885,30 @@ def publications_list(request, pk=None):
         "is_mentor_view": False,
     })
 
+
+@login_required
+def download_all_publications(request):
+    publications = PaperPublication.objects.filter(user=request.user, certificate__isnull=False)
+
+    if not publications.exists():
+        return HttpResponse("No publication certificates available.")
+
+    zip_filename = f"{request.user.username}_publications_certificates.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in publications:
+            if item.certificate:
+                file_path = item.certificate.path
+                file_name = os.path.basename(file_path)
+                zipf.write(file_path, file_name)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
 
 @login_required
 def delete_publication(request, pk):
@@ -833,6 +970,11 @@ def long_term_goals(request, edit_id=None):
         if goal_form.is_valid():
             goal = goal_form.save(commit=False)
             goal.user = request.user
+
+            # Handle custom 'Other' option
+            if goal.plan != "Other":
+                goal.custom_plan = None  # erase on change if recently saved other
+
             goal.save()
             return redirect("long_term_goals")
     else:
@@ -858,7 +1000,7 @@ def long_term_goals(request, edit_id=None):
         "goal": goals,
         "subject_form": subject_form,
         "subjects": subjects,
-        "edit_id": edit_id,  # pass edit id to template
+        "edit_id": edit_id,
         "is_mentor_view": False,
     })
 
@@ -929,6 +1071,32 @@ def semester_results(request):
         "editing": False,
         "is_mentor_view": False,
     })
+
+
+@login_required
+def download_all_semester_marksheets(request):
+    semesters = SemesterResult.objects.filter(user=request.user, marksheet__isnull=False)
+
+    if not semesters.exists():
+        return HttpResponse("No marksheets available.")
+
+    zip_filename = f"{request.user.username}_semester_marksheets.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in semesters:
+            if item.marksheet:
+                file_path = item.marksheet.path
+                # Optional: make filename more meaningful
+                filename_in_zip = f"{request.user.username}_Sem-{item.semester}_marksheet{os.path.splitext(file_path)[1]}"
+                zipf.write(file_path, filename_in_zip)
+
+    with open(zip_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
 
 
 @login_required
@@ -1010,6 +1178,50 @@ def uploaded_documents(request):
         documents.append({"category": "Certification Course", "name": doc.title or "Certification", "file": doc.certificate})
 
     return render(request, "menti/uploaded_documents.html", {"documents": documents, "is_mentor_view": False})
+
+
+@login_required
+def download_all_uploaded_documents_aggregated(request):
+    documents = []
+
+    internships = InternshipPBL.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    marksheets = SemesterResult.objects.filter(user=request.user, marksheet__isnull=False).exclude(marksheet="")
+    publications = PaperPublication.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    other_events = OtherEvent.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    sports = SportsCulturalEvent.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+    courses = CertificationCourse.objects.filter(user=request.user, certificate__isnull=False).exclude(certificate="")
+
+    for doc in internships:
+        documents.append(("Internship", doc.certificate.path))
+    for doc in marksheets:
+        documents.append((f"Semester_{doc.semester}", doc.marksheet.path))
+    for doc in publications:
+        documents.append(("Publication", doc.certificate.path))
+    for doc in other_events:
+        documents.append(("Other_Event", doc.certificate.path))
+    for doc in sports:
+        documents.append(("Sports", doc.certificate.path))
+    for doc in courses:
+        documents.append(("Certification", doc.certificate.path))
+
+    if not documents:
+        return HttpResponse("No documents available.")
+
+    zip_filename = f"{request.user.username}_ALL_UPLOADED_DOCUMENTS.zip"
+    zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for category, file_path in documents:
+            if os.path.exists(file_path):
+                filename = f"{category}_{os.path.basename(file_path)}".replace(" ", "_")
+                zipf.write(file_path, filename)
+
+    with open(zip_path, "rb") as f:
+        response = HttpResponse(f.read(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{zip_filename}"'
+
+    os.remove(zip_path)
+    return response
 
 
 @login_required
@@ -1582,3 +1794,163 @@ def mentee_queries(request):
     queries = Query.objects.filter(mentee=mentee).order_by('-created_at')
 
     return render(request, "menti/mentee_queries.html", {"queries": queries, 'is_mentor_view': False})
+
+
+@login_required
+def student_profile_overview(request):
+    user = request.user
+
+    profile = get_object_or_404(Profile, user=user)
+    overview, _ = StudentProfileOverview.objects.get_or_create(user=user)
+
+    # Pull related data
+    semester_results = SemesterResult.objects.filter(user=user).order_by("semester")
+    education = EducationalDetail.objects.filter(user=user).order_by("year_of_passing")
+    internships = InternshipPBL.objects.filter(user=user)
+    projects = Project.objects.filter(user=user)
+    certifications = CertificationCourse.objects.filter(user=user)
+    publications = PaperPublication.objects.filter(user=user)
+    sports = SportsCulturalEvent.objects.filter(user=user)
+    other_events = OtherEvent.objects.filter(user=user)
+    interests = StudentInterest.objects.filter(student=user).first()
+    subjects = SubjectOfInterest.objects.filter(user=user)
+    long_term_goal = LongTermGoal.objects.filter(user=user).first()
+
+    # Completeness
+    completeness_score, completeness_items = compute_profile_completeness(user)
+
+    if request.method == "POST":
+        form = StudentProfileOverviewForm(request.POST, instance=overview)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile overview updated successfully.")
+            return redirect("student_profile_overview")
+    else:
+        form = StudentProfileOverviewForm(instance=overview)
+
+    context = {
+        "profile": profile,
+        "overview": overview,
+        "form": form,
+        "semester_results": semester_results,
+        "education": education,
+        "internships": internships,
+        "projects": projects,
+        "certifications": certifications,
+        "publications": publications,
+        "sports": sports,
+        "other_events": other_events,
+        "interests": interests,
+        "subjects": subjects,
+        "long_term_goal": long_term_goal,
+        "completeness_score": completeness_score,
+        "completeness_items": completeness_items,
+        "is_mentor_view": False,
+    }
+
+    return render(request, "menti/student_profile_overview.html", context)
+
+
+@login_required
+def export_resume_pdf(request):
+    user = request.user
+
+    profile = get_object_or_404(Profile, user=user)
+    overview, _ = StudentProfileOverview.objects.get_or_create(user=user)
+
+    semester_results = SemesterResult.objects.filter(user=user).order_by("semester")
+    education = EducationalDetail.objects.filter(user=user).order_by("year_of_passing")
+    internships = InternshipPBL.objects.filter(user=user)
+    projects = Project.objects.filter(user=user)
+    certifications = CertificationCourse.objects.filter(user=user)
+    publications = PaperPublication.objects.filter(user=user)
+    sports = SportsCulturalEvent.objects.filter(user=user)
+    other_events = OtherEvent.objects.filter(user=user)
+
+    context = {
+        "profile": profile,
+        "overview": overview,
+        "semester_results": semester_results,
+        "education": education,
+        "internships": internships,
+        "projects": projects,
+        "certifications": certifications,
+        "publications": publications,
+        "sports": sports,
+        "other_events": other_events,
+    }
+
+    template = get_template("menti/resume_pdf.html")
+    html = template.render(context)
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="resume_{user.username}.pdf"'
+
+    def link_callback(uri, rel):
+        """
+        Converts Django media/static URIs to absolute system paths
+        """
+        # MEDIA files
+        if uri.startswith(settings.MEDIA_URL):
+            path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        # STATIC files (optional)
+        elif uri.startswith(settings.STATIC_URL):
+            path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        else:
+            return uri
+
+        if not os.path.isfile(path):
+            raise Exception(f"Media URI must start with {settings.MEDIA_URL} or {settings.STATIC_URL}")
+
+        return path
+
+    pisa_status = pisa.CreatePDF(
+        src=html,
+        dest=response,
+        link_callback=link_callback   #✅✅✅ THIS IS THE FIX
+    )
+
+    if pisa_status.err:
+        return HttpResponse("Error generating PDF", status=500)
+
+    return response
+
+
+
+def public_portfolio_view(request, slug):
+    overview = get_object_or_404(StudentProfileOverview, public_slug=slug, is_public=True)
+    user = overview.user
+
+    profile = get_object_or_404(Profile, user=user)
+
+    semester_results = SemesterResult.objects.filter(user=user).order_by("semester")
+    education = EducationalDetail.objects.filter(user=user).order_by("year_of_passing")
+    internships = InternshipPBL.objects.filter(user=user)
+    projects = Project.objects.filter(user=user)
+    certifications = CertificationCourse.objects.filter(user=user)
+    publications = PaperPublication.objects.filter(user=user)
+    sports = SportsCulturalEvent.objects.filter(user=user)
+    other_events = OtherEvent.objects.filter(user=user)
+    interests = StudentInterest.objects.filter(student=user).first()
+    subjects = SubjectOfInterest.objects.filter(user=user)
+    long_term_goal = LongTermGoal.objects.filter(user=user).first()
+
+    context = {
+        "profile": profile,
+        "overview": overview,
+        "semester_results": semester_results,
+        "education": education,
+        "internships": internships,
+        "projects": projects,
+        "certifications": certifications,
+        "publications": publications,
+        "sports": sports,
+        "other_events": other_events,
+        "interests": interests,
+        "subjects": subjects,
+        "long_term_goal": long_term_goal,
+        "is_public_view": True,
+        "is_mentor_view": True,  # reuse display styling
+    }
+
+    return render(request, "menti/student_profile_public.html", context)

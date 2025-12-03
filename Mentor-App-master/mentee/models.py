@@ -22,7 +22,7 @@ class Mentee(models.Model):
     mentor = models.ForeignKey("Mentor", on_delete=models.SET_NULL, null=True, blank=True, related_name="mentees")
 
     def __str__(self):
-        return self.user.username
+        return self.user.username if self.user and self.user.username else f"Mentee {self.pk}"
 
 DEPARTMENT_CHOICES = [
     ('CIVIL', 'CIVIL'),
@@ -43,7 +43,12 @@ class Mentor(models.Model):
     expertise = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.user.username
+        if self.user and self.user.username:
+            return self.user.username
+        elif self.name:
+            return self.name
+        else:
+            return f"Mentor {self.pk}"
 
 
 AY = [
@@ -151,14 +156,16 @@ def save_profile(sender, instance, **kwargs):
 
 class MentorMentee(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name="mentor_mappings")
-    mentee = models.ForeignKey(Mentee, on_delete=models.CASCADE, related_name="mentee_mappings")
+    mentee = models.OneToOneField(Mentee, on_delete=models.CASCADE, related_name="assigned_mentor")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ("mentor", "mentee")
 
     def __str__(self):
-        return f"{self.mentor.user.username} → {self.mentee.user.username}"
+        mentor_str = self.mentor.user.username if self.mentor and self.mentor.user and self.mentor.user.username else "Unknown Mentor"
+        mentee_str = self.mentee.user.username if self.mentee and self.mentee.user and self.mentee.user.username else "Unknown Mentee"
+        return f"{mentor_str} → {mentee_str}"
 
 
 class InternshipPBL(models.Model):
@@ -211,7 +218,7 @@ class Project(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return self.title or "Untitled Project"
 
 
 class SportsCulturalEvent(models.Model):
@@ -251,7 +258,9 @@ class SportsCulturalEvent(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name_of_event} ({self.academic_year})"
+        name = self.name_of_event or "Unnamed Event"
+        ay = self.academic_year or "No AY"
+        return f"{name} ({ay})"
 
 
 class OtherEvent(models.Model):
@@ -287,7 +296,9 @@ class OtherEvent(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name_of_event} ({self.academic_year})"
+        name = self.name_of_event or "Unnamed Event"
+        ay = self.academic_year or "No AY"
+        return f"{name} ({ay})"
 
 
 class CertificationCourse(models.Model):
@@ -308,7 +319,7 @@ class CertificationCourse(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return self.title or "Unnamed Certification"
 
 
 class PaperPublication(models.Model):
@@ -341,7 +352,7 @@ class PaperPublication(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return self.title or "Untitled Publication"
 
 
 class SelfAssessment(models.Model):
@@ -362,7 +373,9 @@ class SelfAssessment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.semester}"
+        sem = self.semester or "No Semester"
+        user_name = self.user.username if self.user else "Unknown User"
+        return f"{user_name} - {sem}"
 
 
 class LongTermGoal(models.Model):
@@ -370,16 +383,23 @@ class LongTermGoal(models.Model):
         ('Work', 'Work'),
         ('Post Graduation', 'Post Graduation'),
         ('Entrepreneurship', 'Entrepreneurship'),
+        ('Other', 'Other'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, blank=True, null=True)
+    custom_plan = models.CharField(max_length=100, blank=True, null=True)
     reason = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def get_plan_display_value(self):
+        return self.custom_plan if self.plan == "Other" else self.get_plan_display()
+
     def __str__(self):
-        return f"{self.user.username} - {self.get_plan_display()}"
+        user_name = self.user.username if self.user else "Unknown User"
+        plan_name = self.get_plan_display() if self.plan else "No Plan"
+        return f"{user_name} - {plan_name}"
 
 
 class SubjectOfInterest(models.Model):
@@ -404,7 +424,9 @@ class EducationalDetail(models.Model):
     year_of_passing = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.examination} - {self.user.username}"
+        exam = self.examination or "No Exam"
+        user_name = self.user.username if self.user else "Unknown User"
+        return f"{exam} - {user_name}"
 
 
 class SemesterResult(models.Model):
@@ -493,7 +515,44 @@ class StudentInterest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.student.username} - {', '.join(self.interests)}"
+        user_name = self.student.username if self.student else "Unknown User"
+        interests_list = ", ".join(self.interests) if self.interests else "No Interests"
+        return f"{user_name} - {interests_list}"
+
+
+class StudentProfileOverview(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # Editable overview fields
+    profile_summary = models.TextField(
+        blank=True,
+        help_text="Short professional overview for resume/CV"
+    )
+    key_skills = models.TextField(
+        blank=True,
+        help_text="Comma separated skills (Python, Django, ML, etc.)"
+    )
+
+    # Public portfolio
+    is_public = models.BooleanField(default=False)
+    public_slug = models.SlugField(max_length=40, unique=True, blank=True, null=True)
+
+    # Optional: store last computed completeness
+    completeness_score = models.PositiveIntegerField(default=0)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Profile Overview"
+
+    def ensure_public_slug(self):
+        if not self.public_slug:
+            self.public_slug = uuid.uuid4().hex[:12]  # short random id
+
+    def save(self, *args, **kwargs):
+        if self.is_public and not self.public_slug:
+            self.ensure_public_slug()
+        super().save(*args, **kwargs)
 
 
 class Reply(models.Model):
@@ -506,7 +565,8 @@ class Reply(models.Model):
     conversation = models.ForeignKey('Conversation', related_name='replies', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"From {self.sender.username}, in {self.conversation}"
+        sender_name = self.sender.username if self.sender else "Unknown"
+        return f"Reply from {sender_name}"
 
     def save(self, *args, **kwargs):
         if (self.reply or self.file) and self.replied_at is None:
@@ -531,7 +591,9 @@ class Conversation(models.Model):
         return self.replies.all()
 
     def __str__(self):
-        return "From {}, to {}".format(self.sender.username, self.receipient.username)
+        sender_name = self.sender.username if self.sender else "Unknown"
+        recipient_name = self.receipient.username if self.receipient else "Unknown"
+        return f"From {sender_name} to {recipient_name}"
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -554,7 +616,9 @@ class Msg(models.Model):
     date_approved = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"From {self.sender.username}, to {self.receipient.username}"
+        sender_name = self.sender.username if self.sender else "Unknown"
+        recipient_name = self.receipient.username if self.receipient else "Unknown"
+        return f"From {sender_name} to {recipient_name}"
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -575,15 +639,15 @@ class MentorAdmin(models.Model):
     availability_start = models.TimeField()
     availability_end = models.TimeField()
 
-    def _str_(self):
-        return self.user.username
+    def __str__(self):
+        return self.user.username if self.user and self.user.username else f"MentorAdmin {self.pk}"
 
 
 class MenteeAdmin(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    def _str_(self):
-        return self.user.username
+    def __str__(self):
+        return self.user.username if self.user and self.user.username else f"MenteeAdmin {self.pk}"
 
 
 class Meeting(models.Model):
@@ -610,7 +674,7 @@ class Meeting(models.Model):
             self.video_room_name = str(uuid.uuid4())  # auto-generate unique room
         super().save(*args, **kwargs)
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.mentee.user.username} & {self.mentor.user.username} on {self.appointment_date} at {self.time_slot}"
 
     @property
@@ -647,7 +711,7 @@ class Query(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     status = models.CharField(max_length=20, default="pending")
 
-    def _str_(self):
+    def __str__(self):
         return f"Query by {self.mentee} to {self.mentor}"
 
 
@@ -668,3 +732,24 @@ class MentorMenteeInteraction(models.Model):
 
     def mentee_list(self):
         return ", ".join([m.username for m in self.mentees.all()])
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField(null=True, blank=True)
+    is_read = models.BooleanField(default=False, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.message[:30]}"
+
+
+class ReminderLog(models.Model):
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
+    mentee = models.ForeignKey(Mentee, on_delete=models.CASCADE)
+    last_sent_at = models.DateTimeField(auto_now_add=True)
+    is_auto = models.BooleanField(default=False)  # False = manual, True = auto
+
+    def __str__(self):
+        return f"Reminder: {self.mentor.user.username} → {self.mentee.user.username} on {self.last_sent_at}"
+

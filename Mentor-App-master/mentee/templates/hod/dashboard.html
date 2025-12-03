@@ -1,0 +1,348 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} HOD Dashboard {% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header + Export -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">HOD Dashboard</h2>
+      <p class="text-muted mb-0">Completion readiness overview of all mentees.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Excel
+      </a>
+      <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
+        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Total Mentors</div>
+          <div class="fs-3 fw-semibold">{{ total_mentors }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Total Mentees</div>
+          <div class="fs-3 fw-semibold">{{ total_mentees }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Completion Ready (7/7)</div>
+          <div class="fs-3 fw-semibold text-success">{{ ready_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Overall Readiness</div>
+          <div class="fs-3 fw-semibold">{{ placement_ready_percent }}%</div>
+          <div class="progress mt-2" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: {{ placement_ready_percent }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Readiness breakdown -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Completion Breakdown</h5>
+          <div class="d-flex flex-wrap gap-3">
+            <div>
+              <span class="badge bg-success rounded-pill px-3 py-2">
+                Ready: {{ ready_count }}
+              </span>
+            </div>
+            <div>
+              <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                Partial: {{ partial_count }}
+              </span>
+            </div>
+            <div>
+              <span class="badge bg-danger rounded-pill px-3 py-2">
+                Not Started: {{ not_started_count }}
+              </span>
+            </div>
+          </div><br>
+            <ul><li>Ready = 7/7 </li> <li>Partial = between 1 and 6</li> <li>Not started = 0/7</li></ul><hr>
+            <p class="text-muted mt-3 mb-0 small">
+                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 7 (Internships, Sports, Projects, Other achievements, Certifications, Publications, Semester Results)
+            </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mentee Filters + search -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Mentee Filters</h5>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="btn btn-outline-dark btn-sm active" data-filter="all">All</button>
+            <button class="btn btn-outline-success btn-sm" data-filter="ready">Ready</button>
+            <button class="btn btn-outline-warning btn-sm" data-filter="partial">Partial</button>
+            <button class="btn btn-outline-danger btn-sm" data-filter="not_started">Not Started</button>
+          </div>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="menteeSearch" class="form-control"
+                   placeholder="Search by name or Moodle ID...">
+          </div><br>
+          <!-- Mentor filter + search -->
+          <h5 class="card-title mb-2">Mentor Filters</h5>
+          <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="mentorSearch" class="form-control" placeholder="Search by mentor name or department...">
+          </div><hr>
+            <ul class="text-muted mt-2 mb-0 small">
+              <li>Filters apply to the below tables in real time.</li>
+              <li>Just type and the filter will be applied automatically.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mentor-wise analytics -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <span>Mentor-wise Progress Analytics</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Sr. No.</th>
+              <th>Mentor</th>
+              <th>Department</th>
+              <th>Total Mentees</th>
+              <th>Ready</th>
+              <th>Partial</th>
+              <th>Not Started</th>
+              <th>Avg Progress</th>
+            </tr>
+          </thead>
+          <tbody id="mentorTableBody">
+            {% for m in mentor_stats %}
+            <tr data-name="{{ m.mentor_name|lower }}" data-department="{{ m.department|lower }}">
+              <td>{{ forloop.counter }}</td>
+              <td>{{ m.mentor_name }}</td>
+              <td>{{ m.department }}</td>
+              <td>{{ m.total_mentees }}</td>
+              <td class="text-success fw-semibold">{{ m.ready }}</td>
+              <td class="text-warning fw-semibold">{{ m.partial }}</td>
+              <td class="text-danger fw-semibold">{{ m.not_started }}</td>
+              <td style="min-width:150px;">
+                <div class="fw-bold mb-1">{{ m.avg_progress_percent }}%</div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar
+                    {% if m.avg_progress_percent < 40 %} bg-danger
+                    {% elif m.avg_progress_percent < 80 %} bg-warning
+                    {% else %} bg-success {% endif %}"
+                    role="progressbar"
+                    style="width: {{ m.avg_progress_percent }}%;">
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No mentors found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-mentee list -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white">
+      Mentees & their Progress
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table id="menteesTable" class="table table-hover mb-0 text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Sr. No.</th>
+              <th>Moodle Id</th>
+              <th>Name</th>
+              <th>Semester</th>
+              <th>Contact</th>
+              <th>Mentor</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in mentees_list %}
+            <tr
+              data-readiness="{{ s.readiness }}"
+              data-name="{{ s.student_name|lower }}"
+              data-moodle="{{ s.moodle_id|lower }}"
+            >
+              <td>{{ forloop.counter }}</td>
+              <td>{{ s.moodle_id }}</td>
+              <td>{{ s.student_name }}</td>
+              <td>{{ s.semester }}</td>
+              <td>{{ s.contact }}</td>
+              <td>{{ s.mentor_name }}</td>
+              <td style="min-width:160px;">
+                <div class="fw-bold mb-1">{{ s.progress }}</div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar
+                    {% if s.progress_percent < 40 %} bg-danger
+                    {% elif s.progress_percent < 80 %} bg-warning
+                    {% else %} bg-success {% endif %}"
+                    role="progressbar"
+                    style="width: {{ s.progress_percent }}%;">
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">No mentees data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .stat-card {
+    border-radius: 0.75rem;
+  }
+  .stat-card .fs-3 {
+    letter-spacing: 0.02em;
+  }
+  @media (max-width: 576px) {
+    h2 { font-size: 1.4rem; }
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const filterButtons = document.querySelectorAll("[data-filter]");
+  const rows = document.querySelectorAll("#menteesTable tbody tr");
+  const searchInput = document.getElementById("menteeSearch");
+
+  let activeFilter = "all";
+
+  function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+
+    rows.forEach(row => {
+      const readiness = row.getAttribute("data-readiness");
+      const name = row.getAttribute("data-name") || "";
+      const moodle = row.getAttribute("data-moodle") || "";
+
+      let visible = true;
+
+      // filter by readiness
+      if (activeFilter !== "all" && readiness !== activeFilter) {
+        visible = false;
+      }
+
+      // filter by search text
+      if (visible && query) {
+        if (!name.includes(query) && !moodle.includes(query)) {
+          visible = false;
+        }
+      }
+
+      row.style.display = visible ? "" : "none";
+    });
+  }
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      activeFilter = this.getAttribute("data-filter");
+      applyFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener("input", applyFilters);
+  }
+});
+
+//Mentor table filter
+document.addEventListener("DOMContentLoaded", function () {
+
+  const mentorRows = document.querySelectorAll("#mentorTableBody tr");
+  const mentorSearch = document.getElementById("mentorSearch");
+  const mentorButtons = document.querySelectorAll("[data-mentor-filter]");
+
+  let activeMentorFilter = "all";
+
+  function applyMentorFilters() {
+    const query = mentorSearch.value.toLowerCase().trim();
+
+    mentorRows.forEach(row => {
+      const readiness = row.getAttribute("data-readiness");
+      const name = row.getAttribute("data-name") || "";
+      const department = row.getAttribute("data-department") || "";
+
+      let visible = true;
+
+      // readiness filter
+      if (activeMentorFilter !== "all" && readiness !== activeMentorFilter) {
+        visible = false;
+      }
+
+      // search filter
+      if (visible && query) {
+        if (!name.includes(query) && !department.includes(query)) {
+          visible = false;
+        }
+      }
+
+      row.style.display = visible ? "" : "none";
+    });
+  }
+
+  mentorButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      mentorButtons.forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      activeMentorFilter = this.getAttribute("data-mentor-filter");
+      applyMentorFilters();
+    });
+  });
+
+  if (mentorSearch) {
+    mentorSearch.addEventListener("input", applyMentorFilters);
+  }
+
+});
+</script>
+{% endblock %}

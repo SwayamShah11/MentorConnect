@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'mentee.apps.MenteeConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +42,6 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'widget_tweaks',
     'django.contrib.humanize',
-    'mentee.apps.MenteeConfig'
 ]
 
 MIDDLEWARE = [

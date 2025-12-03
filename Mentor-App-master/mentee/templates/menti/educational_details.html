@@ -64,9 +64,9 @@
             <!-- Add Form -->
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
-                    <button class="btn btn-danger mb-3" id="showFormBtn">
+                    <button class="btn btn-danger" id="showFormBtn">
                         Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
-                    </button>
+                    </button><hr>
                     <div class="card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
                             <h4 class="mb-0 fw-semibold">Add Educational Details</h4>
@@ -76,32 +76,45 @@
                                 <form method="post" enctype="multipart/form-data"
                                       action="{% url 'educational-details' %}">
                                         {% csrf_token %}
+                                        {% if form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {{ form.non_field_errors }}
+                                            </div>
+                                        {% endif %}
                                         <div class="row g-3">
                                             <small class="text-muted" style="color:#ff0000 !important;">
-                                                Note: '*' asterisk denotes that the fields are required.
+                                                Note: <ol><li>'*' asterisk denotes that the fields are required.</li>
+                                                    <li>For percentage, enter only number eg. 85.5 (Do not use '%' symbol).</li></ol>
                                             </small>
                                             <div class="col-md-6">
                                                 <label class="form-label">Examination <span style="color:#ff0000 !important;">*</span></label>
                                                     {{ form.examination }}
+                                                <div class="text-danger small">{{ form.examination.errors }}</div>
                                             </div>
 
                                             <div class="col-md-6">
-                                                <label class="form-label">Percentage</label>
+                                                <label class="form-label">Percentage <span style="color:#ff0000 !important;">*</span></label>
                                                 {{ form.percentage }}
+                                                <div class="text-danger small">{{ form.percentage.errors }}</div>
                                             </div>
 
                                             <div class="col-md-6">
-                                                <label class="form-label">University/Board</label>
+                                                <label class="form-label">University/Board <span style="color:#ff0000 !important;">*</span></label>
                                                 {{ form.university_board }}
+                                                <div class="text-danger small">{{ form.university_board.errors }}</div>
                                             </div>
 
                                             <div class="col-md-6">
-                                                <label class="form-label">Year of Passing</label>
+                                                <label class="form-label">Year of Passing <span style="color:#ff0000 !important;">*</span></label>
                                                 {{ form.year_of_passing }}
+                                                <div class="text-danger small">{{ form.year_of_passing.errors }}</div>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
                                             <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">Submit</button>
+                                            <a href="{% url 'educational-details' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
                                         </div>
                                     </form>
                                 </div>
