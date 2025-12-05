@@ -342,6 +342,21 @@ class ChatReplyForm(forms.ModelForm):
         self.fields['reply'].required = False
         self.fields['file'].required = False
 
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            allowed = [
+                "pdf", "doc", "docx", "xls", "xlsx",
+                "ppt", "pptx", "jpg", "jpeg", "png",
+                "gif", "mp4", "mov", "webm", "zip", "rar",
+                "csv", "txt"
+            ]
+            ext = file.name.split(".")[-1].lower()
+            if ext not in allowed:
+                raise forms.ValidationError("File type not supported.")
+        return file
+
+
 class SendForm(ModelForm):
 
     class Meta:

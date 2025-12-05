@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm
-from .models import User
+from django.contrib.auth import get_user_model
 
 
 @admin.register(InternshipPBL)
@@ -108,7 +108,7 @@ admin.site.register(Msg, MsgAdmin)
 
 admin.site.register(Conversation)
 
-
+User = get_user_model()
 class CustomUserCreationForm(UserCreationForm):
 
     class Meta:

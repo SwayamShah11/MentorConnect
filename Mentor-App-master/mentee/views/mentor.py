@@ -10,7 +10,7 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from html import escape
 from django.contrib import messages
-from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, MentorInteractionForm
+from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatReplyForm, MentorInteractionForm
 from django.views.generic import (View, TemplateView,
                                   ListView, DetailView,
                                   CreateView, UpdateView,
@@ -200,7 +200,7 @@ def remind_mentee(request, mentee_id):
         mentee=mentee,
         is_auto=False,
     )
-    messages.success(request, f"Reminder sent to {user.username} - {user.profile.student_name} for: {has_pending}!")
+    messages.success(request, f"Reminder sent to {user.username} - {user.profile.student_name}!")
     return redirect("account1")
 
 
@@ -1286,42 +1286,44 @@ class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMix
 
 @method_decorator(login_required, name='dispatch')
 class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """Mentor Conversation Detail + Chat/File Upload"""
     model = Conversation
     template_name = 'mentor/conversation1.html'
     context_object_name = 'conv'
 
     def test_func(self):
-        # Only mentors can view this
         return self.request.user.is_mentor
 
     def get_queryset(self):
-        # Show only mentor’s conversations
-        return self.model.objects.filter(sender=self.request.user)
+        from django.db.models import Q
+        return Conversation.objects.filter(
+            Q(sender=self.request.user) | Q(receipient=self.request.user)
+        )
 
     def get_context_data(self, **kwargs):
-        """Include ReplyForm and chat replies"""
         context = super().get_context_data(**kwargs)
-        context["form"] = ReplyForm()
+        context["form"] = ChatReplyForm()
         context["is_mentor_view"] = True
         return context
 
     def post(self, request, *args, **kwargs):
-        """Handle message or file submission"""
         self.object = self.get_object()
-        form = ReplyForm(request.POST, request.FILES)
+        form = ChatReplyForm(request.POST, request.FILES)
+
         if form.is_valid():
-            reply = form.save(commit=False)
+            reply = Reply()
+            reply.reply = request.POST.get("reply")
+            reply.file = request.FILES.get("file")
             reply.sender = request.user
             reply.conversation = self.object
             reply.replied_at = now()
             reply.save()
-            return redirect('mentor_conversation_detail', pk=self.object.pk)
 
-        # If invalid, re-render the page with errors
+            return redirect('conv-reply', pk=self.object.pk)
+
         context = self.get_context_data(object=self.object)
         context['form'] = form
         return self.render_to_response(context)
+
 
 
 @method_decorator(login_required, name='dispatch')

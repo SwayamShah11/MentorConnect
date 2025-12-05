@@ -10,6 +10,10 @@ urlpatterns = [
     path("admin-hod-dashboard/", hod.HODDashboardView.as_view(), name="hod_dashboard"),
     path("admin-hod-dashboard/export/excel/", hod.hod_export_excel, name="hod_export_excel"),
     path("admin-hod-dashboard/export/pdf/", hod.hod_export_pdf, name="hod_export_pdf"),
+    # add below existing upload-reply/conv routes
+    path('chat/<int:pk>/upload/', mentee.upload_reply, name='upload_reply'),
+    path('chat/reply/<int:pk>/edit/', mentee.edit_reply, name='edit_reply'),
+    path('chat/reply/<int:pk>/delete/', mentee.delete_reply, name='delete_reply'),
 
     #mentee url
     path('mentee-home/', mentee.mentee_home, name="mentee-home"),
@@ -71,6 +75,7 @@ urlpatterns = [
     path('conversation/', mentee.ConversationListView.as_view(), name='conv'),
     path('conv1/<int:pk>', mentee.ConversationDetailView.as_view(), name='conv1-reply'),
     path('conv2/<int:pk>', mentee.con, name='conv2-reply'),
+    path('upload-reply/<int:pk>/', mentee.upload_reply, name='upload_reply'),
     path('reply/<int:pk>', mentee.ReplyCreateView.as_view(), name='reply'),
     path('chat-delete1/<int:pk>', mentee.ConversationDeleteView.as_view(), name='chat-delete1'),
     path('search-results/', mentee.search, name="search-user"),

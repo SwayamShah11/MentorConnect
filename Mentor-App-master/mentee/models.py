@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from django.urls import reverse
 from django.utils.timezone import now
 import uuid
+from django.conf import settings
 
 
 class User(AbstractUser):
@@ -563,6 +564,8 @@ class Reply(models.Model):
     file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     replied_at = models.DateTimeField(blank=True, null=True)
     conversation = models.ForeignKey('Conversation', related_name='replies', on_delete=models.CASCADE)
+    edited = models.BooleanField(default=False)
+    edited_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         sender_name = self.sender.username if self.sender else "Unknown"
@@ -572,6 +575,38 @@ class Reply(models.Model):
         if (self.reply or self.file) and self.replied_at is None:
             self.replied_at = now()
         super().save(*args, **kwargs)
+
+    def get_file_url(self):
+        return self.file.url if self.file else None
+
+    def seen_count(self):
+        return self.seen_by.count()
+
+User = settings.AUTH_USER_MODEL
+
+class Reaction(models.Model):
+    reply = models.ForeignKey('Reply', related_name='reactions', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    emoji = models.CharField(max_length=20, null=True, blank=True)
+    reacted_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('reply', 'user')  # one reaction per user per message
+
+    def __str__(self):
+        return f"{self.user} → {self.emoji} on {self.reply_id}"
+
+
+class ReplySeen(models.Model):
+    reply = models.ForeignKey('Reply', related_name='seen_by', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    seen_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('reply', 'user')
+
+    def __str__(self):
+        return f"{self.user} saw reply {self.reply_id} at {self.seen_at}"
 
 
 class Conversation(models.Model):

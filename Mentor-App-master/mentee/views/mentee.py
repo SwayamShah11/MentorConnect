@@ -29,7 +29,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db.models import Count, Q
 from ..render import Render
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse, HttpResponseForbidden
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import zipfile
 from collections import defaultdict
@@ -1502,22 +1506,146 @@ def con(request, pk):
 
     if request.method == 'POST':
         form = ChatReplyForm(request.POST, request.FILES)
-        print("FILES:", request.FILES)
-        print("CLEANED DATA:", form.cleaned_data if form.is_valid() else form.errors)
 
         if form.is_valid():
+
+            # prevent empty message
+            if not form.cleaned_data.get("reply") and not form.cleaned_data.get("file"):
+                messages.error(request, "Cannot send an empty message")
+                return redirect("con", pk=pk)
+
             reply_obj = form.save(commit=False)
             reply_obj.sender = request.user
             reply_obj.conversation = conv
             reply_obj.save()
-            print("Saved reply with file:", reply_obj.file)
+            print("DEBUG FILES:", request.FILES)
+
             return redirect('conv2-reply', pk=conv.pk)
+    else:
+        form = ChatReplyForm()
 
     return render(request, 'menti/conversation1.html', {
         'conv': conv,
-        'is_mentor_view': False,
         'form': form,
+        'is_mentor_view': False,
     })
+
+
+@require_POST
+@login_required
+def upload_reply(request, pk):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    conv = get_object_or_404(Conversation, pk=pk)
+
+    text = request.POST.get("reply", "")
+    uploaded_file = request.FILES.get("file")
+
+    reply = Reply.objects.create(
+        conversation=conv,
+        sender=request.user,
+        reply=text or "",
+        file=uploaded_file if uploaded_file else None,
+        replied_at=timezone.now()
+    )
+
+    # Prepare broadcast payload
+    payload = {
+        "id": reply.id,
+        "sender_id": reply.sender.id,
+        "text": reply.reply,
+        "file_url": reply.file.url if reply.file else None,
+        "replied_at": reply.replied_at.isoformat(),
+        "seen_count": reply.seen_by.count(),
+    }
+
+    # Broadcast to WebSocket group
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"conversation_{pk}",
+        {
+            "type": "new_message",
+            "message": payload
+        }
+    )
+
+    # Return HTTP response (so AJAX doesn't show alert)
+    return JsonResponse({
+        "status": "ok",
+        "reply_id": reply.id,
+        "text": reply.reply,
+        "file_url": reply.file.url if reply.file else None
+    })
+
+
+
+@login_required
+def edit_reply(request, pk):
+    """
+    Edit an existing reply; only sender may edit.
+    Broadcasts edited_message.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POST only"}, status=405)
+
+    r = get_object_or_404(Reply, pk=pk)
+    if r.sender != request.user:
+        return HttpResponseForbidden("Not allowed")
+
+    new_text = request.POST.get("reply", "")
+    r.reply = new_text
+    r.replied_at = timezone.now()
+    r.save()
+
+    payload = {
+        "id": r.id,
+        "sender_id": r.sender.id,
+        "sender_username": getattr(r.sender, "username", ""),
+        "text": r.reply,
+        "file_url": r.file.url if getattr(r, "file", None) else None,
+        "replied_at": r.replied_at.isoformat() if r.replied_at else None,
+    }
+
+    # broadcast edited_message
+    channel_layer = get_channel_layer()
+    group_name = f"conversation_{r.conversation.pk}"
+    async_to_sync(channel_layer.group_send)(group_name, {
+        "type": "edited_message",
+        "message": payload
+    })
+
+    return JsonResponse({"status": "ok", "text": payload["text"], "replied_at": payload["replied_at"]})
+
+
+@login_required
+def delete_reply(request, pk):
+    """
+    Delete an existing reply; only sender or conversation owner may delete.
+    Broadcasts deleted_message.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POST only"}, status=405)
+
+    r = get_object_or_404(Reply, pk=pk)
+    # permission check: allow sender or conversation owner (adjust if needed)
+    if r.sender != request.user:
+        return HttpResponseForbidden("Not allowed")
+
+    payload = {"id": r.id}
+    conv_pk = r.conversation.pk
+    # soft-delete or delete; here we delete
+    r.delete()
+
+    # broadcast deleted_message
+    channel_layer = get_channel_layer()
+    group_name = f"conversation_{conv_pk}"
+    async_to_sync(channel_layer.group_send)(group_name, {
+        "type": "deleted_message",
+        "message": payload
+    })
+
+    return JsonResponse({"status": "ok"})
 
 
 class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
