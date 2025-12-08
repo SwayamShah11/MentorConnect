@@ -1,15 +1,13 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
-from django.contrib.auth.models import AbstractUser, BaseUserManager
 from PIL import Image
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import datetime, timedelta
-from django.urls import reverse
 from django.utils.timezone import now
 import uuid
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
@@ -582,11 +580,10 @@ class Reply(models.Model):
     def seen_count(self):
         return self.seen_by.count()
 
-User = settings.AUTH_USER_MODEL
 
 class Reaction(models.Model):
     reply = models.ForeignKey('Reply', related_name='reactions', on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     emoji = models.CharField(max_length=20, null=True, blank=True)
     reacted_at = models.DateTimeField(auto_now=True)
 
@@ -599,7 +596,7 @@ class Reaction(models.Model):
 
 class ReplySeen(models.Model):
     reply = models.ForeignKey('Reply', related_name='seen_by', on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     seen_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -788,3 +785,21 @@ class ReminderLog(models.Model):
     def __str__(self):
         return f"Reminder: {self.mentor.user.username} → {self.mentee.user.username} on {self.last_sent_at}"
 
+class ActivityLog(models.Model):
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    action = models.CharField(max_length=500, blank=True, null=True)
+    module = models.CharField(max_length=100, blank=True, null=True)  # e.g. "Internship", "Projects"
+    details = models.TextField(blank=True, null=True)
+    ip_address = models.CharField(null=True, blank=True)
+    browser = models.CharField(max_length=255, blank=True, null=True)
+    request_path = models.CharField(max_length=500, blank=True, null=True)
+    old_data = models.JSONField(null=True, blank=True)
+    new_data = models.JSONField(null=True, blank=True)
+    changes = models.JSONField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.user} - {self.action} @ {self.timestamp.strftime('%d-%m-%Y %H:%M')}"

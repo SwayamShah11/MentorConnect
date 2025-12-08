@@ -1,4 +1,3 @@
-# mentee/apps.py
 from django.apps import AppConfig
 
 class MenteeConfig(AppConfig):
@@ -6,4 +5,4 @@ class MenteeConfig(AppConfig):
     name = 'mentee'
 
     def ready(self):
-        import mentee.signals   # 👈 make sure signals are loaded
+        import mentee.signals

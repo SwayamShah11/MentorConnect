@@ -3,8 +3,8 @@
 {% block title %}Download Student Data{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2 class="fw-bold text-center mb-4">Download Student's Data</h2>
-
+    <h2 class="fw-bold text-center mb-3">Download Student's Data</h2>
+    <p class="text-center mb-3"><small>Select <b>Category, Academic Year and Department</b> to retrieve student data.</small></p>
     <form method="POST" class="shadow p-4 rounded bg-white">
         {% csrf_token %}
         <div class="row g-3">

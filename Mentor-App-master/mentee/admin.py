@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
                      OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, SemesterResult,
-                     MentorMenteeInteraction)
+                     MentorMenteeInteraction, ActivityLog)
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -190,3 +190,10 @@ class MentorMenteeInteractionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("mentees")
+
+
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ("user", "action", "module", "timestamp", "ip_address")
+    list_filter = ("action", "module", "timestamp")
+    search_fields = ("user__username", "action", "details")

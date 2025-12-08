@@ -175,7 +175,6 @@ def remind_mentee(request, mentee_id):
     Notification.objects.create(
         user=user,
         message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile.\n"
-        f"Pending documents: {has_pending}"
     )
 
     # ✅ 2. Send Email
@@ -184,11 +183,11 @@ def remind_mentee(request, mentee_id):
             subject="Reminder to Upload Your Documents and Complete the Profile",
             message=(
                 f"Dear {user.profile.student_name}({user.username}),\n\n"
-                f"Your mentor {mentor.name} has reminded you to upload your pending documents.\n"
-                f"You need to complete the following pending items:\n"
-                f"- {has_pending}\n\n"
+                f"Your mentor {mentor.name} has reminded you to upload your pending documents and complete your profile.\n"
+                f"You need to complete the pending uploads before the next mentoring session.\n"
                 f"Please log in to MentorConnect and upload them as soon as possible.\n\n"
-                f"Regards,\nMentorConnect Team"
+                f"Regards,\nMentorConnect Team\n\n\n"
+                f"*This is a system generated Email. Please do not reply to this Email.*\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
@@ -848,9 +847,34 @@ def download_student_data(request):
     # -------------------------
     # Build PDF bytes (ReportLab)
     # -------------------------
+    def add_footer(canvas, doc):
+        canvas.setFont("Helvetica", 9)
+
+        # --- Page number ---
+        page_num_text = f"Page {canvas.getPageNumber()}"
+
+        # --- Mentor name ---
+        mentor_name = (
+                doc._request.user.mentor.name
+                or doc._request.user.get_full_name()
+                or doc._request.user.username
+        )
+        mentor_text = f"Mentor: {mentor_name}"
+
+        # --- Bottom Y position ---
+        y = 1 * cm
+
+        # Page number (center)
+        canvas.drawCentredString(A4[0] / 2.0, y, page_num_text)
+
+        # Left text (mentor)
+        canvas.drawString(1.5 * cm, y, mentor_text)
+
     def build_pdf_bytes():
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.5 * cm, rightMargin=1.5 * cm)
+        # inject request for footer
+        doc._request = request
         story = []
         styles = getSampleStyleSheet()
         heading_style = styles["Heading1"]
@@ -868,7 +892,7 @@ def download_student_data(request):
         header_cells = []
         if img:
             header_cells.append(img)
-        header_cells.append(Paragraph("<b>APSIT - Student Report</b>", heading_style))
+        header_cells.append(Paragraph("<b>APSIT - Student Data</b>", heading_style))
         header_table = RLTable([[header_cells[0] if img else "", header_cells[-1]]], colWidths=[2.4 * cm, 14 * cm])
         story.append(header_table)
         story.append(Spacer(1, 8))
@@ -918,7 +942,7 @@ def download_student_data(request):
             story.append(tbl)
             story.append(PageBreak())
 
-        doc.build(story)
+        doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
         buffer.seek(0)
         return buffer
 
@@ -998,6 +1022,7 @@ def download_student_data(request):
 def clear_export_flag(request):
     request.session.pop("export_done", None)
     return HttpResponse("OK")
+
 
 @method_decorator(login_required, name='dispatch')
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

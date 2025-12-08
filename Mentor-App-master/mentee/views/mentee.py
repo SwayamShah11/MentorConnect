@@ -45,6 +45,8 @@ import uuid
 from django.template.loader import render_to_string
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.forms.models import model_to_dict
+
 
 def home(request):
     """Home landing page"""
@@ -63,7 +65,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             return render(request, "menti/account.html", {"user_meeting_data": []})
 
             # Get the one assigned mentor
-        mapping = mentee.mentee_mappings.select_related("mentor__user").first()
+        mapping = mentee.assigned_mentor
         if not mapping:
             return render(request, "menti/account.html", {"user_meeting_data": []})
 
@@ -701,7 +703,6 @@ def delete_sports_cultural(request, pk):
 
     if event.certificate:
         event.certificate.delete(save=False)
-
     event.delete()
     messages.success(request, "Event deleted successfully.")
     return redirect("sports-and-cultural")
@@ -849,7 +850,6 @@ def delete_certification(request, pk):
         file_path = cert.certificate.path
         if os.path.exists(file_path):
             os.remove(file_path)
-
     cert.delete()
     messages.success(request, "Certification deleted successfully.")
     return redirect("certifications")
@@ -1579,7 +1579,6 @@ def upload_reply(request, pk):
     })
 
 
-
 @login_required
 def edit_reply(request, pk):
     """
@@ -1595,7 +1594,9 @@ def edit_reply(request, pk):
 
     new_text = request.POST.get("reply", "")
     r.reply = new_text
-    r.replied_at = timezone.now()
+    r.edited = True  # mark as edited
+    r.edited_at = timezone.now()  # store edit timestamp
+    r.replied_at = timezone.now()  # update shown timestamp
     r.save()
 
     payload = {
@@ -1605,17 +1606,23 @@ def edit_reply(request, pk):
         "text": r.reply,
         "file_url": r.file.url if getattr(r, "file", None) else None,
         "replied_at": r.replied_at.isoformat() if r.replied_at else None,
+        "edited": r.edited,
+        "edited_at": r.edited_at.isoformat(),
     }
 
     # broadcast edited_message
     channel_layer = get_channel_layer()
     group_name = f"conversation_{r.conversation.pk}"
-    async_to_sync(channel_layer.group_send)(group_name, {
-        "type": "edited_message",
-        "message": payload
-    })
 
-    return JsonResponse({"status": "ok", "text": payload["text"], "replied_at": payload["replied_at"]})
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "edited_message",
+            "message": payload
+        }
+    )
+
+    return JsonResponse({"status": "ok", "text": payload["text"], "replied_at": payload["replied_at"], "edited": True})
 
 
 @login_required

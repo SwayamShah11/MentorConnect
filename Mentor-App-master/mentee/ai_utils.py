@@ -107,3 +107,44 @@ def generate_ai_summary(text: str):
     final_summary = restore_urls(combined, url_map)
 
     return final_summary
+
+
+
+# def generate_ai_summary(text: str):
+#     """
+#     Generate an AI summary safely using lazy-loaded model.
+#     """
+#     if not text:
+#         return ""
+#
+#     raw = text.strip()
+#     if len(raw) < 50:
+#         return raw
+#
+#     # Load model lazily (THIS is the important fix)
+#     summarizer_model = get_summarizer()
+#
+#     # Protect URLs
+#     safe_text, url_map = protect_urls(raw)
+#
+#     # Chunking
+#     chunks = chunk_by_words(safe_text, max_chars=900)
+#
+#     summaries = []
+#
+#     for chunk in chunks:
+#         result = summarizer_model(
+#             chunk,
+#             max_length=200,
+#             min_length=60,
+#             do_sample=False,
+#         )
+#         summaries.append(result[0]["summary_text"].strip())
+#
+#     combined = " ".join(summaries)
+#
+#     # Restore URLs
+#     final_summary = restore_urls(combined, url_map)
+#
+#     return final_summary
+

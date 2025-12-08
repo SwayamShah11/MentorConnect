@@ -1,4 +1,4 @@
-from .views import mentee, mentor, hod
+from .views import mentee, mentor, hod, admin_logs
 from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
 from django.conf import settings
@@ -7,9 +7,14 @@ from django.conf.urls.static import static
 """Mentor and Mentee URLs"""
 urlpatterns = [
     path('', mentee.home, name="home"),
-    path("admin-hod-dashboard/", hod.HODDashboardView.as_view(), name="hod_dashboard"),
-    path("admin-hod-dashboard/export/excel/", hod.hod_export_excel, name="hod_export_excel"),
-    path("admin-hod-dashboard/export/pdf/", hod.hod_export_pdf, name="hod_export_pdf"),
+    path("admin/hod-dashboard/", hod.HODDashboardView.as_view(), name="hod_dashboard"),
+    path("admin/hod-dashboard/export/excel/", hod.hod_export_excel, name="hod_export_excel"),
+    path("admin/hod-dashboard/export/pdf/", hod.hod_export_pdf, name="hod_export_pdf"),
+    path("admin/activity-logs/", admin_logs.activity_logs_view, name="activity_logs_page"),
+    path("admin/api/activity-logs/", admin_logs.activity_logs_api, name="activity_logs_api"),
+    path("admin/activity-logs/export/csv/", admin_logs.export_logs_csv, name="activity_logs_export_csv"),
+    path("admin/activity-logs/export/excel/", admin_logs.export_logs_excel, name="activity_logs_export_excel"),
+    path("admin/activity-logs/export/pdf/", admin_logs.export_logs_pdf, name="logs_export_pdf"),
     # add below existing upload-reply/conv routes
     path('chat/<int:pk>/upload/', mentee.upload_reply, name='upload_reply'),
     path('chat/reply/<int:pk>/edit/', mentee.edit_reply, name='edit_reply'),

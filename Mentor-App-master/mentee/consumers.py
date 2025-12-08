@@ -103,7 +103,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def seen_event(self, event):
         await self.send_json({
-            "action": "seen",
+            "action": "seen_event",
             "reply_id": event["reply_id"],
             "user_id": event["user_id"]
         })

@@ -1,17 +1,7 @@
-from .models import (
-    Profile,
-    InternshipPBL,
-    Project,
-    CertificationCourse,
-    PaperPublication,
-    SportsCulturalEvent,
-    OtherEvent,
-    SemesterResult,
-    EducationalDetail,
-    StudentInterest,
-    StudentProfileOverview,
-    Notification,
-)
+from .models import (Profile, InternshipPBL, Project, CertificationCourse, PaperPublication, SportsCulturalEvent,
+    OtherEvent, SemesterResult, EducationalDetail, StudentInterest, StudentProfileOverview)
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 def compute_profile_completeness(user):
     """
@@ -117,3 +107,14 @@ def get_document_progress(user):
     has_pending = completed_count < total_required
 
     return completed_count, total_required, has_pending
+
+
+IST = ZoneInfo("Asia/Kolkata")
+
+def to_ist(dt):
+    """Convert UTC datetime → IST, return formatted string."""
+    if not dt:
+        return ""
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.utc)
+    return dt.astimezone(IST).strftime("%d-%m-%Y %H:%M:%S")
