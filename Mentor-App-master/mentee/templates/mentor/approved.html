@@ -18,7 +18,6 @@
           <th>Approved At</th>
           <th>Status</th>
           <th>Start Chat</th>
-          <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -42,7 +41,6 @@
         {% endif %}
 
         <td> <a class="btn btn-primary btn-sm" href="{% url 'start-chat1' pk=approved.sender.pk %}">Start Chat</a></td>
-    <td><a class="btn btn-info btn-sm" href="{% url 'pdf1' %}">Download Pdf</a></td>
     </tr>
 {% endfor %}
        </ol>

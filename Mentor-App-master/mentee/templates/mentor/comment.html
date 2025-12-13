@@ -1,18 +1,18 @@
 {% extends "mentor/base1.html" %}
-
 {% load crispy_forms_tags %}
-
+{% load static %}
 {% block content %}
 <br><br><br>
-
-
+<div class="container">
+    <p><b>Request Content</b></p>
+    <p>From: {{ messo.sender }} - {{ messo.sender.profile.student_name }}</p>
+    <p>Message:  {{ messo.msg_content }}</p>
+</div><hr>
 	<h1>Review the Request </h1>
 	<form method="post">
 		{% csrf_token %}
-
 		{{ form|crispy }}
-
-
 		<button type="submit" class="btn btn-primary btn-sm">Submit comment</button>
 	</form>
+<br>
 {% endblock %}

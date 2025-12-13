@@ -116,9 +116,17 @@
 
 <div class="chat-wrapper">
   <div class="chat-header">
-    <img src="{{ conv.sender.profile.image.url }}" width="40" height="40" style="border-radius:50%;">
+    {% if conv.sender.mentor.image  %}
+      <img src="{{ conv.sender.mentor.image.url }}" width="50" height="50" style="border-radius:50%;">
+    {% else %}
+      <img src="/media/default.png" width="40" height="40" style="border-radius:50%;">
+    {% endif %}
     <div>
+      {% if conv.sender.mentor.name %}
+      <div><strong>{{ conv.sender.mentor.name }}</strong></div>
+      {% else %}
       <div><strong>{{ conv.sender.username }}</strong></div>
+      {% endif %}
       <div class="status" id="presence-status">offline</div>
     </div>
   </div>

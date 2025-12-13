@@ -1138,7 +1138,7 @@ def reply_message(request, pk):
     if not request.user.is_mentor:
         return redirect('home')
 
-    reply = get_object_or_404(Msg, pk=pk)
+    reply = get_object_or_404(Msg, pk=pk, receipient=request.user)
 
     if request.method == 'POST':
 
@@ -1156,6 +1156,7 @@ def reply_message(request, pk):
         form = ReplyForm
 
     context = {
+        'messo': reply,
         'reply': reply,
         'form': form,
     }
@@ -1191,23 +1192,6 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return self.model.filter(receipient=self.request.user)
-
-@method_decorator(login_required, name='dispatch')
-class Pdf(View):
-    """Pdf of Approved Requests"""
-
-    def test_func(self):
-        return self.request.user.is_mentor
-
-    def get(self, request):
-        messo2 = Msg.objects.filter(is_approved=True).order_by('-date_approved').filter(receipient=self.request.user)
-
-        params = {
-            'messo2': messo2,
-
-            'request': request
-        }
-        return Render.render('mentor/pdf.html', params)
 
 
 @method_decorator(login_required, name='dispatch')

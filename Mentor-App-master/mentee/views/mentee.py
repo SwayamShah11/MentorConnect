@@ -1386,20 +1386,6 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
-class Pdf(View):
-    """Pdf of Approved Requests"""
-
-    def get(self, request):
-        messo1 = Msg.objects.filter(is_approved=True).order_by('-date_approved').filter(sender=self.request.user)
-
-        params = {
-            'messo1': messo1,
-
-            'request': request
-        }
-        return Render.render('menti/pdf.html', params)
-
-
 class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
     """create new message for a specific user from the profile"""
 
@@ -1418,7 +1404,7 @@ class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageM
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('list')
+        return reverse('conv')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

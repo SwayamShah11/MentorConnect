@@ -8,6 +8,7 @@ from django.utils.timezone import now
 import uuid
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from datetime import date
 
 
 class User(AbstractUser):
@@ -142,6 +143,15 @@ class Profile(models.Model):
             output_size = (300, 300)
             img.thumbnail(output_size)
             img.save(self.image.path)
+
+    @property
+    def age(self):
+        if not self.dob:
+            return None
+        today = date.today()
+        return today.year - self.dob.year - (
+                (today.month, today.day) < (self.dob.month, self.dob.day)
+        )
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
