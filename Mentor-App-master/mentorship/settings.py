@@ -96,6 +96,10 @@ DATABASES = {
     }
 }
 
+CRONJOBS = [
+    ('0 3 * * *', 'mentee.cron.cleanup_old_logs'),  # runs daily at 3 AM
+]
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators

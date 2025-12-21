@@ -2005,7 +2005,7 @@ def export_resume_pdf(request):
     html = template.render(context)
 
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="resume_{user.username}.pdf"'
+    response["Content-Disposition"] = f'attachment; filename="{user.username}_{user.profile.student_name}_resume.pdf"'
 
     def link_callback(uri, rel):
         """
