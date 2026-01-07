@@ -109,7 +109,7 @@ class HODDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         # Admin (HOD) only
-        return self.request.user.is_superuser
+        return self.request.user.is_staff
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

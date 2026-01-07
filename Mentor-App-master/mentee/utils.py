@@ -23,7 +23,7 @@ def compute_profile_completeness(user):
     # Basic fields
     items.append({"label": "Name", "done": profile and filled(profile.student_name)})
     items.append({"label": "Branch/Year/Semester", "done": profile and filled(profile.branch) and filled(profile.year) and filled(profile.semester)})
-    items.append({"label": "Contact & Email", "done": profile and filled(profile.contact_number) and filled(profile.email)})
+    items.append({"label": "Contact & Email", "done": profile and filled(profile.contact_number) and filled(user.email)})
     items.append({"label": "Career Domain", "done": profile and filled(profile.career_domain)})
     items.append({"label": "About Me", "done": profile and filled(profile.about_me)})
 

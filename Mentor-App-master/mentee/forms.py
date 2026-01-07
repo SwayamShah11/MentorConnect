@@ -72,7 +72,7 @@ class ProfileUpdateForm(forms.ModelForm):
     # override email field with regex validation
     email = forms.EmailField(   # 👈 changed from email_id → email
         validators=[email_validator],
-        widget=forms.EmailInput(attrs={'placeholder': 'example@email.com', 'readonly':'readonly'})
+        widget=forms.EmailInput(attrs={'placeholder': 'example@email.com'})
     )
 
     class Meta:
@@ -80,7 +80,7 @@ class ProfileUpdateForm(forms.ModelForm):
         fields = [
             'moodle_id',   # 👈 added so it shows up
             'image', 'student_name', 'semester', 'year', 'branch',
-            'address', 'contact_number', 'email', 'dob', 'hobby', 'about_me',
+            'address', 'contact_number', 'dob', 'hobby', 'about_me',
             'mother_name', 'mother_occupation', 'mother_contact',
             'father_name', 'father_occupation', 'father_contact',
             'sibling1_name', 'sibling2_name', 'career_domain'

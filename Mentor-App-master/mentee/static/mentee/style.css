@@ -197,9 +197,39 @@ a.article-title:hover {
           left: 0;
         }
 
+        /* Mobile view */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar img {
+                width: 60px !important;
+                height: 60px !important;
+            }
+
+            .sidebar h5 {
+                font-size: 16px;
+            }
+
+            .sidebar small {
+                font-size: 13px;
+            }
+        }
+
         /* Content area */
         .content {
-            margin-left: 0;           /* Same as sidebar width */
+            margin-left: 0;
             margin-top: 56px;             /* Push below navbar */
             padding: 1rem;
             transition: margin-left 0.3s ease-in-out;

@@ -75,8 +75,8 @@
               <strong>Career Domain:</strong> {{ profile.career_domain|default:"Not specified" }}
             </p>
             <p class="mb-0">
-              <i class="bi bi-envelope"></i> {{ profile.email }} &nbsp; | &nbsp;
-              <i class="bi bi-telephone"></i> {{ profile.contact_number }}
+              <i class="bi bi-envelope"></i> {{ user.email|default:"—"  }} &nbsp; | &nbsp;
+              <i class="bi bi-telephone"></i> {{ profile.contact_number|default:"—"  }}
             </p>
           </div>
         </div>
@@ -159,7 +159,7 @@
             <div class="card-body">
               {% for i in internships %}
                 <p class="mb-1">
-                  <strong>{{ i.title }}</strong> at {{ i.company_name }} ({{ i.no_of_days }} days)
+                    <strong>{{ i.title }}</strong> at {{ i.company_name }} from <strong>{{i.start_date}}</strong> to <strong>{{i.end_date}}</strong> (<i>{{ i.no_of_days }} days</i>)
                 </p>
               {% empty %}
                 <p class="mb-0 text-muted">No internships added yet.</p>
@@ -185,7 +185,7 @@
             <div class="card-body">
               {% for c in certifications %}
                 <p class="mb-1">
-                  <strong>{{ c.title }}</strong> - {{ c.certifying_authority }}
+                  <strong>{{ c.title }}</strong> - {{ c.certifying_authority }} from <strong>{{c.start_date}}</strong> to <strong>{{c.end_date}}</strong> (<i>{{ c.no_of_days }} days</i>)
                 </p>
               {% empty %}
                 <p class="mb-0 text-muted">No certifications added yet.</p>
@@ -198,7 +198,7 @@
             <div class="card-body">
               {% for pub in publications %}
                 <p class="mb-1">
-                  <strong>{{ pub.title }}</strong> ({{ pub.type }} - {{ pub.level }})
+                    <strong>{{ pub.title }}</strong> ({{ pub.type }} - {{ pub.level }} Level) <strong class="mx-2"><i>Authors: {{pub.authors}}</i></strong>
                 </p>
               {% empty %}
                 <p class="mb-0 text-muted">No publications added yet.</p>
@@ -209,19 +209,21 @@
           <div class="card mb-4">
             <div class="card-header"><h5 class="mb-0">Achievements</h5></div>
             <div class="card-body">
-              {% for s in sports %}
-                <p class="mb-1">
-                  Sports/Cultural: <strong>{{ s.name_of_event }}</strong> - {{ s.prize_won }}
-                </p>
-              {% endfor %}
-              {% for o in other_events %}
-                <p class="mb-1">
-                  Other: <strong>{{ o.name_of_event }}</strong> - {{ o.prize_won }}
-                </p>
-              {% endfor %}
-              {% if not sports and not other_events %}
-                <p class="mb-0 text-muted">No achievements added yet.</p>
-              {% endif %}
+                <p class="mb-1">Sports/Cultural:</p>
+                  {% for s in sports %}
+                      <ul>
+                        <li><strong>{{ s.name_of_event }}</strong> - {{ s.prize_won }} (Level - {{s.level}})</li>
+                      </ul>
+                  {% endfor %}
+                    <p class="mb-1">Other:</p>
+                  {% for o in other_events %}
+                    <ul class="mb-1">
+                        <li><strong>{{ o.name_of_event }}</strong> - {{ o.prize_won }} (Level - {{o.level}})</li>
+                    </ul>
+                  {% endfor %}
+                  {% if not sports and not other_events %}
+                    <p class="mb-0 text-muted">No achievements added yet.</p>
+                  {% endif %}
             </div>
           </div>
 

@@ -12,8 +12,12 @@ from datetime import date
 
 
 class User(AbstractUser):
+    username = models.CharField(max_length=150, unique=True)
     is_mentee = models.BooleanField(default=False)
     is_mentor = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.username or f"User {self.pk}"
 
 
 class Mentee(models.Model):
@@ -112,7 +116,6 @@ class Profile(models.Model):
 
     address = models.TextField(blank=True, null=True)
     contact_number = models.CharField(max_length=15, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     hobby = models.TextField(blank=True, null=True)
     about_me = models.TextField(blank=True, null=True)
@@ -156,7 +159,7 @@ class Profile(models.Model):
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance, moodle_id=instance.username, email=instance.email)  # 👈 auto set moodle_id
+        Profile.objects.create(user=instance, moodle_id=instance.username, email=instance.email)
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):

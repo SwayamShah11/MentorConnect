@@ -39,11 +39,11 @@
           <div class="collapse navbar-collapse" id="navbarToggle">
             <div class="navbar-nav mr-auto">
                 <div class="navbar-nav mx-5">
-                    {% if user.is_authenticated and request.user.is_superuser %}
+                    {% if user.is_authenticated and request.user.is_staff %}
                           <a class="nav-link" href="{% url 'admin:index' %}">
                             <i class="bi bi-house-fill"></i> Home
                           </a>
-                        {% endif %}
+                    {% endif %}
                     {% if user.is_authenticated and request.user.is_mentor %}
                     <a class="nav-item nav-link" href="{% url 'account1' %}">Home</a>
                     <a class="nav-item nav-link" href="{% url 'profile1' %}">Profile</a>

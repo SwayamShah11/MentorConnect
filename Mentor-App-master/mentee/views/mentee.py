@@ -62,12 +62,12 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         try:
             mentee = request.user.mentee
         except Mentee.DoesNotExist:
-            return render(request, "menti/account.html", {"user_meeting_data": []})
+            return render(request, "menti/account.html", {"user_meeting_data": [], "is_mentor_view": False})
 
             # Get the one assigned mentor
         mapping = mentee.assigned_mentor
         if not mapping:
-            return render(request, "menti/account.html", {"user_meeting_data": []})
+            return render(request, "menti/account.html", {"user_meeting_data": [], "is_mentor_view": False})
 
         mentor = mapping.mentor
         now = timezone.localtime(timezone.now())
@@ -259,7 +259,7 @@ def user_login(request):
         if user:
             if user.is_active:
                 login(request, user)
-                messages.success(request, f'Welcome to your Account')
+                messages.success(request, f'Welcome to your Account {user}')
                 return HttpResponseRedirect(reverse('mentee-home'))
 
             else:
@@ -267,7 +267,8 @@ def user_login(request):
         else:
             print("Someone tried to login and failed.")
             print("They used username: {} and password: {}".format(username, password))
-            return HttpResponse("Invalid login details given")
+            messages.warning(request, f'Invalid login details')
+            return redirect('login')
     else:
         return render(request, 'menti/login.html', {})
 
@@ -404,13 +405,20 @@ def mark_notification_read(request, notification_id):
 @login_required
 def profile(request):
     profile = request.user.profile
+    user = request.user
+
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()
+            profile = form.save(commit=False)
+            # 🔑 Update User.email explicitly
+            user.email = form.cleaned_data['email']
+            user.save()
+            profile.save()
             return redirect('profile')
     else:
-        form = ProfileUpdateForm(instance=profile)
+        form = ProfileUpdateForm(instance=profile, initial={'email': user.email})
+
 
     return render(request, 'menti/profile.html', {'form': form, "is_mentor_view": False,})
 
@@ -1989,6 +1997,7 @@ def export_resume_pdf(request):
     other_events = OtherEvent.objects.filter(user=user)
 
     context = {
+        "user": user,
         "profile": profile,
         "overview": overview,
         "semester_results": semester_results,
@@ -2005,7 +2014,7 @@ def export_resume_pdf(request):
     html = template.render(context)
 
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{user.username}_{user.profile.student_name}_resume.pdf"'
+    response["Content-Disposition"] = f'attachment; filename="{user.username}_{user.profile.student_name}_profile.pdf"'
 
     def link_callback(uri, rel):
         """

@@ -251,6 +251,12 @@
           <!-- Mentees list / attendance -->
           <div class="mb-3">
             <label class="form-label fw-semibold">Mentees Present</label>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="selectAllMentees">
+              <label class="form-check-label fw-semibold" for="selectAllMentees">
+                Select All Mentees
+              </label>
+            </div>
             <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
               {% for p in mentees %}
                 <div class="form-check">
@@ -616,6 +622,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Monthly attendance graph
+// Monthly attendance graph (multi-color bars)
 document.addEventListener("DOMContentLoaded", function () {
   const monthLabels = [
     {% for m in monthly_attendance %}
@@ -629,6 +636,19 @@ document.addEventListener("DOMContentLoaded", function () {
     {% endfor %}
   ];
 
+  // Generate different colors for each bar
+  const barColors = monthValues.map((_, i) => {
+    const colors = [
+      "rgba(13,110,253,0.8)",  // blue
+      "rgba(25,135,84,0.8)",   // green
+      "rgba(255,193,7,0.8)",   // yellow
+      "rgba(220,53,69,0.8)",   // red
+      "rgba(111,66,193,0.8)",  // purple
+      "rgba(23,162,184,0.8)"   // teal
+    ];
+    return colors[i % colors.length];
+  });
+
   const ctx2 = document.getElementById("monthlyChart").getContext("2d");
 
   new Chart(ctx2, {
@@ -638,7 +658,7 @@ document.addEventListener("DOMContentLoaded", function () {
       datasets: [{
         label: "Monthly Attendance %",
         data: monthValues,
-        backgroundColor: "rgba(25,135,84,0.8)",
+        backgroundColor: barColors,
         borderRadius: 6
       }]
     },
@@ -646,9 +666,37 @@ document.addEventListener("DOMContentLoaded", function () {
       responsive: true,
       scales: {
         y: { beginAtZero: true, max: 100 }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw + "%"
+          }
+        }
       }
     }
   });
 });
+
+
+// Attendance select-all button logic
+document.addEventListener("DOMContentLoaded", function () {
+  const selectAll = document.getElementById("selectAllMentees");
+  const mentees = document.querySelectorAll(".mentee-checkbox");
+
+  selectAll.addEventListener("change", function () {
+    mentees.forEach(cb => cb.checked = selectAll.checked);
+    if (window.restoreSemester) restoreSemester();
+  });
+
+  // Auto-update "Select All" if user manually unchecks any mentee
+  mentees.forEach(cb => {
+    cb.addEventListener("change", function () {
+      selectAll.checked = [...mentees].every(m => m.checked);
+      if (window.restoreSemester) restoreSemester();
+    });
+  });
+});
+
 </script>
 {% endblock %}

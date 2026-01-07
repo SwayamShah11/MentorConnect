@@ -18,9 +18,14 @@ from django.db.models.fields.files import FieldFile
 
 
 @receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance, moodleID=instance.username, email=instance.email)
+def create_profile(sender, instance, **kwargs):
+    Profile.objects.get_or_create(
+        user=instance,
+        defaults={
+            "moodle_id": instance.username,
+            "email": instance.email,
+        }
+    )
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):

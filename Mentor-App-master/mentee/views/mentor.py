@@ -265,13 +265,15 @@ def user_login(request):
         if user:
             if user.is_active:
                 login(request, user)
+                messages.success(request, f'Welcome to your Account {user}')
                 return HttpResponseRedirect(reverse('account1'))
             else:
                 return HttpResponse("Your account was inactive.")
         else:
             print("Someone tried to login and failed.")
             print("They used username: {} and password: {}".format(username, password))
-            return HttpResponse("Invalid login details given")
+            messages.warning(request, f'Invalid login details')
+            return redirect("login1")
     else:
         return render(request, 'mentor/login1.html', {})
 
@@ -1242,30 +1244,6 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return self.model.objects.filter(sender=self.request.user)
-
-
-"""List all chat conversation by a user"""
-# class ConverationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-
-# fields = ('reply',)
-# model = Conversation
-# template_name = 'mentor/conversation.html'
-# context_object_name = 'conversation'
-
-# def test_func(self):
-# return self.request.user.is_mentor
-
-# def form_valid(self, form):
-# form.instance.sender = self.request.user
-# form.instance.receipient = User.objects.get(pk=self.kwargs['pk'])
-# return super().form_valid(form)
-
-# def get_success_url(self):
-# return reverse('conv1')
-
-
-# def get_queryset(self):
-# return self.model.objects.filter(sender=self.request.user)
 
 
 @method_decorator(login_required, name='dispatch')
