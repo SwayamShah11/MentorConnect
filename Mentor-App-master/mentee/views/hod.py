@@ -20,7 +20,6 @@ def _build_hod_dashboard_data():
     Returns a dict with the same structure used by the template.
     """
     mentors_qs = Mentor.objects.all()
-
     mentor_stats = []
     mentees_list = []
 

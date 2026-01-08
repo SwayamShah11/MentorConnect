@@ -23,7 +23,6 @@ def create_profile(sender, instance, **kwargs):
         user=instance,
         defaults={
             "moodle_id": instance.username,
-            "email": instance.email,
         }
     )
 

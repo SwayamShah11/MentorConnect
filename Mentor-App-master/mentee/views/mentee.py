@@ -1,6 +1,7 @@
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.contrib import messages
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
@@ -17,7 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 User = get_user_model()
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect, HttpResponseForbidden
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 import traceback
 from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
@@ -52,7 +53,8 @@ def home(request):
     """Home landing page"""
     return render(request, 'home.html')
 
-
+# Mentor-Mentee interaction page logic
+@method_decorator(login_required, name="dispatch")
 class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         # Only mentees can access this view
@@ -278,6 +280,7 @@ def custom_logout(request):
     return redirect('login')
 
 
+#-----------------forget password logic starts---------------------
 def send_forget_password_email(email, token):
     try:
         subject = 'Reset Your Password'
@@ -384,13 +387,13 @@ def ChangePassword(request, token):
         print("Error in ChangePassword:", e)
         messages.error(request, "Something went wrong. Try again.")
         return redirect('forget_password')
+#-----------------forget password logic ends---------------------
 
 
 @login_required
 def mentee_home(request):
     profile = Profile.objects.get(user=request.user)
     notifications = Notification.objects.filter(user=request.user, is_read=False)
-
     return render(request, "menti/mentee_home.html", {"profile": profile, "notifications": notifications, "is_mentor_view": False,})
 
 
@@ -401,7 +404,7 @@ def mark_notification_read(request, notification_id):
     note.save()
     return redirect("mentee-home")
 
-
+# profile page logic
 @login_required
 def profile(request):
     profile = request.user.profile
@@ -423,6 +426,7 @@ def profile(request):
     return render(request, 'menti/profile.html', {'form': form, "is_mentor_view": False,})
 
 
+@method_decorator(login_required, name="dispatch")
 class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Creates new message"""
 
@@ -449,7 +453,7 @@ class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return context
 
-
+#--------------------Internship page logic starts------------------------
 @login_required
 def internship_pbl_list(request, pk=None):
     internships = InternshipPBL.objects.filter(user=request.user).order_by("-start_date")
@@ -564,6 +568,7 @@ def download_all_certificates(request):
     os.remove(zip_path)
     return response
 
+
 @login_required
 def delete_internship(request, pk):
     internship = get_object_or_404(InternshipPBL, pk=pk, user=request.user)
@@ -578,8 +583,9 @@ def delete_internship(request, pk):
     internship.delete()
     messages.success(request, "Record deleted successfully.")
     return redirect("internship-pbl-list")
+#--------------------------Internship logic ends---------------------------
 
-
+#-------------------------Projects page logic starts------------------------
 @login_required
 def projects_view(request):
     projects = Project.objects.filter(user=request.user).order_by("-uploaded_at")
@@ -625,8 +631,9 @@ def projects_view(request):
             "is_mentor_view": False,
         },
     )
+#---------------------Projects page logic ends----------------------------
 
-
+#---------------------Sports page logic starts----------------------------
 @login_required
 def sports_cultural_list(request):
     events = SportsCulturalEvent.objects.filter(user=request.user).order_by("-uploaded_at")
@@ -714,8 +721,9 @@ def delete_sports_cultural(request, pk):
     event.delete()
     messages.success(request, "Event deleted successfully.")
     return redirect("sports-and-cultural")
+#---------------------Sports page logic ends----------------------------
 
-
+#---------------------Other events page logic starts--------------------
 @login_required
 def other_event_list(request, pk=None):
     events = OtherEvent.objects.filter(user=request.user).order_by("-uploaded_at")
@@ -788,8 +796,9 @@ def delete_other_event(request, pk):
     event.delete()
     messages.success(request, "Event deleted successfully.")
     return redirect("other-events")
+#---------------------Other events page logic ends--------------------
 
-
+#------------------Certifications page logic starts-------------------
 @login_required
 def certification_list(request, pk=None):
     certifications = CertificationCourse.objects.filter(user=request.user).order_by("-uploaded_at")
@@ -861,8 +870,9 @@ def delete_certification(request, pk):
     cert.delete()
     messages.success(request, "Certification deleted successfully.")
     return redirect("certifications")
+#------------------Certifications page logic ends-------------------
 
-
+#------------------Publications page logic starts-------------------
 @login_required
 def publications_list(request, pk=None):
     publications = PaperPublication.objects.filter(user=request.user).order_by("-uploaded_at")
@@ -922,13 +932,15 @@ def download_all_publications(request):
     os.remove(zip_path)
     return response
 
+
 @login_required
 def delete_publication(request, pk):
     pub = get_object_or_404(PaperPublication, pk=pk, user=request.user)
     pub.delete()
     return redirect("publications")
+#------------------Publications page logic ends-------------------
 
-
+#------------------Self assessment page logic starts-------------------
 @login_required
 def self_assessment(request, pk=None):
     assessments = SelfAssessment.objects.filter(user=request.user).order_by("-created_at")
@@ -969,8 +981,9 @@ def delete_assessment(request, pk):
     assessment = get_object_or_404(SelfAssessment, pk=pk, user=request.user)
     assessment.delete()
     return redirect("self_assessment")
+#------------------Self assessment page logic ends-------------------
 
-
+#-----------------Long term goals and subject of interest page logic starts------------------
 @login_required
 def long_term_goals(request, edit_id=None):
     goals = LongTermGoal.objects.filter(user=request.user)
@@ -1022,8 +1035,9 @@ def delete_subject(request, pk):
     subject = get_object_or_404(SubjectOfInterest, pk=pk, user=request.user)
     subject.delete()
     return redirect("long_term_goals")
+#-----------------Long term goals and subject of interest page logic ends------------------
 
-
+#-----------------Educational details page logic starts------------------
 @login_required
 def educational_details(request):
     details = EducationalDetail.objects.filter(user=request.user)
@@ -1060,8 +1074,9 @@ def educational_details(request):
         "is_mentor_view": False,
     }
     return render(request, "menti/educational_details.html", context)
+#-----------------Educational details page logic ends------------------
 
-
+#-----------------Semester results page logic starts------------------
 @login_required
 def semester_results(request):
     semesters = SemesterResult.objects.filter(user=request.user)
@@ -1138,8 +1153,9 @@ def delete_semester(request, pk):
     semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
     semester.delete()
     return redirect("semester_results")
+#-----------------Semester results page logic ends------------------
 
-
+#-----------------Student's interest page logic starts------------------
 @login_required
 def student_interests(request):
     obj, created = StudentInterest.objects.get_or_create(student=request.user)
@@ -1161,8 +1177,9 @@ def student_interests(request):
         "saved_interests": saved_interests,
         "is_mentor_view": False,
     })
+#-----------------Student's interest page logic ends------------------
 
-
+#-----------------Uploaded documents page logic starts------------------
 @login_required
 def uploaded_documents(request):
     documents = []
@@ -1234,6 +1251,7 @@ def download_all_uploaded_documents_aggregated(request):
 
     os.remove(zip_path)
     return response
+#-----------------Uploaded documents page logic ends------------------
 
 
 @login_required
@@ -1241,6 +1259,9 @@ def credits_view(request):
     return render(request, 'menti/credits.html', {"is_mentor_view": False,})
 
 
+#--------------------Messages page logic starts------------------------
+#--------------------Inbox requests and chatting logic-----------------------
+@method_decorator(login_required, name="dispatch")
 class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """Views lists of messages you have sent to other users"""
 
@@ -1261,6 +1282,7 @@ class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class SentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """details the message sent"""
 
@@ -1275,6 +1297,7 @@ class SentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.model.objects.filter(sender=self.request.user)
 
 
+@method_decorator(login_required, name="dispatch")
 class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """Views lists of inbox messages received"""
 
@@ -1294,6 +1317,7 @@ class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Inbox Detailed view"""
 
@@ -1313,6 +1337,7 @@ class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """controls messege view"""
 
@@ -1343,6 +1368,7 @@ def messege_view(request):
     return render(request, 'menti/messages-module.html', {"is_mentor_view": False,})
 
 
+@method_decorator(login_required, name="dispatch")
 class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """Deletes Sent Messages"""
 
@@ -1359,23 +1385,12 @@ class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """view list of approved messages from mentors"""
 
     def test_func(self):
         return self.request.user.is_mentee
-
-    # def get(self, request):
-
-    # messo = Msg.objects.filter(is_approved=True).order_by('-date_approved')
-
-    # context = {
-
-    # 'messo': messo,
-
-    # }
-
-    # return render(request, "menti/approved.html", context)
 
     model = Msg.objects.filter(is_approved=True).order_by('-date_approved')
 
@@ -1393,10 +1408,9 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context['is_mentor_view'] = False
         return context
 
-
+@method_decorator(login_required, name="dispatch")
 class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
     """create new message for a specific user from the profile"""
-
     fields = ('msg_content',)
     model = Msg
     template_name = 'menti/sendindividual.html'
@@ -1420,9 +1434,9 @@ class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageM
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class ProfileDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """view details of a user in the profile"""
-
     model = User
     context_object_name = 'user'
     template_name = 'menti/profile_detail.html'
@@ -1436,9 +1450,9 @@ class ProfileDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """List all chat conversation by a user"""
-
     model = Conversation
     template_name = 'menti/list-converations.html'
     context_object_name = 'conversation'
@@ -1456,9 +1470,9 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """List Conversations"""
-
     model = Conversation
     template_name = 'menti/conversation1.html'
     context_object_name = 'conv'
@@ -1475,9 +1489,9 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class ConversationList1View(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """List Conversation"""
-
     model = Conversation
     template_name = 'menti/conversation2.html'
     context_object_name = 'conversation'
@@ -1649,9 +1663,9 @@ def delete_reply(request, pk):
     return JsonResponse({"status": "ok"})
 
 
+@method_decorator(login_required, name="dispatch")
 class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Replies by a user"""
-
     fields = ('reply',)
     model = Reply
     template_name = 'menti/conversation.html'
@@ -1677,6 +1691,7 @@ class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class ConversationDeleteView(DeleteView):
     """delete view Chat"""
     model = Reply
@@ -1720,9 +1735,9 @@ def search(request):
     return render(request, 'menti/search_results.html', context)
 
 
+@method_decorator(login_required, name="dispatch")
 class CreateIndividualMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
     """create new message for a specific user from search query"""
-
     fields = ('conversation',)
     model = Conversation
     template_name = 'menti/messagecreate2.html'
@@ -1741,9 +1756,9 @@ class CreateIndividualMessageView(LoginRequiredMixin, UserPassesTestMixin, Succe
         return reverse('list')
 
 
+@method_decorator(login_required, name="dispatch")
 class Profile2DetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """view details of a user search in the profile"""
-
     model = User
     context_object_name = 'user'
     template_name = 'menti/profile_detail1.html'
@@ -1757,9 +1772,9 @@ class Profile2DetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return context
 
 
+@method_decorator(login_required, name="dispatch")
 class Reply1CreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Replies by a user"""
-
     fields = ('reply',)
     model = Reply
     template_name = 'menti/conversation3.html'
@@ -1796,8 +1811,10 @@ def con1(request, pk):
     }
 
     return render(request, 'menti/conversation4.html', context)
+#--------------------Messages page logic ends----------------------
 
 
+#--------------------Meeting scheduling logic starts-----------------------
 @login_required
 def schedule_meeting_view(request, pk):
     user = get_object_or_404(User, pk=pk)
@@ -1874,8 +1891,9 @@ def meeting_room_view(request, room_name):
 def meetings_view(request):
     # your logic here
     return render(request, 'menti/meetings.html')
+#--------------------Meeting scheduling logic ends-----------------------
 
-
+#--------------------Mentee Query submission logic starts-----------------------
 @login_required
 def query_suggestion(request, pk):
     """
@@ -1923,8 +1941,9 @@ def mentee_queries(request):
     queries = Query.objects.filter(mentee=mentee).order_by('-created_at')
 
     return render(request, "menti/mentee_queries.html", {"queries": queries, 'is_mentor_view': False})
+#--------------------Mentee Query logic ends-----------------------
 
-
+#--------------------Profile Overview logic starts-----------------------
 @login_required
 def student_profile_overview(request):
     user = request.user
@@ -1983,7 +2002,6 @@ def student_profile_overview(request):
 @login_required
 def export_resume_pdf(request):
     user = request.user
-
     profile = get_object_or_404(Profile, user=user)
     overview, _ = StudentProfileOverview.objects.get_or_create(user=user)
 
@@ -2012,7 +2030,6 @@ def export_resume_pdf(request):
 
     template = get_template("menti/resume_pdf.html")
     html = template.render(context)
-
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{user.username}_{user.profile.student_name}_profile.pdf"'
 
@@ -2044,8 +2061,6 @@ def export_resume_pdf(request):
         return HttpResponse("Error generating PDF", status=500)
 
     return response
-
-
 
 def public_portfolio_view(request, slug):
     overview = get_object_or_404(StudentProfileOverview, public_slug=slug, is_public=True)
@@ -2082,5 +2097,5 @@ def public_portfolio_view(request, slug):
         "is_public_view": True,
         "is_mentor_view": True,  # reuse display styling
     }
-
     return render(request, "menti/student_profile_public.html", context)
+#--------------------Profile Overview logic ends-----------------------

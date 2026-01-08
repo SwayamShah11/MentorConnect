@@ -156,15 +156,6 @@ class Profile(models.Model):
                 (today.month, today.day) < (self.dob.month, self.dob.day)
         )
 
-@receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance, moodle_id=instance.username, email=instance.email)
-
-@receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
-    instance.profile.save()
-
 
 class MentorMentee(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name="mentor_mappings")

@@ -11,10 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from html import escape
 from django.contrib import messages
 from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatReplyForm, MentorInteractionForm
-from django.views.generic import (View, TemplateView,
-                                  ListView, DetailView,
-                                  CreateView, UpdateView,
-                                  DeleteView)
+from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
@@ -46,7 +43,6 @@ from io import BytesIO
 from datetime import datetime
 from collections import Counter, defaultdict
 
-from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, FileResponse
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -59,19 +55,18 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 # ReportLab libs
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import (
-    SimpleDocTemplate, Table as RLTable, TableStyle as RLTableStyle,
-    Paragraph, Spacer, Image as RLImage, PageBreak
-)
+from reportlab.platypus import (SimpleDocTemplate, Table as RLTable, TableStyle as RLTableStyle, Paragraph, Spacer, Image as RLImage, PageBreak)
 from reportlab.lib import colors
 from reportlab.lib.units import cm
+
 SEMESTER = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']       #used in Mentor-Mentee interaction function
+
 
 def home(request):
     """Landing page """
-
     return render(request, 'home.html')
 
+#-----------------Mentor dashboard logic starts-------------------
 @method_decorator(login_required, name='dispatch')
 class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
     """For Mentor Account"""
@@ -201,6 +196,7 @@ def remind_mentee(request, mentee_id):
     )
     messages.success(request, f"Reminder sent to {user.username} - {user.profile.student_name}!")
     return redirect("account1")
+#-----------------Mentor dashboard logic ends-------------------
 
 
 def register1(request):
@@ -226,6 +222,7 @@ def register1(request):
     return render(request, 'mentor/register1.html', {'form1': form1})
 
 
+#---------------Profile page logic starts-----------------
 @login_required
 def profile1(request):
     """Update Mentor Profile"""
@@ -253,6 +250,7 @@ def profile1(request):
         form = MentorProfileForm(instance=mentor, user=request.user)
 
     return render(request, "mentor/profile1.html", {"form": form})
+#---------------Profile page logic ends-----------------
 
 
 def user_login(request):
@@ -338,6 +336,7 @@ def view_mentee(request, mentee_id):
         "is_mentor_view": True,   # 👈 flag to hide edit buttons
     }
     return render(request, "mentor/view_mentee_dashboard.html", context)
+
 
 @login_required
 def mentee_documents(request):
@@ -526,7 +525,7 @@ def download_all_documents(request):
     response["Content-Disposition"] = f'attachment; filename="{zip_filename}"'
     return response
 
-# Download student data in excel
+#-----------------Download student data logic starts--------------------
 # Mapping of all models and their fields
 CATEGORY_MAP = {
     "internship": (
@@ -572,7 +571,6 @@ CATEGORY_MAP = {
     ),
 }
 
-
 # Category mapping
 CATEGORY_MODELS = {
     "internship": InternshipPBL,
@@ -594,7 +592,6 @@ def download_student_data(request):
       - branch (ALL or branch code)
       - export (excel|pdf|zip)
     """
-
     # --- basic context & permission check ---
     mentor = get_object_or_404(Mentor, user=request.user)
     mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
@@ -1018,6 +1015,7 @@ def download_student_data(request):
 
     # fallback
     return render(request, "mentor/download_student_data.html", context)
+#-----------------Download student data logic ends--------------------
 
 
 @login_required
@@ -1026,6 +1024,8 @@ def clear_export_flag(request):
     return HttpResponse("OK")
 
 
+#--------------------Messages page logic starts----------------------
+#--------------------Inbox requests and chatting logic-----------------------
 @method_decorator(login_required, name='dispatch')
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """controls message view"""
@@ -1121,7 +1121,6 @@ class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 @method_decorator(login_required, name='dispatch')
 class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Inbox Detailed view"""
-
     model = Msg
     context_object_name = 'messo'
     template_name = 'mentor/inboxview1.html'
@@ -1171,18 +1170,6 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         return self.request.user.is_mentor
-
-    # def get(self, request):
-
-    # messo = Msg.objects.filter(is_approved=True).order_by('-date_approved')
-
-    # context = {
-
-    # 'messo': messo,
-
-    # }
-
-    # return render(request, "menti/approved.html", context)
 
     model = Msg.objects.filter(is_approved=True).order_by('-date_approved')
 
@@ -1398,7 +1385,9 @@ def mark_as_done(request, query_id):
     messages.success(request, f"Query from {query.mentee} has been resolved.")
     return redirect(reverse('mentor_queries'))
 
+#--------------------Messages page logic ends----------------------
 
+#-----------------forget password logic starts---------------------
 def send_forget_password_email(email, token):
     try:
         subject = 'Reset Your Password'
@@ -1462,6 +1451,7 @@ def ForgetPass(request):
         messages.error(request, 'Something went wrong. Please try again.')
 
     return render(request, 'mentor/forget-pass.html')
+
 def ChangePass(request, token):
     try:
         profile_obj = Profile.objects.filter(forget_password_token=token).first()
@@ -1499,8 +1489,9 @@ def ChangePass(request, token):
         print("Error in ChangePass:", e)
         messages.error(request, "Something went wrong. Try again.")
         return redirect('forget_pass')
+#-----------------forget password logic ends---------------------
 
-
+#----------------Mentor-Mentee interaction page logic starts-----------------
 COMMON_AGENDA_POINTS = [
     "Academic performance review",
     "75% Attendance compulsory",
@@ -1927,9 +1918,7 @@ def export_interactions(request, export_type):
     # ✅ FOOTER + PAGE NUMBER + LOGO
     def add_footer_and_page_number(canvas, doc):
         canvas.saveState()
-
         width, height = A4
-
         # ✅ WHITE BACKGROUND FOR LOGO
         canvas.setFillColor(colors.white)
         canvas.rect(30, height - 80, 90, 50, fill=1, stroke=0)
@@ -1981,8 +1970,9 @@ def export_interactions(request, export_type):
 
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename="Mentor_Mentee_interactions.pdf")
+#----------------Mentor-Mentee interaction page logic ends-----------------
 
-
+#-----------------Student data visualization logic starts------------------
 @login_required
 def student_visualization(request):
     internship_data = list(
@@ -2048,11 +2038,8 @@ def get_chart_data(request):
         .annotate(count=Count("id"))
         .order_by("user__profile__branch")
     )
-
     labels = [d["user__profile__branch"] or "Unknown" for d in data]
     counts = [d["count"] for d in data]
 
-    return JsonResponse({
-        "labels": labels,
-        "data": counts,
-    })
+    return JsonResponse({"labels": labels, "data": counts,})
+#-----------------Student data visualization logic ends------------------
