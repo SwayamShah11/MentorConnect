@@ -4,8 +4,9 @@
 {% load widget_tweaks %}
 {% block title %} Mentor {% endblock %}
 {% block content %}
+{% include "menti/mentee_sidebar.html" %}
 <div class="d-flex">
-  <div class="content flex-grow-1 p-4">
+  <div class="content shifted flex-grow-1 p-4">
     <div class="row">
       <div class="col-md-12">
         <div class="content-section">
@@ -31,10 +32,16 @@
                            style="width:100px; height:100px; object-fit: cover;">
                       {% endif %}
                     <div class="flex-grow-1">
-                      <h4 class="mb-1">{{ user.mentor.name }}</h4>
-                      <p class="text-muted mb-1 mx-2">Email: {{ user.email }}</p>
-                      <p class="text-muted mb-1 mx-2">Department: {{ user.mentor.department }}</p>
-                      <p class="text-muted mb-1 mx-2">Specialization: {{ user.mentor.expertise }}</p>
+                      {% if user.mentor %}
+                          <h4 class="mb-1">{{ user.mentor.name }}</h4>
+                          <p class="text-muted mb-1 mx-2">Email: {{ user.email }}</p>
+                          <p class="text-muted mb-1 mx-2">Department: {{ user.mentor.department }}</p>
+                          <p class="text-muted mb-1 mx-2">Specialization: {{ user.mentor.expertise }}</p>
+                        {% else %}
+                          <h5 class="text-warning">
+                            <i class="bi bi-exclamation-triangle"></i> Mentor not assigned yet
+                          </h5>
+                      {% endif %}
 
                       <div class="btn-group" role="group">
                         <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">
@@ -187,11 +194,11 @@
 
                     {% if overall_percent < 75 %}
                     <div class="alert alert-danger py-2 mb-2">
-                      ⚠ Low attendance! Minimum requirement is 75%. You need to attend mentoring sessions regularly.
+                      ⚠ Low attendance! Minimum requirement is 75%. You need to attend mentoring sessions regularly for improvement.
                     </div>
                     {% else %}
                     <div class="alert alert-success py-2 mb-2">
-                      ✅ Attendance is above minimum requirement. You regularly attend mentoring sessions. Keep it up.
+                      ✅ Attendance is above minimum requirement. You're regularly attending mentoring sessions. Keep it up.
                     </div>
                     {% endif %}
                   </div>
@@ -213,24 +220,11 @@
 
         </div>
 
-        <!-- AI Insight -->
+        <!-- Insight -->
         <hr>
         <div class="card shadow-sm mt-3 border-primary">
           <div class="card-body">
-            <h5 class="fw-bold text-primary">🤖 AI Performance Insight</h5>
-            <p class="mb-0 fw-semibold">
-              {{ ai_insight }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Attendance Prediction -->
-        <div class="card shadow-sm mt-3 border-info">
-          <div class="card-body text-center">
-            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>
-
-            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>
-
+            <h5 class="fw-bold text-primary">🤖 Performance Insight</h5>
             <div class="
               fw-semibold
               {% if risk_level == 'Excellent' %}text-success
@@ -239,20 +233,43 @@
               {% else %}text-danger
               {% endif %}
             ">
-              Predicted Status: {{ risk_level }}
+              Attendance Status: {{ risk_level }}
             </div>
-
-            {% if risk_level == "Critical" %}
-            <div class="alert alert-danger mt-3 py-2">
-              ⚠ High risk of falling below minimum attendance!
-            </div>
-            {% elif risk_level == "Warning" %}
-            <div class="alert alert-warning mt-3 py-2">
-              ⚠ Attendance may drop. Maintain consistency!
-            </div>
-            {% endif %}
+            <p class="mb-0 fw-semibold">
+              {{ ai_insight }}
+            </p>
           </div>
         </div>
+
+        <!-- Attendance Prediction -->
+<!--        <div class="card shadow-sm mt-3 border-info">-->
+<!--          <div class="card-body text-center">-->
+<!--            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>-->
+
+<!--            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>-->
+
+<!--            <div class="-->
+<!--              fw-semibold-->
+<!--              {% if risk_level == 'Excellent' %}text-success-->
+<!--              {% elif risk_level == 'Stable' %}text-primary-->
+<!--              {% elif risk_level == 'Warning' %}text-warning-->
+<!--              {% else %}text-danger-->
+<!--              {% endif %}-->
+<!--            ">-->
+<!--              Predicted Status: {{ risk_level }}-->
+<!--            </div>-->
+
+<!--            {% if risk_level == "Critical" %}-->
+<!--            <div class="alert alert-danger mt-3 py-2">-->
+<!--              ⚠ High risk of falling below minimum attendance!-->
+<!--            </div>-->
+<!--            {% elif risk_level == "Warning" %}-->
+<!--            <div class="alert alert-warning mt-3 py-2">-->
+<!--              ⚠ Attendance may drop. Maintain consistency!-->
+<!--            </div>-->
+<!--            {% endif %}-->
+<!--          </div>-->
+<!--        </div>-->
 
       </div>
     </div>

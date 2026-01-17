@@ -116,7 +116,7 @@ class ProfileUpdateForm(forms.ModelForm):
 class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
     class Meta:
         model = InternshipPBL
-        fields = ["title", "academic_year", "semester", "type",
+        fields = ["title", "academic_year", "semester", "year", "type",
                   "company_name", "details", "start_date", "end_date",
                   "no_of_days", "certificate"]
         widgets = {
@@ -131,7 +131,7 @@ class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["title", "academic_year", "semester", "project_type", "details", "guide_name", "link"]
+        fields = ["title", "academic_year", "semester", "year", "project_type", "details", "guide_name", "link"]
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Project Title"}),
             "guide_name": forms.TextInput(attrs={"placeholder": "Guide Name"}),
@@ -144,7 +144,7 @@ class SportsCulturalForm(PDFValidationMixin, forms.ModelForm):
     class Meta:
         model = SportsCulturalEvent
         fields = [
-            "name_of_event", "academic_year", "semester", "type",
+            "name_of_event", "academic_year", "semester", "year", "type",
             "venue", "level", "prize_won", "certificate"
         ]
         widgets = {
@@ -158,7 +158,7 @@ class OtherEventForm(PDFValidationMixin, forms.ModelForm):
     class Meta:
         model = OtherEvent
         fields = [
-            "name_of_event", "academic_year", "semester", "level",
+            "name_of_event", "academic_year", "semester", "year", "level",
             "details", "prize_won", "amount_won", "team_members", "certificate"
         ]
         widgets = {
@@ -175,7 +175,7 @@ class CertificationCourseForm(PDFValidationMixin, forms.ModelForm):
         model = CertificationCourse
         fields = [
             "title", "certifying_authority", "valid_upto",
-            "academic_year", "semester", "start_date", "end_date",
+            "academic_year", "semester", "year", "start_date", "end_date",
             "no_of_days", "domain", "level", "amount_reimbursed", "certificate"
         ]
         widgets = {
@@ -195,7 +195,7 @@ class CertificationCourseForm(PDFValidationMixin, forms.ModelForm):
 class PaperPublicationForm(PDFValidationMixin, forms.ModelForm):
     class Meta:
         model = PaperPublication
-        fields = ["title", "academic_year", "semester", "type", "details", "level", "amount_reimbursed", "authors", "certificate"]
+        fields = ["title", "academic_year", "semester", "year", "type", "conf_name", "details", "level", "amount_reimbursed", "authors", "certificate"]
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Paper Title"}),
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Details (max 500 words)"}),
@@ -214,7 +214,7 @@ class SelfAssessmentForm(forms.ModelForm):
 
     class Meta:
         model = SelfAssessment
-        fields = ["semester", "goals", "reason"]
+        fields = ["semester", "goals", "year", "reason"]
         widgets = {
             "semester": forms.Select(attrs={"class": "form-control"}),
             "reason": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Reason"}),

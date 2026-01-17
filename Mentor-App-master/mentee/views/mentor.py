@@ -6,6 +6,8 @@ import io
 from django.utils.decorators import method_decorator
 import os
 import re
+
+from django.views.decorators.http import require_POST
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from html import escape
@@ -14,7 +16,7 @@ from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatRep
 from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -22,7 +24,7 @@ from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
                       MentorMenteeInteraction, Notification, ReminderLog)
-from ..utils import get_document_progress
+from ..utils import get_document_progress, mentor_required
 from django.views.decorators.csrf import csrf_exempt
 from mentee.ai_utils import generate_ai_summary
 from datetime import datetime, timedelta
@@ -50,7 +52,7 @@ from django.conf import settings
 # Excel libs
 import openpyxl
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Alignment
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 # ReportLab libs
@@ -114,11 +116,12 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             if completed_count < 7:
                 no_document_mentees.append(mentee_data)
-
+        pending_reminder_count = len(no_document_mentees)
         return render(request, "mentor/account1.html", {
             "form": form,
             "mentees": mentees,
             "no_document_mentees": no_document_mentees,
+            "pending_reminder_count": pending_reminder_count,
         })
 
     def post(self, request):
@@ -142,14 +145,11 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
             existing_mapping = MentorMentee.objects.filter(mentee=mentee).first()
 
             if existing_mapping:
-                messages.error(
-                    request,
-                    f"{profile.student_name} is already assigned to Mentor: {existing_mapping.mentor.name}"
-                )
+                messages.error(request,f"{moodle_id}-{profile.student_name} is already assigned to Mentor: {existing_mapping.mentor.name}")
                 return redirect("account1")
 
             MentorMentee.objects.create(mentor=mentor, mentee=mentee)
-            messages.success(request, f"{profile.student_name} added as your mentee!")
+            messages.success(request, f"{moodle_id}-{profile.student_name} added as your mentee!")
 
         return redirect("account1")
 
@@ -195,6 +195,71 @@ def remind_mentee(request, mentee_id):
         is_auto=False,
     )
     messages.success(request, f"Reminder sent to {user.username} - {user.profile.student_name}!")
+    return redirect("account1")
+
+
+@login_required
+def remind_all_mentees(request):
+    mentor = get_object_or_404(Mentor, user=request.user)
+
+    mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related(
+        "mentee__user", "mentee__user__profile"
+    )
+
+    reminded_count = 0
+
+    for mapping in mentee_mappings:
+        mentee = mapping.mentee
+        user = mentee.user
+
+        completed_count, total_required, has_pending = get_document_progress(user)
+
+        # Skip mentees with no pending documents
+        if not has_pending:
+            continue
+
+        # ✅ 1. Save Notification
+        Notification.objects.create(
+            user=user,
+            message=(
+                f"⚠️ Your mentor {mentor.name} has reminded you to upload your "
+                f"pending documents and complete the Profile.\n"
+            )
+        )
+
+        # ✅ 2. Send Email
+        if user.email:
+            send_mail(
+                subject="Reminder to Upload Your Documents and Complete the Profile",
+                message=(
+                    f"Dear {user.profile.student_name} ({user.username}),\n\n"
+                    f"Your mentor {mentor.name} has reminded you to upload your pending "
+                    f"documents and complete your profile.\n"
+                    f"You need to complete the pending uploads before the next mentoring session.\n\n"
+                    f"Please log in to MentorConnect and upload them as soon as possible.\n\n"
+                    f"Regards,\nMentorConnect Team\n\n"
+                    f"*This is a system generated Email. Please do not reply to this Email.*\n"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+
+        # ✅ 3. Log Reminder
+        ReminderLog.objects.create(
+            mentor=mentor,
+            mentee=mentee,
+            is_auto=False,
+        )
+
+        reminded_count += 1
+
+    # ✅ Feedback message
+    if reminded_count:
+        messages.success(request, f"Reminder sent to {reminded_count} mentees successfully!")
+    else:
+        messages.info(request, "All mentees have already completed their documents.")
+
     return redirect("account1")
 #-----------------Mentor dashboard logic ends-------------------
 
@@ -338,192 +403,233 @@ def view_mentee(request, mentee_id):
     return render(request, "mentor/view_mentee_dashboard.html", context)
 
 
+#-------------------Download mentee docs logic starts----------------------
 @login_required
 def mentee_documents(request):
     documents = []
-    moodle = None
     error = None
+    selected_moodles = []
+    selected_mentees_info = []  # [{moodle_id, name}...]
 
-    # current mentor
     mentor = get_object_or_404(Mentor, user=request.user)
 
-    # mentees under this mentor (same logic as AccountView)
     mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
     mentees = []
+    mentee_map = {}  # moodle_id(str) -> {"user": user, "name": name}
+
     for mapping in mentee_mappings:
         profile = Profile.objects.filter(user=mapping.mentee.user).first()
-        if not profile:
+        if not profile or not profile.moodle_id:
             continue
+
+        moodle_str = str(profile.moodle_id).strip()
+        name = (profile.student_name or mapping.mentee.user.username)
+
         mentees.append({
             "user_id": mapping.mentee.user.id,
-            "moodle_id": profile.moodle_id,
-            "name": profile.student_name or mapping.mentee.user.username,
+            "moodle_id": moodle_str,
+            "name": name,
         })
-
-    def get_mentee_user_by_moodle(moodle_id: str):
-        for m in mentees:
-            if m["moodle_id"] == moodle_id:
-                return User.objects.get(pk=m["user_id"])
-        return None
+        mentee_map[moodle_str] = {"user": mapping.mentee.user, "name": name}
 
     if request.method == "POST":
-        moodle = request.POST.get("moodle_id")
+        selected_moodles = [m.strip() for m in request.POST.getlist("moodle_ids") if m.strip()]
 
-        mentee_user = get_mentee_user_by_moodle(moodle)
-        if mentee_user is None:
-            error = "Selected Moodle ID is not one of your mentees."
+        if not selected_moodles:
+            error = "Please select at least one Moodle ID."
         else:
+            invalid = [m for m in selected_moodles if m not in mentee_map]
+            if invalid:
+                error = "Selected Moodle ID is not one of your mentees."
+            else:
+                # Helper
+                def add_doc(owner_moodle, owner_name, file, label, dtype):
+                    if file:
+                        documents.append({
+                            "owner_moodle": owner_moodle,
+                            "owner_name": owner_name,
+                            "name": label,
+                            "file": file,
+                            "type": dtype,
+                        })
 
-            def add_doc(file, label, dtype):
-                """file: FileField, label: document name, dtype: category"""
-                if file:
-                    documents.append({
-                        "name": label,
-                        "file": file,
-                        "type": dtype,
+                # Build docs for each selected mentee
+                for moodle_id in selected_moodles:
+                    mentee_user = mentee_map[moodle_id]["user"]
+                    mentee_name = mentee_map[moodle_id]["name"]
+
+                    selected_mentees_info.append({
+                        "moodle_id": moodle_id,
+                        "name": mentee_name,
                     })
 
-            # Internship / PBL
-            for item in InternshipPBL.objects.filter(user=mentee_user):
-                add_doc(
-                    item.certificate,
-                    item.title or "Internship / PBL Certificate",
-                    "Internship / PBL",
-                )
+                    for item in InternshipPBL.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.certificate,
+                                item.title or "Internship / PBL Certificate", "Internship / PBL")
 
-            # Sports & Cultural
-            for item in SportsCulturalEvent.objects.filter(user=mentee_user):
-                add_doc(
-                    item.certificate,
-                    item.name_of_event or "Sports / Cultural Event",
-                    "Sports / Cultural",
-                )
+                    for item in SportsCulturalEvent.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.certificate,
+                                item.name_of_event or "Sports / Cultural Event", "Sports / Cultural")
 
-            # Other Events
-            for item in OtherEvent.objects.filter(user=mentee_user):
-                add_doc(
-                    item.certificate,
-                    item.name_of_event or "Other Event",
-                    "Other Event",
-                )
+                    for item in OtherEvent.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.certificate,
+                                item.name_of_event or "Other Event", "Other Event")
 
-            # Certification Courses
-            for item in CertificationCourse.objects.filter(user=mentee_user):
-                add_doc(
-                    item.certificate,
-                    item.title or "Certification Course",
-                    "Course",
-                )
+                    for item in CertificationCourse.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.certificate,
+                                item.title or "Certification Course", "Course")
 
-            # Paper Publications
-            for item in PaperPublication.objects.filter(user=mentee_user):
-                add_doc(
-                    item.certificate,
-                    item.title or "Paper Publication",
-                    "Publication",
-                )
+                    for item in PaperPublication.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.certificate,
+                                item.title or "Paper Publication", "Publication")
 
-            # Semester Results (marksheets)
-            for item in SemesterResult.objects.filter(user=mentee_user):
-                add_doc(
-                    item.marksheet,
-                    f"Semester {item.semester} Marksheet",
-                    "Semester Result",
-                )
+                    for item in SemesterResult.objects.filter(user=mentee_user):
+                        add_doc(moodle_id, mentee_name, item.marksheet,
+                                f"Semester {item.semester} Marksheet", "Semester Result")
+
+                # Optional: stable ordering (group by mentee then type then name)
+                documents.sort(key=lambda d: (d["owner_moodle"], d["type"], (d["name"] or "")))
 
     return render(request, "mentor/mentee_documents.html", {
         "documents": documents,
-        "moodle": moodle,
         "mentees": mentees,
         "error": error,
+        "selected_moodles": selected_moodles,
+        "selected_mentees_info": selected_mentees_info,
     })
 
 
 @login_required
 def download_all_documents(request):
     if request.method != "POST":
-        return redirect("mentee_documents")  # or wherever your page is
-
-    moodle = request.POST.get("moodle_id")
-    if not moodle:
-        messages.error(request, "No Moodle ID selected.")
         return redirect("mentee_documents")
 
-    # verify mentor and build mentees list (same logic as mentee_documents)
     mentor = get_object_or_404(Mentor, user=request.user)
-    mentee_mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
+    mappings = MentorMentee.objects.filter(mentor=mentor).select_related("mentee__user")
+
+    # Build {moodle_id: user}
     mentees = {}
-    for mapping in mentee_mappings:
+    for mapping in mappings:
         profile = Profile.objects.filter(user=mapping.mentee.user).first()
         if profile and profile.moodle_id:
-            mentees[profile.moodle_id] = mapping.mentee.user
+            mentees[str(profile.moodle_id).strip()] = mapping.mentee.user
 
-    if moodle not in mentees:
-        messages.error(request, "Selected Moodle ID is not one of your mentees.")
+    download_scope = request.POST.get("download_scope", "selected")  # "all" or "selected"
+    selected_moodles = [m.strip() for m in request.POST.getlist("moodle_ids") if m.strip()]  # multi-select
+    selected_types = request.POST.getlist("doc_types")     # optional multi-select
+
+    if download_scope == "all":
+        target_moodles = list(mentees.keys())
+    else:
+        if not selected_moodles:
+            messages.error(request, "No mentees selected.")
+            return redirect("mentee_documents")
+        # keep only mentor's mentees
+        target_moodles = [m for m in selected_moodles if m in mentees]
+
+    if not target_moodles:
+        messages.error(request, "Selected Moodle IDs are not one of your mentees.")
         return redirect("mentee_documents")
 
-    mentee_user = mentees[moodle]
+    # If no types selected => include all
+    ALL_TYPES = {
+        "Internship / PBL",
+        "Sports / Cultural",
+        "Other Event",
+        "Course",
+        "Publication",
+        "Semester Result",
+    }
+    if selected_types:
+        allowed_types = set(t for t in selected_types if t in ALL_TYPES)
+    else:
+        allowed_types = ALL_TYPES
 
-    # collect files (FileField instances) and labels
-    files_to_zip = []  # list of tuples: (filesystem_path, arcname)
-    # helper to append if file present
-    def try_add(filefield, label_prefix):
-        # filefield expected to be a FieldFile (or None)
-        if filefield:
-            try:
-                fs_path = filefield.path  # filesystem path
-            except Exception:
-                # fallback: try url -> not archive if no path
-                fs_path = None
-            if fs_path and os.path.exists(fs_path):
-                # prepare a safe arcname within zip
-                basename = os.path.basename(fs_path)
-                arcname = f"{label_prefix} - {basename}"
-                files_to_zip.append((fs_path, arcname))
+    files_to_zip = []  # list of tuples: (fs_path, arcname_in_zip)
 
-    # gather from models (same categories as earlier)
-    for item in InternshipPBL.objects.filter(user=mentee_user):
-        try_add(item.certificate, f"Internship_PBL_{(item.title or '').strip()[:40]}")
+    def safe(s: str) -> str:
+        return "".join(c if c.isalnum() or c in " ._-" else "_" for c in (s or ""))
 
-    for item in SportsCulturalEvent.objects.filter(user=mentee_user):
-        try_add(item.certificate, f"Sports_{(item.name_of_event or '').strip()[:40]}")
+    def try_add(filefield, arcname):
+        if not filefield:
+            return
+        try:
+            fs_path = filefield.path
+        except Exception:
+            return
+        if fs_path and os.path.exists(fs_path):
+            files_to_zip.append((fs_path, arcname))
 
-    for item in OtherEvent.objects.filter(user=mentee_user):
-        try_add(item.certificate, f"OtherEvent_{(item.name_of_event or '').strip()[:40]}")
+    for moodle in target_moodles:
+        mentee_user = mentees[moodle]
+        profile = Profile.objects.filter(user=mentee_user).first()
+        student_name = (getattr(profile, "student_name", "") or getattr(profile, "name", "") or "Student").strip()
 
-    for item in CertificationCourse.objects.filter(user=mentee_user):
-        try_add(item.certificate, f"Course_{(item.title or '').strip()[:40]}")
+        # Put each mentee into its own folder in the zip
+        base_folder = safe(f"{moodle}_{student_name}")
 
-    for item in PaperPublication.objects.filter(user=mentee_user):
-        try_add(item.certificate, f"Publication_{(item.title or '').strip()[:40]}")
+        if "Internship / PBL" in allowed_types:
+            for item in InternshipPBL.objects.filter(user=mentee_user):
+                title = safe((item.title or "").strip()[:40])
+                try_add(item.certificate, f"{base_folder}/Internship_PBL/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
-    for item in SemesterResult.objects.filter(user=mentee_user):
-        try_add(item.marksheet, f"Marksheet_Sem{(item.semester or '')}")
+        if "Sports / Cultural" in allowed_types:
+            for item in SportsCulturalEvent.objects.filter(user=mentee_user):
+                ev = safe((item.name_of_event or "").strip()[:40])
+                try_add(item.certificate, f"{base_folder}/Sports_Cultural/{ev or 'certificate'}_{os.path.basename(item.certificate.name)}")
+
+        if "Other Event" in allowed_types:
+            for item in OtherEvent.objects.filter(user=mentee_user):
+                ev = safe((item.name_of_event or "").strip()[:40])
+                try_add(item.certificate, f"{base_folder}/Other_Event/{ev or 'certificate'}_{os.path.basename(item.certificate.name)}")
+
+        if "Course" in allowed_types:
+            for item in CertificationCourse.objects.filter(user=mentee_user):
+                title = safe((item.title or "").strip()[:40])
+                try_add(item.certificate, f"{base_folder}/Course/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
+
+        if "Publication" in allowed_types:
+            for item in PaperPublication.objects.filter(user=mentee_user):
+                title = safe((item.title or "").strip()[:40])
+                try_add(item.certificate, f"{base_folder}/Publication/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
+
+        if "Semester Result" in allowed_types:
+            for item in SemesterResult.objects.filter(user=mentee_user):
+                sem = safe(str(item.semester or ""))
+                try_add(item.marksheet, f"{base_folder}/Semester_Result/Sem_{sem}_{os.path.basename(item.marksheet.name)}")
 
     if not files_to_zip:
-        messages.info(request, "No documents available to download for this student.")
+        messages.info(request, "No documents available for the selected mentee(s) and filter.")
         return redirect("mentee_documents")
 
-    # create in-memory zip
-    zip_filename = f"{moodle}_documents.zip"
+    # Create zip in-memory
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        used = set()
         for fs_path, arcname in files_to_zip:
-            # arcname must be unique / safe
-            # sanitize arcname
-            safe_name = "".join(c if c.isalnum() or c in " ._-" else "_" for c in arcname)
-            # ensure unique if duplicates
-            counter = 1
-            candidate = safe_name
-            while candidate in zf.namelist():
-                candidate = f"{os.path.splitext(safe_name)[0]}_{counter}{os.path.splitext(safe_name)[1]}"
-                counter += 1
+            arcname = safe(arcname)
+
+            # Ensure unique names
+            candidate = arcname
+            base, ext = os.path.splitext(candidate)
+            i = 1
+            while candidate in used:
+                candidate = f"{base}_{i}{ext}"
+                i += 1
+            used.add(candidate)
+
             zf.write(fs_path, arcname=candidate)
 
     buffer.seek(0)
+
+    # filename
+    scope_label = "ALL" if download_scope == "all" else "SELECTED"
+    zip_filename = f"{scope_label}_mentees_documents.zip"
+
     response = HttpResponse(buffer.read(), content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename="{zip_filename}"'
     return response
+#-------------------Download mentee docs logic ends----------------------
 
 #-----------------Download student data logic starts--------------------
 # Mapping of all models and their fields
@@ -1113,7 +1219,7 @@ class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Msg
     context_object_name = 'inbox'
     template_name = 'mentor/inbox1.html'
-    paginate_by = 5
+    paginate_by = 10
 
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user).filter(is_approved=False)
@@ -1177,7 +1283,7 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     context_object_name = 'messo'
 
-    paginate_by = 5
+    paginate_by = 10
 
     def get_queryset(self):
         return self.model.filter(receipient=self.request.user)
@@ -1224,7 +1330,7 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Conversation
     template_name = 'mentor/list-converations.html'
     context_object_name = 'conversation'
-    paginate_by = 4
+    paginate_by = 10
 
     def test_func(self):
         return self.request.user.is_mentor
@@ -1333,7 +1439,7 @@ class MentorMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Meeting
     template_name = 'mentor/vc.html'  # You’ll create this template
     context_object_name = 'meetings'
-    paginate_by = 5
+    paginate_by = 10
 
     def test_func(self):
         return self.request.user.is_mentor  # Ensure only mentors can access
@@ -1500,6 +1606,34 @@ COMMON_AGENDA_POINTS = [
     "Personal or behavioural concerns",
 ]
 
+def roman_to_int(r: str):
+    if not r:
+        return None
+    r = str(r).strip().upper()
+    roman_map = {"I": 1, "V": 5, "X": 10}
+
+    total = 0
+    prev = 0
+    for ch in reversed(r):
+        val = roman_map.get(ch)
+        if not val:
+            return None
+        if val < prev:
+            total -= val
+        else:
+            total += val
+            prev = val
+    return total
+
+def sem_to_class(sem: str) -> str:
+    n = roman_to_int(sem)
+    if not n:
+        return ""
+    if n in (1, 2): return "FE"
+    if n in (3, 4): return "SE"
+    if n in (5, 6): return "TE"
+    if n in (7, 8): return "BE"
+    return ""
 
 @login_required
 def mentor_mentee_interactions(request):
@@ -1534,11 +1668,20 @@ def mentor_mentee_interactions(request):
 
         # ✅ FIXED: Auto semester from SELECTED mentees only
         semester = ""
+        class_year = ""
         selected_profiles = Profile.objects.filter(user__id__in=mentee_ids)
         if selected_profiles.exists():
-            semester = ", ".join(
+            # ✅ semesters (Roman numerals)
+            semesters = list(
                 selected_profiles.values_list("semester", flat=True).distinct()
             )
+            semesters = [s for s in semesters if s]  # remove None/empty
+
+            semester = ", ".join(semesters)
+
+            # ✅ derive FE/SE/TE/BE from Roman numerals
+            classes = sorted({sem_to_class(s) for s in semesters if sem_to_class(s)})
+            class_year = ", ".join(classes)  # e.g. "FE" or "FE, SE"
 
         # ✅ Build agenda safely
         agenda_parts = checked_points[:]
@@ -1553,7 +1696,11 @@ def mentor_mentee_interactions(request):
             )
             interaction.date = date
             interaction.semester = semester
+            interaction.class_year = class_year
             interaction.agenda = agenda_text
+            # ✅ since agenda changed, invalidate old summary unless you want to keep it
+            interaction.ai_summary = None
+            interaction.ai_summary_generated = False
             interaction.save()
             interaction.mentees.set(User.objects.filter(id__in=mentee_ids))
 
@@ -1565,7 +1712,10 @@ def mentor_mentee_interactions(request):
                 mentor=request.user,
                 date=date,
                 semester=semester,
+                class_year=class_year,
                 agenda=agenda_text,
+                ai_summary=None,  # ✅ ensure empty
+                ai_summary_generated=False,  # ✅ manual only
             )
             interaction.mentees.set(User.objects.filter(id__in=mentee_ids))
 
@@ -1584,6 +1734,7 @@ def mentor_mentee_interactions(request):
         attendance.append({
             "name": p.student_name,
             "semester": p.semester,
+            "year": p.year,
             "branch": p.branch,
             "moodle": p.moodle_id,
             "percent": percent
@@ -1628,6 +1779,7 @@ def delete_interaction(request, pk):
 
 
 @login_required
+@require_POST
 def regenerate_ai_summary(request, pk):
     interaction = get_object_or_404(MentorMenteeInteraction, id=pk, mentor=request.user)
 
@@ -1635,7 +1787,8 @@ def regenerate_ai_summary(request, pk):
     summary = generate_ai_summary(interaction.agenda)
 
     interaction.ai_summary = summary
-    interaction.save()
+    interaction.ai_summary_generated = True  # ✅ mark manual generation
+    interaction.save(update_fields=["ai_summary", "ai_summary_generated"])
 
     return JsonResponse({
         "success": True,
@@ -1652,7 +1805,7 @@ def export_interactions(request, export_type):
     if export_type == "excel":
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Date", "Semester", "Agenda", "AI Summary", "Mentees"])
+        ws.append(["Date", "Semester", "Year", "Agenda", "AI Summary", "Mentees"])
 
         for i in qs:
             mentees = ", ".join([
@@ -1663,8 +1816,9 @@ def export_interactions(request, export_type):
             ws.append([
                 i.date.strftime("%d-%m-%Y"),
                 i.semester,
+                i.class_year,
                 i.agenda,
-                i.ai_summary or "Not Generated",
+                i.ai_summary if getattr(i, "ai_summary_generated", False) else "Not Generated",
                 mentees
             ])
 
@@ -1776,7 +1930,7 @@ def export_interactions(request, export_type):
     """
 
     # ✅ TABLE DATA
-    data = [["Sr. No.", "Date", "Sem", "Agenda", "AI Summary", "Mentees"]]
+    data = [["Sr. No.", "Date", "Sem", "Year", "Agenda", "AI Summary", "Mentees"]]
 
     for idx, i in enumerate(qs, start=1):
         mentee_lines = []
@@ -1793,7 +1947,7 @@ def export_interactions(request, export_type):
 
         agenda_paragraph = Paragraph(bulletize(i.agenda), styles["Normal"])
         ai_summary_paragraph = Paragraph(
-            bulletize(i.ai_summary or "Not Generated"),
+            bulletize(i.ai_summary) if getattr(i, "ai_summary_generated", False) else bulletize("Not Generated"),
             styles["Normal"]
         )
 
@@ -1801,6 +1955,7 @@ def export_interactions(request, export_type):
             str(idx),
             i.date.strftime("%d-%m-%Y"),
             i.semester,
+            i.class_year,
             agenda_paragraph,
             ai_summary_paragraph,
             Paragraph(mentees_formatted, styles["Normal"]),
@@ -1809,7 +1964,7 @@ def export_interactions(request, export_type):
     # ✅ COLUMN WIDTHS (PRINT OPTIMIZED)
     table = RLTable(
         data,
-        colWidths=[33, 56, 28, 160, 160, 150],  # ✅ wider AI + Agenda
+        colWidths=[33, 56, 28, 25, 150, 150, 145],  # ✅ wider AI + Agenda
         repeatRows=1
     )
 
@@ -1975,33 +2130,53 @@ def export_interactions(request, export_type):
 #-----------------Student data visualization logic starts------------------
 @login_required
 def student_visualization(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
+    mentee_user_ids = (
+        MentorMentee.objects
+        .filter(mentor=mentor_obj)
+        .values_list("mentee__user_id", flat=True)
+    )
+
     internship_data = list(
-        InternshipPBL.objects.values("user__profile__branch")
+        InternshipPBL.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
     project_data = list(
-        Project.objects.values("user__profile__branch")
+        Project.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
     sports_data = list(
-        SportsCulturalEvent.objects.values("user__profile__branch")
+        SportsCulturalEvent.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
     course_data = list(
-        CertificationCourse.objects.values("user__profile__branch")
+        CertificationCourse.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
     hackathon_data = list(
-        OtherEvent.objects.values("user__profile__branch")
+        OtherEvent.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
     paper_data = list(
-        PaperPublication.objects.values("user__profile__branch")
+        PaperPublication.objects
+        .filter(user_id__in=mentee_user_ids)
+        .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
 
@@ -2042,4 +2217,111 @@ def get_chart_data(request):
     counts = [d["count"] for d in data]
 
     return JsonResponse({"labels": labels, "data": counts,})
+
+
+@login_required
+def export_department_students_excel(request):
+    # ✅ must be a mentor user
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
+    category = request.GET.get("category")   # internship/project/sports/course/other/paper
+    dept = request.GET.get("dept")           # branch string as stored in Profile.branch
+
+    if not category or not dept:
+        return HttpResponse("Missing category or dept", status=400)
+
+    model_map = {
+        "internship": (InternshipPBL, "Internships_PBL"),
+        "project": (Project, "Projects"),
+        "sports": (SportsCulturalEvent, "Sports_Cultural"),
+        "course": (CertificationCourse, "Courses_Certifications"),
+        "other": (OtherEvent, "Other_Achievements"),
+        "paper": (PaperPublication, "Paper_Publications"),
+    }
+
+    if category not in model_map:
+        return HttpResponse("Invalid category", status=400)
+
+    Model, category_label = model_map[category]
+
+    # ✅ ONLY mentees assigned to THIS mentor
+    mentee_user_ids = (
+        MentorMentee.objects
+        .filter(mentor=mentor_obj)
+        .values_list("mentee__user_id", flat=True)
+    )
+
+    # ✅ filter records:
+    # 1) record belongs to assigned mentee
+    # 2) mentee department matches clicked bar label
+    qs = (
+        Model.objects
+        .select_related("user", "user__profile")
+        .filter(user_id__in=mentee_user_ids, user__profile__branch=dept)
+        .order_by("user__profile__student_name", "-uploaded_at" if hasattr(Model, "uploaded_at") else "id")
+    )
+
+    # ✅ Build Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Students"
+
+    headers = [
+        "Moodle ID", "Student Name", "Department", "Semester", "Academic Year",
+        "Record Title", "Type", "Details", "Uploaded At"
+    ]
+    ws.append(headers)
+
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    def safe(v):
+        return "" if v is None else str(v)
+
+    for obj in qs:
+        profile = getattr(obj.user, "profile", None)
+
+        moodle = safe(getattr(profile, "moodle_id", ""))
+        name = safe(getattr(profile, "student_name", obj.user.get_full_name() or obj.user.username))
+        branch = safe(getattr(profile, "branch", ""))
+        semester = safe(getattr(obj, "semester", getattr(profile, "semester", "")))
+        academic_year = safe(getattr(obj, "academic_year", ""))
+
+        record_title = safe(getattr(obj, "title", None) or getattr(obj, "name_of_event", None) or "")
+        record_type = safe(getattr(obj, "type", None) or getattr(obj, "project_type", None) or getattr(obj, "level", None) or "")
+
+        details = safe(
+            getattr(obj, "details", None)
+            or getattr(obj, "company_name", None)
+            or getattr(obj, "venue", None)
+            or getattr(obj, "authors", None)
+            or ""
+        )
+
+        uploaded_at = safe(getattr(obj, "uploaded_at", ""))
+
+        ws.append([
+            moodle, name, branch, semester, academic_year,
+            record_title, record_type, details, uploaded_at
+        ])
+
+    # simple autosize
+    for col in ws.columns:
+        max_len = 0
+        letter = col[0].column_letter
+        for cell in col:
+            v = "" if cell.value is None else str(cell.value)
+            max_len = max(max_len, len(v))
+        ws.column_dimensions[letter].width = min(max_len + 2, 45)
+
+    filename = f"{dept}_{category_label}_MyMentees_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
 #-----------------Student data visualization logic ends------------------

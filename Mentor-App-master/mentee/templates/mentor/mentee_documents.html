@@ -20,22 +20,25 @@
                 <div class="card-body">
                     <form method="POST" class="mb-3" id="moodle-search-form">
                         {% csrf_token %}
-                        <label class="form-label fw-semibold">Select Mentee Moodle Id</label>
                         <div class="d-flex flex-wrap gap-2">
-                            <select name="moodle_id"
-                                    class="form-select form-select-lg"
-                                    required>
-                                <option value="" disabled {% if not moodle %}selected{% endif %}>
-                                    Choose Moodle ID
-                                </option>
+                            <label class="form-label fw-semibold">Select Mentee Moodle ID(s)</label>
 
+                            <select name="moodle_ids"
+                                    class="form-select form-select-lg"
+                                    multiple
+                                    size="6"
+                                    id="moodle-ids-select">
                                 {% for mentee in mentees %}
                                     <option value="{{ mentee.moodle_id }}"
-                                            {% if moodle == mentee.moodle_id %}selected{% endif %}>
+                                        {% if selected_moodles and mentee.moodle_id in selected_moodles %}selected{% endif %}>
                                         {{ mentee.moodle_id }} — {{ mentee.name }}
                                     </option>
                                 {% endfor %}
                             </select>
+
+                            <small class="text-muted d-block mt-1">
+                                Hold Ctrl (Windows) / Cmd (Mac) to select multiple.
+                            </small>
                         </div>
                         <div class="d-flex justify-content-center mt-2">
                             <button type="submit"
@@ -61,7 +64,7 @@
         </div>
     </div>
 
-    {% if moodle %}
+    {% if mentees  %}
         <!-- Results card -->
         <div class="row mt-4">
             <div class="col-12">
@@ -69,18 +72,42 @@
                     <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                         <div>
                             <h5 class="mb-0 fw-semibold">Uploaded Documents</h5>
-                            <small class="text-muted">
-                                Moodle ID: <span class="fw-semibold">{{ moodle }}</span>
+                            <small class="text-muted d-block">
+                                Selected mentee(s):
+                                {% if selected_mentees_info %}
+                                    <span class="fw-semibold">
+                                        {% for m in selected_mentees_info %}
+                                            {{ m.moodle_id }} — {{ m.name }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span class="fw-semibold">None</span>
+                                {% endif %}
                             </small>
                         </div>
                         <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mt-2 mt-md-0">
-                            <form method="POST" action="{% url 'download_all_documents' %}" class="d-inline-block">
+                            <form method="POST" action="{% url 'download_all_documents' %}" class="d-inline-block" id="download-form">
                                 {% csrf_token %}
-                                <input type="hidden" name="moodle_id" value="{{ moodle }}">
-                                <button type="submit" class="btn btn-success ms-2" id="download-all-btn" {% if not moodle %}disabled{% endif %}>
-                                    <i class="bi bi-download me-1"></i> Download All
+
+                                <!-- Send selected mentees (copied from the multi-select) -->
+                                <div id="selected-moodles-container"></div>
+
+                                <!-- Optional: Download all mentees -->
+                                <input type="hidden" name="download_scope" id="download-scope" value="selected">
+
+                                <!-- Send selected document types (from filter) -->
+                                <div id="selected-types-container"></div>
+
+                                <button type="submit" class="btn btn-success ms-2" id="download-all-btn">
+                                    <i class="bi bi-download me-1"></i> Download
                                 </button>
                             </form>
+
+                            <div class="form-check form-switch ms-2">
+                              <input class="form-check-input" type="checkbox" id="all-mentees-switch">
+                              <label class="form-check-label" for="all-mentees-switch">All mentees</label>
+                            </div>
+
                             <span class="badge bg-primary-subtle text-primary">
                                 {{ documents|length }} document{{ documents|length|pluralize }}
                             </span>
@@ -88,15 +115,58 @@
                             <!-- Filter by type -->
                             <div class="input-group input-group-sm" style="max-width:260px;">
                                 <span class="input-group-text">Filter</span>
-                                <select id="doc-type-filter" class="form-select">
-                                    <option value="">All Types</option>
-                                    <option value="Internship / PBL">Internship / PBL</option>
-                                    <option value="Sports / Cultural">Sports / Cultural</option>
-                                    <option value="Other Event">Other Event</option>
-                                    <option value="Course">Course</option>
-                                    <option value="Publication">Publication</option>
-                                    <option value="Semester Result">Semester Result</option>
-                                </select>
+                                <div class="dropdown">
+                                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                          id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Filter
+                                  </button>
+
+                                  <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="filterDropdown" style="min-width: 240px;">
+                                    <li class="mb-2">
+                                      <button type="button" class="btn btn-link btn-sm p-0" id="clear-filters">Clear</button>
+                                    </li>
+
+                                    {% for t in "Internship / PBL|Sports / Cultural|Other Event|Course|Publication|Semester Result"|cut:" "|add:""|default:"" %}
+                                    {% endfor %}
+
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Internship / PBL" id="t1">
+                                        <label class="form-check-label" for="t1">Internship / PBL</label>
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Sports / Cultural" id="t2">
+                                        <label class="form-check-label" for="t2">Sports / Cultural</label>
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Other Event" id="t3">
+                                        <label class="form-check-label" for="t3">Other Event</label>
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Course" id="t4">
+                                        <label class="form-check-label" for="t4">Course</label>
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Publication" id="t5">
+                                        <label class="form-check-label" for="t5">Publication</label>
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="form-check">
+                                        <input class="form-check-input doc-type-check" type="checkbox" value="Semester Result" id="t6">
+                                        <label class="form-check-label" for="t6">Semester Result</label>
+                                      </div>
+                                    </li>
+                                  </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -106,30 +176,31 @@
                             <div class="table-responsive">
                                 <table class="table table-hover mb-0 align-middle text-center">
                                     <thead class="table-light">
-                                        <tr>
-                                            <th scope="col">Sr. No.</th>
-                                            <th scope="col">Type</th>
-                                            <th scope="col">Document Name</th>
-                                            <th scope="col">Download</th>
-                                        </tr>
+                                      <tr>
+                                        <th scope="col">Sr. No.</th>
+                                        <th scope="col">Moodle ID</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Type</th>
+                                        <th scope="col">Document Name</th>
+                                        <th scope="col">Download</th>
+                                      </tr>
                                     </thead>
                                     <tbody>
                                         {% for doc in documents %}
                                         <tr data-doc-type="{{ doc.type }}">
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ doc.type }}</td>
-                                            <td class="text-start px-4">
-                                                <i class="bi bi-file-earmark-text me-2 text-primary"></i>
-                                                {{ doc.name|default:doc.file.name }}
-                                            </td>
-                                            <td>
-                                                <a href="{{ doc.file.url }}"
-                                                   class="btn btn-outline-success btn-sm"
-                                                   target="_blank">
-                                                    <i class="bi bi-download me-1"></i>
-                                                    Download
-                                                </a>
-                                            </td>
+                                          <td>{{ forloop.counter }}</td>
+                                          <td>{{ doc.owner_moodle }}</td>
+                                          <td class="text-start">{{ doc.owner_name }}</td>
+                                          <td>{{ doc.type }}</td>
+                                          <td class="text-start px-4">
+                                              <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                              {{ doc.name|default:doc.file.name }}
+                                          </td>
+                                          <td>
+                                              <a href="{{ doc.file.url }}" class="btn btn-outline-success btn-sm" target="_blank">
+                                                  <i class="bi bi-download me-1"></i> Download
+                                              </a>
+                                          </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -163,38 +234,101 @@
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Loading state for search button
-        const form = document.getElementById("moodle-search-form");
-        const btn = document.getElementById("search-btn");
-        const btnText = document.getElementById("search-btn-text");
-        const btnSpinner = document.getElementById("search-btn-spinner");
+document.addEventListener("DOMContentLoaded", function () {
+    const moodleSelect = document.getElementById("moodle-ids-select");
+    const allSwitch = document.getElementById("all-mentees-switch");
+    const downloadScope = document.getElementById("download-scope");
 
-        if (form && btn && btnText && btnSpinner) {
-            form.addEventListener("submit", function () {
-                btn.disabled = true;
-                btnText.textContent = "Searching...";
-                btnSpinner.classList.remove("d-none");
-            });
-        }
+    const selectedMoodlesContainer = document.getElementById("selected-moodles-container");
+    const selectedTypesContainer = document.getElementById("selected-types-container");
 
-        // Client-side filter by document type
-        const filterSelect = document.getElementById("doc-type-filter");
-        if (filterSelect) {
-            filterSelect.addEventListener("change", function () {
-                const selected = this.value;
-                const rows = document.querySelectorAll("tbody tr[data-doc-type]");
+    const typeChecks = document.querySelectorAll(".doc-type-check");
+    const clearBtn = document.getElementById("clear-filters");
 
-                rows.forEach(function (row) {
-                    const rowType = row.getAttribute("data-doc-type") || "";
-                    if (!selected || rowType === selected) {
-                        row.classList.remove("d-none");
-                    } else {
-                        row.classList.add("d-none");
-                    }
-                });
-            });
-        }
+    function getSelectedValues(selectEl) {
+        if (!selectEl) return [];
+        return Array.from(selectEl.selectedOptions).map(o => o.value).filter(Boolean);
+    }
+
+    function getCheckedTypes() {
+        return Array.from(typeChecks).filter(c => c.checked).map(c => c.value);
+    }
+
+    function syncDownloadPayload() {
+        // moodles
+        selectedMoodlesContainer.innerHTML = "";
+        const moodles = getSelectedValues(moodleSelect);
+        moodles.forEach(val => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "moodle_ids";
+            input.value = val;
+            selectedMoodlesContainer.appendChild(input);
+        });
+
+        // types (checkboxes)
+        selectedTypesContainer.innerHTML = "";
+        const types = getCheckedTypes();
+        types.forEach(val => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "doc_types";
+            input.value = val;
+            selectedTypesContainer.appendChild(input);
+        });
+    }
+
+    function applyFilter() {
+        const selectedTypes = getCheckedTypes(); // [] means show all
+        const rows = document.querySelectorAll("tbody tr[data-doc-type]");
+
+        rows.forEach(row => {
+            const rowType = row.getAttribute("data-doc-type") || "";
+            const show = selectedTypes.length === 0 || selectedTypes.includes(rowType);
+            row.classList.toggle("d-none", !show);
+        });
+    }
+
+    // Bind filter checkbox events
+    typeChecks.forEach(chk => {
+        chk.addEventListener("change", function () {
+            applyFilter();
+            syncDownloadPayload();
+        });
     });
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+            typeChecks.forEach(c => c.checked = false);
+            applyFilter();
+            syncDownloadPayload();
+        });
+    }
+
+    if (moodleSelect) {
+        moodleSelect.addEventListener("change", syncDownloadPayload);
+    }
+
+    if (allSwitch) {
+        allSwitch.addEventListener("change", function () {
+            downloadScope.value = this.checked ? "all" : "selected";
+            syncDownloadPayload();
+        });
+    }
+
+    // Ensure download always has payload
+    const downloadForm = document.getElementById("download-form");
+    if (downloadForm) {
+        downloadForm.addEventListener("submit", function () {
+            syncDownloadPayload();
+        });
+    }
+
+    // initial
+    applyFilter();
+    syncDownloadPayload();
+});
 </script>
+
+
 {% endblock %}

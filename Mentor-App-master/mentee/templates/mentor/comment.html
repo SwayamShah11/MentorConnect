@@ -1,18 +1,24 @@
 {% extends "mentor/base1.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
+{% block title %} Approve Request {% endblock %}
 {% block content %}
-<br><br><br>
+<br><br>
 <div class="container">
-    <p><b>Request Content</b></p>
-    <p>From: {{ messo.sender }} - {{ messo.sender.profile.student_name }}</p>
-    <p>Message:  {{ messo.msg_content }}</p>
+    <div class="align-items-center mb-3">
+        <p class="text-white p-3 bg-black rounded"><b>Request Content</b><br>
+        From: {{ messo.sender }} - {{ messo.sender.profile.student_name }}<br>
+        Message:  {{ messo.msg_content }}</p>
+    </div>
 </div><hr>
 	<h1>Review the Request </h1>
 	<form method="post">
 		{% csrf_token %}
 		{{ form|crispy }}
-		<button type="submit" class="btn btn-primary btn-sm">Submit comment</button>
+		<button type="submit" class="btn btn-primary">Submit comment</button>
+        <a href="{% url 'inbox2' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+            <i class="bi bi-arrow-left-circle"></i> Back
+        </a>
 	</form>
 <br>
 {% endblock %}

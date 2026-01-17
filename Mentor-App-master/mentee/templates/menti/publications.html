@@ -5,8 +5,11 @@
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
     <!-- Main Content -->
-    <div class="content flex-grow-1 p-4">
+    <div class="content shifted flex-grow-1 p-4">
         <div class="container">
 
             <!-- Header -->
@@ -45,8 +48,10 @@
                         <th class="text-center">Sr. No</th>
                         <th class="text-center">Title</th>
                         <th class="text-center">AY</th>
+                        <th class="text-center">Class</th>
                         <th class="text-center">Semester</th>
                         <th class="text-center">Type</th>
+                        <th class="text-center">Name of Conference/Journal</th>
                         <th class="text-center">Details</th>
                         <th class="text-center">Level</th>
                         <th class="text-center">Amount Reimbursed (in Rs.)</th>
@@ -60,8 +65,10 @@
                             <td class="text-center">{{ forloop.counter }}</td>
                             <td class="text-center">{{ item.title }}</td>
                             <td class="text-center">{{ item.academic_year }}</td>
+                            <td class="text-center">{{ item.year }}</td>
                             <td class="text-center">{{ item.semester }}</td>
                             <td class="text-center">{{ item.type }}</td>
+                            <td class="text-center">{{ item.conf_name }}</td>
                             <td class="text-center">{{ item.details }}</td>
                             <td class="text-center">{{ item.level }}</td>
                             <td class="text-center">{{ item.amount_reimbursed }}</td>
@@ -84,7 +91,7 @@
                             </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="11" class="text-center">No records yet</td></tr>
+                        <tr><td colspan="12" class="text-center">No records yet</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -114,19 +121,29 @@
                                             {{ form.title|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.academic_year|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.semester|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.year|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-md-6">
                                             <label class="form-label">Type <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.type|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Name of Conference/Journal <span class="text-muted">(if applicable)</span></label>
+                                            {{ form.conf_name|add_class:"form-control" }}
                                         </div>
 
                                         <div class="col-12">
@@ -264,6 +281,11 @@ a[aria-expanded="true"] .toggle-icon {
       appearance: menulist !important;
     }
     select[name="level"] {
+      -webkit-appearance: menulist !important;
+      -moz-appearance: menulist !important;
+      appearance: menulist !important;
+    }
+    select[name="year"] {
       -webkit-appearance: menulist !important;
       -moz-appearance: menulist !important;
       appearance: menulist !important;

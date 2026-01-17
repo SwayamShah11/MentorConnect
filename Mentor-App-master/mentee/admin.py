@@ -173,6 +173,7 @@ class MentorMenteeInteractionAdmin(admin.ModelAdmin):
         'mentee_list',
         'date',
         'semester',
+        'class_year',
         'agenda',
         'created_at',
     ]

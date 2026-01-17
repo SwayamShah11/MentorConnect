@@ -6,8 +6,11 @@
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
     <!-- Main Content-->
-    <div class="content flex-grow-1 p-4">
+    <div class="content shifted flex-grow-1 p-4">
           <div class="container mt-3">
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">

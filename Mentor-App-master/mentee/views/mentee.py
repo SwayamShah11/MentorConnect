@@ -12,7 +12,7 @@ from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
                       MentorMenteeInteraction, StudentProfileOverview, Notification)
-from ..utils import compute_profile_completeness
+from ..utils import compute_profile_completeness, mentee_required
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -49,11 +49,21 @@ from xhtml2pdf import pisa
 from django.forms.models import model_to_dict
 
 
+class MenteeOnlyView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        return hasattr(self.request.user, "mentee") and self.request.user.is_mentee
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            return redirect("home")
+        return super().handle_no_permission()
+
+
 def home(request):
     """Home landing page"""
     return render(request, 'home.html')
 
-# Mentor-Mentee interaction page logic
+#-------------------Mentor-Mentee interaction page logic starts-----------------------
 @method_decorator(login_required, name="dispatch")
 class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -67,11 +77,11 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             return render(request, "menti/account.html", {"user_meeting_data": [], "is_mentor_view": False})
 
             # Get the one assigned mentor
-        mapping = mentee.assigned_mentor
+        mapping = getattr(mentee, "assigned_mentor", None)
         if not mapping:
             return render(request, "menti/account.html", {"user_meeting_data": [], "is_mentor_view": False})
 
-        mentor = mapping.mentor
+        mentor = mapping.mentor if mapping else None
         now = timezone.localtime(timezone.now())
         meetings = Meeting.objects.filter(mentee=mentee, mentor=mentor)
 
@@ -200,7 +210,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             else:
                 risk_level = "Critical"
 
-        # ✅ AI-BASED PERFORMANCE INSIGHTS (RULE-BASED SMART LOGIC)
+        # ✅ PERFORMANCE INSIGHTS (RULE-BASED SMART LOGIC)
         if overall_percent >= 85:
             ai_insight = "✅ Excellent consistency! You are highly engaged with mentor interactions."
         elif 75 <= overall_percent < 85:
@@ -226,7 +236,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         }
 
         return render(request, "menti/account.html", context)
-
+#-------------------Mentor-Mentee interaction page logic ends-----------------------
 
 def register(request):
     """Controls the register module"""
@@ -252,27 +262,32 @@ def register(request):
 
 
 def user_login(request):
-    """Login function"""
+    if request.user.is_authenticated:
+        # optional: redirect already logged-in user
+        return redirect("mentee-home")
 
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(username=username, password=password)
-        if user:
-            if user.is_active:
-                login(request, user)
-                messages.success(request, f'Welcome to your Account {user}')
-                return HttpResponseRedirect(reverse('mentee-home'))
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
 
-            else:
-                return HttpResponse("Your account was inactive.")
-        else:
-            print("Someone tried to login and failed.")
-            print("They used username: {} and password: {}".format(username, password))
-            messages.warning(request, f'Invalid login details')
-            return redirect('login')
-    else:
-        return render(request, 'menti/login.html', {})
+        if user is None:
+            messages.warning(request, "Invalid login details")
+            return redirect("login")
+
+        # role check: mentee portal only
+        if not (user.is_mentee and hasattr(user, "mentee")):
+            messages.error(request, "This login is for mentees only. Please use the mentor login page.")
+            return redirect("login")  # or redirect("login1") if you want to send them to mentor login
+
+        if not user.is_active:
+            messages.error(request, "Your account is inactive.")
+            return redirect("login")
+
+        login(request, user)
+        return HttpResponseRedirect(reverse("mentee-home"))
+
+    return render(request, "menti/login.html")
 
 
 def custom_logout(request):
@@ -391,10 +406,15 @@ def ChangePassword(request, token):
 
 
 @login_required
+@mentee_required
 def mentee_home(request):
     profile = Profile.objects.get(user=request.user)
-    notifications = Notification.objects.filter(user=request.user, is_read=False)
-    return render(request, "menti/mentee_home.html", {"profile": profile, "notifications": notifications, "is_mentor_view": False,})
+    notifications = Notification.objects.filter(user=request.user, is_read=False).order_by("-created_at")[:10]
+    return render(request, "menti/mentee_home.html", {
+        "profile": profile,
+        "notifications": notifications,
+        "is_mentor_view": False,
+    })
 
 
 @login_required
@@ -404,8 +424,9 @@ def mark_notification_read(request, notification_id):
     note.save()
     return redirect("mentee-home")
 
-# profile page logic
+#-----------------profile page logic starts--------------------
 @login_required
+@mentee_required
 def profile(request):
     profile = request.user.profile
     user = request.user
@@ -418,12 +439,14 @@ def profile(request):
             user.email = form.cleaned_data['email']
             user.save()
             profile.save()
+            messages.success(request, 'Profile updated successfully.')
             return redirect('profile')
     else:
         form = ProfileUpdateForm(instance=profile, initial={'email': user.email})
 
 
     return render(request, 'menti/profile.html', {'form': form, "is_mentor_view": False,})
+#---------------------Profile page logic ends--------------------
 
 
 @method_decorator(login_required, name="dispatch")
@@ -455,6 +478,7 @@ class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
 #--------------------Internship page logic starts------------------------
 @login_required
+@mentee_required
 def internship_pbl_list(request, pk=None):
     internships = InternshipPBL.objects.filter(user=request.user).order_by("-start_date")
     internship = None
@@ -497,6 +521,7 @@ def internship_pbl_list(request, pk=None):
 
 #download internship certificate
 @login_required
+@mentee_required
 def download_certificate(request, pk):
     try:
         internship = InternshipPBL.objects.get(pk=pk)
@@ -545,13 +570,14 @@ def download_certificate(request, pk):
 
 
 @login_required
+@mentee_required
 def download_all_certificates(request):
     internships = InternshipPBL.objects.filter(user=request.user, certificate__isnull=False)
 
     if not internships.exists():
         return HttpResponse("No certificates available.")
 
-    zip_filename = f"{request.user.username}_internship_certificates.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_internship_certificates.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -570,6 +596,7 @@ def download_all_certificates(request):
 
 
 @login_required
+@mentee_required
 def delete_internship(request, pk):
     internship = get_object_or_404(InternshipPBL, pk=pk, user=request.user)
 
@@ -587,6 +614,7 @@ def delete_internship(request, pk):
 
 #-------------------------Projects page logic starts------------------------
 @login_required
+@mentee_required
 def projects_view(request):
     projects = Project.objects.filter(user=request.user).order_by("-uploaded_at")
 
@@ -635,6 +663,7 @@ def projects_view(request):
 
 #---------------------Sports page logic starts----------------------------
 @login_required
+@mentee_required
 def sports_cultural_list(request):
     events = SportsCulturalEvent.objects.filter(user=request.user).order_by("-uploaded_at")
 
@@ -662,13 +691,14 @@ def sports_cultural_list(request):
 
 
 @login_required
+@mentee_required
 def download_all_sports_cultural(request):
     events = SportsCulturalEvent.objects.filter(user=request.user, certificate__isnull=False)
 
     if not events.exists():
         return HttpResponse("No sports & cultural certificates available.")
 
-    zip_filename = f"{request.user.username}_sports_cultural_certificates.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_sports_cultural_certificates.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -687,6 +717,7 @@ def download_all_sports_cultural(request):
 
 
 @login_required
+@mentee_required
 def edit_sports_cultural(request, pk):
     event = get_object_or_404(SportsCulturalEvent, pk=pk, user=request.user)
     editing = True
@@ -713,6 +744,7 @@ def edit_sports_cultural(request, pk):
 
 
 @login_required
+@mentee_required
 def delete_sports_cultural(request, pk):
     event = get_object_or_404(SportsCulturalEvent, pk=pk, user=request.user)
 
@@ -725,6 +757,7 @@ def delete_sports_cultural(request, pk):
 
 #---------------------Other events page logic starts--------------------
 @login_required
+@mentee_required
 def other_event_list(request, pk=None):
     events = OtherEvent.objects.filter(user=request.user).order_by("-uploaded_at")
     editing = False
@@ -760,13 +793,14 @@ def other_event_list(request, pk=None):
 
 
 @login_required
+@mentee_required
 def download_all_other_events(request):
     events = OtherEvent.objects.filter(user=request.user, certificate__isnull=False)
 
     if not events.exists():
         return HttpResponse("No other event certificates available.")
 
-    zip_filename = f"{request.user.username}_other_events_certificates.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_other-events_certificates.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -785,6 +819,7 @@ def download_all_other_events(request):
 
 
 @login_required
+@mentee_required
 def delete_other_event(request, pk):
     event = get_object_or_404(OtherEvent, pk=pk, user=request.user)
 
@@ -800,6 +835,7 @@ def delete_other_event(request, pk):
 
 #------------------Certifications page logic starts-------------------
 @login_required
+@mentee_required
 def certification_list(request, pk=None):
     certifications = CertificationCourse.objects.filter(user=request.user).order_by("-uploaded_at")
     editing = False
@@ -835,13 +871,14 @@ def certification_list(request, pk=None):
 
 
 @login_required
+@mentee_required
 def download_all_certifications(request):
     certifications = CertificationCourse.objects.filter(user=request.user, certificate__isnull=False)
 
     if not certifications.exists():
         return HttpResponse("No certification certificates available.")
 
-    zip_filename = f"{request.user.username}_certifications_certificates.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_certification-courses_certificates.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -860,6 +897,7 @@ def download_all_certifications(request):
 
 
 @login_required
+@mentee_required
 def delete_certification(request, pk):
     cert = get_object_or_404(CertificationCourse, pk=pk, user=request.user)
 
@@ -874,6 +912,7 @@ def delete_certification(request, pk):
 
 #------------------Publications page logic starts-------------------
 @login_required
+@mentee_required
 def publications_list(request, pk=None):
     publications = PaperPublication.objects.filter(user=request.user).order_by("-uploaded_at")
     editing = False
@@ -909,13 +948,14 @@ def publications_list(request, pk=None):
 
 
 @login_required
+@mentee_required
 def download_all_publications(request):
     publications = PaperPublication.objects.filter(user=request.user, certificate__isnull=False)
 
     if not publications.exists():
         return HttpResponse("No publication certificates available.")
 
-    zip_filename = f"{request.user.username}_publications_certificates.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_publications_certificates.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -934,6 +974,7 @@ def download_all_publications(request):
 
 
 @login_required
+@mentee_required
 def delete_publication(request, pk):
     pub = get_object_or_404(PaperPublication, pk=pk, user=request.user)
     pub.delete()
@@ -942,6 +983,7 @@ def delete_publication(request, pk):
 
 #------------------Self assessment page logic starts-------------------
 @login_required
+@mentee_required
 def self_assessment(request, pk=None):
     assessments = SelfAssessment.objects.filter(user=request.user).order_by("-created_at")
     editing = False
@@ -977,6 +1019,7 @@ def self_assessment(request, pk=None):
 
 
 @login_required
+@mentee_required
 def delete_assessment(request, pk):
     assessment = get_object_or_404(SelfAssessment, pk=pk, user=request.user)
     assessment.delete()
@@ -985,6 +1028,7 @@ def delete_assessment(request, pk):
 
 #-----------------Long term goals and subject of interest page logic starts------------------
 @login_required
+@mentee_required
 def long_term_goals(request, edit_id=None):
     goals = LongTermGoal.objects.filter(user=request.user)
     subjects = SubjectOfInterest.objects.filter(user=request.user)
@@ -1031,6 +1075,7 @@ def long_term_goals(request, edit_id=None):
 
 
 @login_required
+@mentee_required
 def delete_subject(request, pk):
     subject = get_object_or_404(SubjectOfInterest, pk=pk, user=request.user)
     subject.delete()
@@ -1039,6 +1084,7 @@ def delete_subject(request, pk):
 
 #-----------------Educational details page logic starts------------------
 @login_required
+@mentee_required
 def educational_details(request):
     details = EducationalDetail.objects.filter(user=request.user)
 
@@ -1078,6 +1124,7 @@ def educational_details(request):
 
 #-----------------Semester results page logic starts------------------
 @login_required
+@mentee_required
 def semester_results(request):
     semesters = SemesterResult.objects.filter(user=request.user)
 
@@ -1101,13 +1148,14 @@ def semester_results(request):
 
 
 @login_required
+@mentee_required
 def download_all_semester_marksheets(request):
     semesters = SemesterResult.objects.filter(user=request.user, marksheet__isnull=False)
 
     if not semesters.exists():
         return HttpResponse("No marksheets available.")
 
-    zip_filename = f"{request.user.username}_semester_marksheets.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_semester_marksheets.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -1127,6 +1175,7 @@ def download_all_semester_marksheets(request):
 
 
 @login_required
+@mentee_required
 def edit_semester(request, pk):
     semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
 
@@ -1149,6 +1198,7 @@ def edit_semester(request, pk):
 
 
 @login_required
+@mentee_required
 def delete_semester(request, pk):
     semester = get_object_or_404(SemesterResult, pk=pk, user=request.user)
     semester.delete()
@@ -1157,6 +1207,7 @@ def delete_semester(request, pk):
 
 #-----------------Student's interest page logic starts------------------
 @login_required
+@mentee_required
 def student_interests(request):
     obj, created = StudentInterest.objects.get_or_create(student=request.user)
     if request.method == "POST":
@@ -1181,6 +1232,7 @@ def student_interests(request):
 
 #-----------------Uploaded documents page logic starts------------------
 @login_required
+@mentee_required
 def uploaded_documents(request):
     documents = []
 
@@ -1210,6 +1262,7 @@ def uploaded_documents(request):
 
 
 @login_required
+@mentee_required
 def download_all_uploaded_documents_aggregated(request):
     documents = []
 
@@ -1236,7 +1289,7 @@ def download_all_uploaded_documents_aggregated(request):
     if not documents:
         return HttpResponse("No documents available.")
 
-    zip_filename = f"{request.user.username}_ALL_UPLOADED_DOCUMENTS.zip"
+    zip_filename = f"{request.user.username}_{request.user.profile.student_name}_ALL_UPLOADED_DOCUMENTS.zip"
     zip_path = os.path.join(settings.MEDIA_ROOT, zip_filename)
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
@@ -1255,6 +1308,7 @@ def download_all_uploaded_documents_aggregated(request):
 
 
 @login_required
+@mentee_required
 def credits_view(request):
     return render(request, 'menti/credits.html', {"is_mentor_view": False,})
 
@@ -1407,6 +1461,7 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['is_mentor_view'] = False
         return context
+
 
 @method_decorator(login_required, name="dispatch")
 class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
@@ -1945,6 +2000,7 @@ def mentee_queries(request):
 
 #--------------------Profile Overview logic starts-----------------------
 @login_required
+@mentee_required
 def student_profile_overview(request):
     user = request.user
 
@@ -2000,6 +2056,7 @@ def student_profile_overview(request):
 
 
 @login_required
+@mentee_required
 def export_resume_pdf(request):
     user = request.user
     profile = get_object_or_404(Profile, user=user)

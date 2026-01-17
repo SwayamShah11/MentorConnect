@@ -79,16 +79,22 @@
       </nav>
     </header>
 {% endif %}
-{% include "menti/mentee_sidebar.html" %}
 
 <div class="container"><br><br><br>
   {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-              </div>
-            {% endfor %}
-  {% endif %}
+  {% for message in messages %}
+    <div class="alert
+        {% if message.tags == 'error' %}alert-danger
+        {% elif message.tags == 'success' %}alert-success
+        {% else %}alert-info{% endif %}
+        alert-dismissible fade show text-center fw-bold" role="alert">
+
+      {{ message }}
+
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+{% endif %}
   {% block content %} {% endblock %}
 </div>
 
@@ -100,26 +106,25 @@
   <script src="{% static 'js/bootstrap.js' %}"></script>
   <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
   <script>
-    const sidebar = document.getElementById("sidebar");
-    const content = document.querySelector(".content");
-    const toggleBtn = document.getElementById("toggleSidebarBtn");
-    const icon = document.getElementById("sidebarIcon");
+      const sidebar = document.getElementById("sidebar");
+      const content = document.querySelector(".content");
+      const toggleBtn = document.getElementById("toggleSidebarBtn");
+      const icon = document.getElementById("sidebarIcon");
 
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", function () {
-        sidebar.classList.toggle("active");
-        content.classList.toggle("shifted");
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", function () {
+          sidebar.classList.toggle("active");
 
-        // Toggle icon
-        if (icon.classList.contains("bi-list")) {
-          icon.classList.remove("bi-list");
-          icon.classList.add("bi-x");
-        } else {
-          icon.classList.remove("bi-x");
-          icon.classList.add("bi-list");
-        }
-      });
-    }
+          // 🔑 sync content with sidebar state
+          if (sidebar.classList.contains("active")) {
+            content.classList.add("shifted");
+            icon.classList.replace("bi-list", "bi-x");
+          } else {
+            content.classList.remove("shifted");
+            icon.classList.replace("bi-x", "bi-list");
+          }
+        });
+      }
   </script>
   </body>
 </html>

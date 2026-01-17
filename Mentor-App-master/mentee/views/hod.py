@@ -1,10 +1,16 @@
 import os
 import io
+from django.conf import settings
 from datetime import datetime
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.shortcuts import redirect, get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
 import openpyxl
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from ..models import Mentor, MentorMentee, Profile
+from ..models import Mentor, Mentee, MentorMentee, Profile, ReminderLog, Notification
 from ..utils import get_document_progress
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
@@ -59,19 +65,23 @@ def _build_hod_dashboard_data():
 
             # determine simple readiness label for UI filters
             if completed == 0:
-                readiness = "not started"
+                readiness = "not_started"
             elif completed == total:
                 readiness = "ready"
             else:
                 readiness = "partial"
 
             mentees_list.append({
+                "mentee_id": mapping.mentee.pk,
+                "user_id": user.id,
                 "student_name": profile.student_name if profile else user.username,
                 "moodle_id": profile.moodle_id if profile else "",
                 "semester": profile.semester if profile else "",
                 "contact": profile.contact_number if profile else "",
+                "email": getattr(profile, "email", "") if profile else user.email,
+                "phone": profile.contact_number if profile else "",
                 "mentor_name": mentor.name,
-                "department": mentor.department,
+                "department": profile.branch,
                 "progress": f"{completed}/{total}",
                 "progress_percent": progress_percent,
                 "readiness": readiness,
@@ -101,6 +111,163 @@ def _build_hod_dashboard_data():
         "mentor_stats": mentor_stats,
         "mentees_list": mentees_list,
     }
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)  # or u.is_staff if HOD is staff
+def hod_remind_mentee(request, mentee_id):
+    if request.method != "POST":
+        return redirect("hod_dashboard")  # replace with your dashboard url name
+
+    mentee = get_object_or_404(Mentee, pk=mentee_id)
+    user = mentee.user
+    profile = Profile.objects.filter(user=user).first()
+
+    # Progress check (only remind if pending)
+    completed, total, has_pending = get_document_progress(user)
+    if total and completed == total:
+        messages.info(request, "This mentee has already completed all uploads.")
+        return redirect("hod_dashboard")
+
+    # Email target
+    to_email = (getattr(profile, "email", None) or user.email)
+    if not to_email:
+        messages.error(request, "Mentee email not found.")
+        return redirect("hod_dashboard")
+
+    student_name = (profile.student_name if profile and profile.student_name else user.username)
+
+    # Optional: prevent spamming (e.g., block if sent in last 24 hours)
+    recent = ReminderLog.objects.filter(mentee=mentee).order_by("-last_sent_at").first()
+    if recent and recent.last_sent_at >= timezone.now() - timedelta(hours=24):
+        messages.warning(request, "Reminder already sent within last 24 hours.")
+        return redirect("hod_dashboard")
+
+    # Determine "mentor" for logging (HOD is not a Mentor model)
+    # If you want HOD reminders not tied to mentor, you can set mentor nullable in ReminderLog.
+    # For now, attach the mentee’s assigned mentor (first mapping).
+    mentor = None
+    mapping = getattr(mentee, "mentee_mappings", None)
+    if mapping:
+        mm = mentee.mentee_mappings.select_related("mentor__user").first()
+        if mm:
+            mentor = mm.mentor
+
+    # If no mentor found, you have two choices:
+    # 1) Skip ReminderLog OR
+    # 2) Create a dummy mentor record for HOD (not recommended)
+    # We'll skip log if mentor is missing.
+    subject = "Reminder: Complete your pending document uploads (MentorConnect)"
+    body = (
+        f"Hello {student_name},\n\n"
+        f"This is a reminder from the HoD to upload your pending documents in MentorConnect.\n"
+        f"Your current progress: {completed}/{total} categories completed.\n\n"
+        f"Please complete the remaining uploads at the earliest.\n\n"
+        f"Regards,\n"
+        f"HOD\n\n\n"
+        f"*This is a system generated mail, do not reply.*"
+    )
+
+    # Send email
+    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [to_email], fail_silently=False)
+
+    # In-app notification
+    Notification.objects.create(
+        user=user,
+        message=f"Reminder:This reminder is from HoD. Please upload pending documents. Current progress {completed}/{total}."
+    )
+
+    # Log reminder (only if mentor exists)
+    if mentor:
+        ReminderLog.objects.create(
+            mentor=mentor,
+            mentee=mentee,
+            is_auto=False
+        )
+
+    messages.success(request, f"Reminder sent to {student_name} (Email + In-app).")
+    return redirect("hod_dashboard")
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)  # or is_staff if your HOD is staff
+def hod_remind_all_pending(request):
+    if request.method != "POST":
+        return redirect("hod_dashboard")
+
+    # Collect ALL mentees that exist in mappings (across all mentors)
+    mappings = MentorMentee.objects.select_related("mentee__user", "mentor").all()
+
+    sent_count = 0
+    skipped_completed = 0
+    skipped_no_email = 0
+    skipped_recent = 0
+
+    for mm in mappings:
+        mentee = mm.mentee
+        user = mentee.user
+        mentor = mm.mentor
+
+        profile = Profile.objects.filter(user=user).first()
+
+        completed, total, has_pending = get_document_progress(user)
+
+        # Skip if already complete
+        if total and completed == total:
+            skipped_completed += 1
+            continue
+
+        # Email target
+        to_email = (getattr(profile, "email", None) or user.email)
+        if not to_email:
+            skipped_no_email += 1
+            continue
+
+        # Anti-spam: skip if reminder sent in last 24h (any mentor/HOD)
+        recent = ReminderLog.objects.filter(mentee=mentee).order_by("-last_sent_at").first()
+        if recent and recent.last_sent_at >= timezone.now() - timedelta(hours=24):
+            skipped_recent += 1
+            continue
+
+        student_name = (profile.student_name if profile and profile.student_name else user.username)
+
+        subject = "Reminder: Complete your pending document uploads (MentorConnect)"
+        body = (
+            f"Hello {student_name},\n\n"
+            f"This is a reminder from the HoD to upload your pending documents in MentorConnect.\n"
+            f"Your current progress: {completed}/{total} categories completed.\n\n"
+            f"Please complete the remaining uploads at the earliest.\n\n"
+            f"Regards,\n"
+            f"HOD\n\n\n"
+            f"*This is a system generated mail, do not reply.*\n"
+        )
+
+        # Email
+        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [to_email], fail_silently=False)
+
+        # In-app notification
+        Notification.objects.create(
+            user=user,
+            message=f"Reminder: This reminder is from HoD of your department. Please upload pending documents. Current progress {completed}/{total}."
+        )
+
+        # Log reminder (uses the mentee's mentor from mapping)
+        ReminderLog.objects.create(
+            mentor=mentor,
+            mentee=mentee,
+            is_auto=False
+        )
+
+        sent_count += 1
+
+    messages.success(
+        request,
+        f"Remind All complete. Sent: {sent_count}, "
+        f"Skipped completed: {skipped_completed}, "
+        f"Skipped (no email): {skipped_no_email}, "
+        f"Skipped (recent <24hrs): {skipped_recent}."
+    )
+    return redirect("hod_dashboard")
 
 
 class HODDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
-
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
     <!-- Main Content -->
-    <div class="content flex-grow-1 p-4">
+    <div class="content shifted flex-grow-1 p-4">
         <div class="container">
 
             <!-- Header -->
@@ -46,6 +48,7 @@
                         <th class="text-center">Sr. No</th>
                         <th class="text-center">Name of Event</th>
                         <th class="text-center">Academic Year</th>
+                        <th class="text-center">Class</th>
                         <th class="text-center">Semester</th>
                         <th class="text-center">Type</th>
                         <th class="text-center">Venue</th>
@@ -60,6 +63,7 @@
                             <td class="text-center">{{ forloop.counter }}</td>
                             <td class="text-center">{{ item.name_of_event }}</td>
                             <td class="text-center">{{ item.academic_year }}</td>
+                            <td class="text-center">{{ item.year }}</td>
                             <td class="text-center">{{ item.semester }}</td>
                             <td class="text-center">{{ item.type }}</td>
                             <td class="text-center">{{ item.venue }}</td>
@@ -108,7 +112,7 @@
                                     <div class="row g-3">
                                     <small class="text-muted" style="color:#ff0000 !important;">
                                         Note: '*' asterisk denotes that the fields are required.</small>
-                                        <div class="col-12">
+                                        <div class="col-md-6">
                                             <label class="form-label">Name of Event <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.name_of_event|add_class:"form-control" }}
                                         </div>
@@ -116,6 +120,11 @@
                                         <div class="col-md-6">
                                             <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.academic_year|add_class:"form-control" }}
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.year|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-3">
@@ -128,7 +137,7 @@
                                             {{ form.type|add_class:"form-select" }}
                                         </div>
 
-                                        <div class="col-12">
+                                        <div class="col-md-3">
                                             <label class="form-label">Venue <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.venue|add_class:"form-control" }}
                                         </div>

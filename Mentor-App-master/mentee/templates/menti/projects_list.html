@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
-
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
     <!-- Main Content -->
-    <div class="content flex-grow-1 p-4">
+    <div class="content shifted flex-grow-1 p-4">
         <div class="container">
             <div class="d-flex align-items-center mb-3">
                 <h2 class="text-white p-3 bg-black rounded">
@@ -35,6 +37,7 @@
                             <th class="text-center">Sr. No</th>
                             <th class="text-center">Title</th>
                             <th class="text-center">Academic Year</th>
+                            <th class="text-center">Class</th>
                             <th class="text-center">Semester</th>
                             <th class="text-center">Type</th>
                             <th class="text-center">Details</th>
@@ -51,6 +54,7 @@
                                 <td class="text-center">{{ forloop.counter }}</td>
                                 <td class="text-center">{{ project.title }}</td>
                                 <td class="text-center">{{ project.academic_year }}</td>
+                                <td class="text-center">{{ project.year }}</td>
                                 <td class="text-center">{{ project.semester }}</td>
                                 <td class="text-center">{{ project.project_type }}</td>
                                 <td class="text-center">{{ project.details }}</td>
@@ -79,7 +83,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="9" class="text-center">No projects submitted yet.</td>
+                                <td colspan="10" class="text-center">No projects submitted yet.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -110,7 +114,7 @@
                                             <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.title|add_class:"form-control" }}
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-6">
                                             <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.academic_year|add_class:"form-select" }}
                                         </div>
@@ -118,11 +122,15 @@
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.semester|add_class:"form-select" }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
                                             <label class="form-label">Project Type <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.project_type|add_class:"form-select" }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.year|add_class:"form-select" }}
+                                        </div>
+                                        <div class="col-md-3">
                                             <label class="form-label">Guide Name <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.guide_name|add_class:"form-control" }}
                                         </div>

@@ -11,6 +11,13 @@
       <h2 class="mb-1">HOD Dashboard</h2>
       <p class="text-muted mb-0">Completion readiness overview of all mentees.</p>
     </div>
+      <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning"
+              onclick="return confirm('Send reminders to all mentees with pending documents?');">
+        <i class="bi bi-bell"></i> Remind All (Pending)
+      </button>
+    </form>
     <div class="d-flex flex-wrap gap-2">
       <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
         <i class="bi bi-file-earmark-excel"></i> Export Excel
@@ -86,7 +93,8 @@
           </div><br>
             <ul><li>Ready = 7/7 </li> <li>Partial = between 1 and 6</li> <li>Not started = 0/7</li></ul><hr>
             <p class="text-muted mt-3 mb-0 small">
-                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 7 (Internships, Sports, Projects, Other achievements, Certifications, Publications, Semester Results)
+                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 7
+                (Internships, Sports/Cultural, Projects, Other Achievements, Certifications, Paper Publications, Semester Results)
             </p>
         </div>
       </div>
@@ -106,7 +114,7 @@
           <div class="input-group input-group-sm">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
             <input type="text" id="menteeSearch" class="form-control"
-                   placeholder="Search by name or Moodle ID...">
+                   placeholder="Search by Mentee name or Moodle ID or department or semester or Mentor name...">
           </div><br>
           <!-- Mentor filter + search -->
           <h5 class="card-title mb-2">Mentor Filters</h5>
@@ -187,7 +195,6 @@
         <table id="menteesTable" class="table table-hover mb-0 text-center align-middle">
           <thead class="table-light">
             <tr>
-              <th>Sr. No.</th>
               <th>Moodle Id</th>
               <th>Name</th>
               <th>Department</th>
@@ -195,6 +202,7 @@
               <th>Contact</th>
               <th>Mentor</th>
               <th>Progress</th>
+              <th>Reminder</th>
             </tr>
           </thead>
           <tbody>
@@ -203,8 +211,10 @@
               data-readiness="{{ s.readiness }}"
               data-name="{{ s.student_name|lower }}"
               data-moodle="{{ s.moodle_id|lower }}"
+              data-department="{{ s.department|default_if_none:''|lower }}"
+              data-semester="{{ s.semester|default_if_none:''|lower }}"
+              data-mentor="{{ s.mentor_name|default_if_none:''|lower }}"
             >
-              <td>{{ forloop.counter }}</td>
               <td>{{ s.moodle_id }}</td>
               <td>{{ s.student_name }}</td>
               <td>{{ s.department }}</td>
@@ -222,6 +232,19 @@
                     style="width: {{ s.progress_percent }}%;">
                   </div>
                 </div>
+              </td>
+              <td>
+                  {% if s.readiness != "ready" %}
+                    <form method="post" action="{% url 'hod_remind_mentee' s.mentee_id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-warning btn-sm"
+                              onclick="return confirm('Send reminder to {{ s.student_name }}?');">
+                        <i class="bi bi-bell"></i> Remind
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="badge bg-success">Completed</span>
+                  {% endif %}
               </td>
             </tr>
             {% empty %}
@@ -258,23 +281,27 @@ document.addEventListener("DOMContentLoaded", function () {
   let activeFilter = "all";
 
   function applyFilters() {
-    const query = searchInput.value.toLowerCase().trim();
+    const query = (searchInput?.value || "").toLowerCase().trim();
 
     rows.forEach(row => {
-      const readiness = row.getAttribute("data-readiness");
+      const readiness = row.getAttribute("data-readiness") || "";
       const name = row.getAttribute("data-name") || "";
       const moodle = row.getAttribute("data-moodle") || "";
+      const department = row.getAttribute("data-department") || "";
+      const semester = row.getAttribute("data-semester") || "";
+      const mentor = row.getAttribute("data-mentor") || "";
 
       let visible = true;
 
-      // filter by readiness
+      // 1) filter by readiness
       if (activeFilter !== "all" && readiness !== activeFilter) {
         visible = false;
       }
 
-      // filter by search text
+      // 2) filter by search text (name / moodle / department / semester)
       if (visible && query) {
-        if (!name.includes(query) && !moodle.includes(query)) {
+        const haystack = `${name} ${moodle} ${department} ${semester} ${mentor}`;
+        if (!haystack.includes(query)) {
           visible = false;
         }
       }
@@ -287,7 +314,7 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       filterButtons.forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-      activeFilter = this.getAttribute("data-filter");
+      activeFilter = this.getAttribute("data-filter") || "all";
       applyFilters();
     });
   });

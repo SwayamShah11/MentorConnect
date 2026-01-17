@@ -3,7 +3,8 @@
 {% load widget_tweaks %}
 {% block title %} Credits {% endblock %}
 {% block content %}
-<div id="wrapper" class="d-flex">
+{% include "menti/mentee_sidebar.html" %}
+<div id="wrapper" class="d-flex active">
     <div id="page-content" class="flex-grow-1">
         <main role="main" class="container py-5">
             <div class="d-flex align-items-center mb-4">
@@ -85,6 +86,49 @@ a[aria-expanded="true"] .toggle-icon {
   margin-left: 250px;
 }
 
+/* Page content */
+#page-content {
+  transition: margin-left 0.3s ease-in-out;
+  margin-left: 250px; /* open by default */
+}
+
+/* Sidebar default */
+.sidebar {
+  width: 250px;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  height: calc(100vh - 56px);
+  transition: left 0.3s ease-in-out;
+  z-index: 1050;
+}
+
+/* Closed state */
+#wrapper:not(.active) .sidebar {
+  left: -250px;
+}
+
+#wrapper:not(.active) #page-content {
+  margin-left: 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  #page-content {
+    margin-left: 0 !important;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    left: 0;
+  }
+
+  #wrapper.active .sidebar {
+    transform: translateX(0);
+  }
+}
+
+
 .team-list {
   display: flex;
   flex-direction: column;
@@ -111,9 +155,4 @@ span.text-muted {
     color: #fff !important;
 }
 </style>
-<script>
-  document.getElementById("toggleSidebarBtn").addEventListener("click", function () {
-    document.getElementById("wrapper").classList.toggle("active");
-  });
-</script>
 {% endblock %}

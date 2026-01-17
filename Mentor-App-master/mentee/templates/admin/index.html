@@ -1,6 +1,6 @@
 {% extends "admin/index.html" %}
-
 {% block content %}
+{% if user.is_superuser == True %}
 <style>
 .custom-btn {
     background: #ffc107;
@@ -22,6 +22,6 @@
         📝 View Activity Logs
     </a>
 </div>
-
+{% endif %}
 {{ block.super }}
 {% endblock %}

@@ -1,12 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from PIL import Image
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from datetime import datetime, timedelta
 from django.utils.timezone import now
 import uuid
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from datetime import date
 
@@ -70,6 +67,13 @@ AY = [
 SEMESTER = [
         ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
         ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
+    ]
+
+YEAR_CHOICES = [
+        ('FE', 'FE'),  # First Year
+        ('SE', 'SE'),  # Second Year
+        ('TE', 'TE'),  # Third Year
+        ('BE', 'BE'),  # Final Year
     ]
 
 class Profile(models.Model):
@@ -184,6 +188,7 @@ class InternshipPBL(models.Model):
     title = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=200, choices=TYPE_CHOICES, blank=True, null=True)
     company_name = models.CharField(max_length=100, blank=True, null=True)
     details = models.TextField(max_length=500, blank=True, null=True)
@@ -214,6 +219,7 @@ class Project(models.Model):
     title = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     project_type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
     details = models.TextField(max_length=1000, blank=True, null=True)
     guide_name = models.CharField(max_length=100, blank=True, null=True)
@@ -252,6 +258,7 @@ class SportsCulturalEvent(models.Model):
     name_of_event = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, blank=True, null=True)
     venue = models.CharField(max_length=500, blank=True, null=True)
     level = models.CharField(max_length=50, choices=LEVEL_CHOICES, blank=True, null=True)
@@ -290,6 +297,7 @@ class OtherEvent(models.Model):
     name_of_event = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     level = models.CharField(max_length=50, choices=LEVEL_CHOICES, blank=True, null=True)
     details = models.TextField(max_length=1000, blank=True, null=True)
     prize_won = models.CharField(max_length=20, choices=PRIZE_CHOICES, blank=True, null=True)
@@ -311,6 +319,7 @@ class CertificationCourse(models.Model):
     valid_upto = models.CharField(max_length=50, null=True, blank=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     no_of_days = models.PositiveIntegerField(blank=True, null=True)
@@ -345,7 +354,9 @@ class PaperPublication(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
+    conf_name = models.CharField(max_length=255, null=True, blank=True)
     details = models.TextField(max_length=500, blank=True, null=True)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, blank=True, null=True)
     amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
@@ -370,6 +381,7 @@ class SelfAssessment(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     goals = models.JSONField(default=list)  # stores multiple goals
     reason = models.TextField(max_length=500, blank=True, null=True)
 
@@ -668,7 +680,7 @@ class Msg(models.Model):
     class Meta:
         ordering = ['-sent_at']
 
-#zaruuu
+
 class MentorAdmin(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     specialization = models.CharField(max_length=255, blank=True, null=True)
@@ -755,9 +767,11 @@ class MentorMenteeInteraction(models.Model):
     mentor = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(null=True, blank=True)
     semester = models.CharField(max_length=10, choices=Profile.SEMESTER_CHOICES, null=True, blank=True)
+    class_year = models.CharField(max_length=10, blank=True, null=True)
     agenda = models.TextField(null=True, blank=True)
     mentees = models.ManyToManyField(User, related_name="mentor_interactions")
     ai_summary = models.TextField(blank=True, null=True)
+    ai_summary_generated = models.BooleanField(default=False, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

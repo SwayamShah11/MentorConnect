@@ -86,27 +86,22 @@
     </div>
     </header>
 
-
-
 <div class="container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert
+            {% if message.tags == 'error' %}alert-danger
+            {% elif message.tags == 'success' %}alert-success
+            {% else %}alert-info{% endif %}
+            alert-dismissible fade show text-center fw-bold" role="alert">
 
-  {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-              </div>
-            {% endfor %}
+          {{ message }}
 
-
-  {% endif %}
-
-  {% block content %}
-
-
-  {% endblock %}
-
-
-
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% block content %} {% endblock %}
 </div>
 
     <!-- Optional JavaScript -->
@@ -139,6 +134,5 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 </script>
-
   </body>
 </html>

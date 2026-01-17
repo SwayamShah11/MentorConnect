@@ -108,22 +108,20 @@
      <br><br><br>
 
   {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-              </div>
-            {% endfor %}
-  {% endif %}
+  {% for message in messages %}
+    <div class="alert
+        {% if message.tags == 'error' %}alert-danger
+        {% elif message.tags == 'success' %}alert-success
+        {% else %}alert-info{% endif %}
+        alert-dismissible fade show text-center fw-bold" role="alert">
 
-  {% block content %}
+      {{ message }}
 
-    <br><br>
-
-
-  {% endblock %}
-
-
-
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+  {% block content %} {% endblock %}
 </div>
 
     <!-- Optional JavaScript -->
@@ -154,6 +152,13 @@
         }
       });
     }
+
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+          alert.classList.remove('show');
+          alert.classList.add('fade');
+        });
+    }, 10000);
   </script>
   </body>
 </html>

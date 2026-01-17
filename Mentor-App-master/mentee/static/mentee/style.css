@@ -155,15 +155,17 @@ a.article-title:hover {
             height: calc(100vh - 56px);   /* Full height minus navbar */
             position: fixed;
             top: 56px;                    /* Push below navbar */
-            left: -250px;
+            left: 0;
             overflow-y: auto;             /* Scrollable */
             transition: left 0.3s ease-in-out;
             z-index: 1050; /* stays above content */
             scrollbar-width: thin;        /* Firefox */
             scrollbar-color: #6c757d #212529; /* Custom scrollbar colors */
-            <!--    background-color: #343a40;    /* Dark sidebar (Bootstrap dark) */-->
+            /*background-color: #343a40;*/    /* Dark sidebar (Bootstrap dark) */
         }
-
+        .sidebar:not(.active) {
+           left: -250px;
+        }
         /* Custom scrollbar for WebKit (Chrome, Edge, Safari) */
         .sidebar::-webkit-scrollbar {
             width: 6px;
@@ -201,6 +203,7 @@ a.article-title:hover {
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                left: 0;
             }
 
             .sidebar.show {

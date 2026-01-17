@@ -92,6 +92,8 @@
 // ✅ Institute Logo (Base64 OR Direct URL)
 const instituteLogoURL = "/media/logo.png";
 
+let currentCategory = null;
+
 const internshipData = {{ internship_data|safe }};
 const projectData = {{ project_data|safe }};
 const sportsData = {{ sports_data|safe }};
@@ -129,13 +131,12 @@ function getChartTitle(type) {
 
 // ✅ VIEW CHART BUTTON
 function loadCharts() {
-
   const category = document.getElementById("categorySelect").value;
   if (!category) {
     alert("Please select a category first!");
     return;
   }
-
+  currentCategory = category;
   if (category === "internship") {
     labels = internshipData.map(i => i.user__profile__branch || "N/A");
     values = internshipData.map(i => i.total);
@@ -225,24 +226,43 @@ function showChart(type) {
   };
 
   if (type === "bar") {
-    const ctx = document.getElementById("barChart");
-    ctx.classList.remove("d-none");
+      const ctx = document.getElementById("barChart");
+      ctx.classList.remove("d-none");
 
-    barChart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: "Count",
-          data: values,
-          backgroundColor: [
-            "#0d6efd","#198754","#dc3545","#ffc107",
-            "#6610f2","#20c997","#fd7e14"
-          ]
-        }]
-      },
-      options: commonOptions
-    });
+      barChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Count",
+            data: values,
+            backgroundColor: [
+              "#0d6efd","#198754","#dc3545","#ffc107",
+              "#6610f2","#20c997","#fd7e14"
+            ]
+          }]
+        },
+        options: {
+          ...commonOptions,
+
+          // ✅ CLICK ON BAR -> DOWNLOAD EXCEL
+          onClick: function(evt, elements) {
+            if (!elements || !elements.length) return;
+
+            const index = elements[0].index;
+            const dept = labels[index]; // department label from x-axis
+
+            if (!dept || dept === "N/A" || dept === "Unknown") {
+              alert("Invalid department selected.");
+              return;
+            }
+
+            // ✅ download Excel
+            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&dept=${encodeURIComponent(dept)}`;
+            window.location.href = url;
+          }
+        }
+      });
   }
 
   if (type === "pie") {

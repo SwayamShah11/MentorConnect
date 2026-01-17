@@ -93,6 +93,21 @@
       <h5 class="text-danger text-center fw-bold">
         ⚠️ Mentees Who Have Not Uploaded Documents
       </h5>
+        {% if no_document_mentees %}
+            <form method="post" action="{% url 'remind_all_mentees' %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-danger btn-sm position-relative"
+                      onclick="return confirm('Send reminder to all pending mentees?');">
+                <i class="bi bi-bell-fill"></i> Remind All
+                <!-- 🔴 Count Badge -->
+                <span class="position-absolute top-0 start-100 translate-middle
+                             badge rounded-pill bg-warning text-dark">
+                  {{ pending_reminder_count }}
+                </span>
+              </button>
+            </form>
+        {% endif %}
 
       <table class="table table-bordered table-hover table-striped text-center mt-2">
         <thead class="table-danger">

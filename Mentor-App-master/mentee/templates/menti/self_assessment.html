@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex">
     <!-- Sidebar -->
-
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
     <!-- Main Content -->
-    <div class="content flex-grow-1 p-4">
+    <div class="content shifted flex-grow-1 p-4">
         <div class="container mt-4">
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
@@ -27,6 +29,7 @@
                 <thead class="table-dark">
                     <tr>
                         <th class="text-center">Semester</th>
+                        <th class="text-center">Class</th>
                         <th class="text-center">Goals/Plan</th>
                         <th class="text-center">Reason</th>
                         {% if is_mentor_view == False %}
@@ -38,6 +41,7 @@
                     {% for item in assessments %}
                     <tr>
                         <td class="text-center">{{ item.semester }}</td>
+                        <td class="text-center">{{ item.year }}</td>
                         <td class="text-center">
                             {% for g in item.goals %}
                                 {{ g }}{% if not forloop.last %}, {% endif %}
@@ -53,7 +57,7 @@
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4" class="text-center">No records yet</td></tr>
+                    <tr><td colspan="5" class="text-center">No records yet</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -88,8 +92,14 @@
                                             {{ form.semester|add_class:"form-control" }}
                                         </div>
 
-                                        <!-- Goals/Plan -->
+                                        <!-- Class -->
                                         <div class="col-md-6">
+                                            <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.year|add_class:"form-control" }}
+                                        </div>
+
+                                        <!-- Goals/Plan -->
+                                        <div class="col-12">
                                             <label class="form-label">Goals/Plan <span style="color:#ff0000 !important;">*</span></label>
                                             <div class="form-control p-2" style="height:auto;">
                                                 {{ form.goals }}
@@ -173,6 +183,11 @@ a[aria-expanded="true"] .toggle-icon {
     max-height: 800px; /* set bigger than your form height */
 }
 select[name="semester"] {
+      -webkit-appearance: menulist !important;
+      -moz-appearance: menulist !important;
+      appearance: menulist !important;
+    }
+select[name="year"] {
       -webkit-appearance: menulist !important;
       -moz-appearance: menulist !important;
       appearance: menulist !important;

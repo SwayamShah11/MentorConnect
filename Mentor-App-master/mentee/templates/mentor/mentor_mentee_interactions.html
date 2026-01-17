@@ -74,6 +74,7 @@
             <tr>
               <th scope="col" class="text-center">Date</th>
               <th scope="col" class="text-center">Semester</th>
+              <th scope="col" class="text-center">Class</th>
               <th scope="col" class="text-center">Agenda Discussed</th>
               <th scope="col" class="text-center">Mentees Present</th>
               <th scope="col" class="text-center">Actions</th>
@@ -85,6 +86,7 @@
                 <tr>
                   <td class="text-center">{{ i.date|date:"d-m-Y" }}</td>
                   <td class="text-center">{{ i.semester }}</td>
+                  <td class="text-center">{{ i.class_year }}</td>
                   <td style="max-width: 350px;">
                     <!-- ✅ Original Agenda -->
                     <div class="small text-wrap">{{ i.agenda }}</div>
@@ -92,22 +94,26 @@
                     {{ i.agenda }}
                     </textarea>
                     <!-- ✅ AI Summary Toggle -->
-                      {% if i.ai_summary %}
-                        <button class="btn btn-sm btn-outline-warning mt-2"
-                                onclick="toggleSummary('{{ i.id }}')">
+                      <button
+                          id="view_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-warning mt-2 {% if not i.ai_summary or not i.ai_summary_generated %}d-none{% endif %}"
+                          type="button"
+                          onclick="toggleSummary('{{ i.id }}')">
                           View AI Summary
                         </button>
 
-                        <div id="ai_summary_{{ i.id }}"
-                             class="alert alert-warning small mt-2 text-start d-none">
+                        <div
+                          id="ai_summary_{{ i.id }}"
+                          class="alert alert-warning small mt-2 text-start d-none">
                           <b>AI Summary:</b>
-                            <ul class="mb-0 mt-1">
+                          <ul class="mb-0 mt-1" id="ai_summary_list_{{ i.id }}">
+                            {% if i.ai_summary and i.ai_summary_generated %}
                               {% for line in i.ai_summary.splitlines %}
                                 <li>{{ line|cut:"• " }}</li>
                               {% endfor %}
-                            </ul>
+                            {% endif %}
+                          </ul>
                         </div>
-                      {% endif %}
                         <div class="progress mt-2 d-none" id="ai_progress_wrap_{{ i.id }}">
                           <div class="progress-bar progress-bar-striped progress-bar-animated"
                                id="ai_progress_{{ i.id }}"
@@ -115,10 +121,10 @@
                                style="width: 0%">0%</div>
                         </div>
 
-                      <!-- ✅ Regenerate Button -->
+                      <!-- ✅ Generate Button -->
                       <button class="btn btn-sm btn-outline-dark mt-2"
                               onclick="regenerateAISummary('{{ i.id }}')">
-                        🔄 Regenerate
+                        🔄 Generate
                       </button>
                   </td>
                   <td style="max-width: 260px;" class="text-center">
@@ -171,6 +177,7 @@
         <th>Moodle ID</th>
         <th>Name</th>
         <th>Semester</th>
+        <th>Year</th>
         <th>Department</th>
         <th>Attendance %</th>
       </tr>
@@ -179,6 +186,7 @@
         <td>{{ a.moodle }}</td>
         <td>{{ a.name }}</td>
         <td>{{ a.semester }}</td>
+        <td>{{ a.year }}</td>
         <td>{{ a.branch }}</td>
         <td>{{ a.percent }}%</td>
       </tr>
@@ -238,11 +246,16 @@
               <input type="date" name="date" class="form-control" required>
             </div>
 
-            <!-- Semester (Auto) -->
-            <div class="col-md-6">
+            <!-- Semester & Class (Auto) -->
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Semester (Auto from mentee)</label>
               <input type="text" id="autoSemester" class="form-control" readonly
                      placeholder="Select mentees to auto-fill">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Class (Auto from mentee)</label>
+              <input type="text" id="autoClass" class="form-control" readonly
+                     placeholder="FE / SE / TE / BE">
             </div>
           </div>
 
@@ -356,15 +369,48 @@
 document.addEventListener("DOMContentLoaded", function () {
   const mentees = document.querySelectorAll(".mentee-checkbox");
   const semesterField = document.getElementById("autoSemester");
+  const classField = document.getElementById("autoClass");
+
+  function romanToInt(r) {
+    if (!r) return null;
+    const s = String(r).trim().toUpperCase();
+
+    const map = { I:1, V:5, X:10 };
+    let total = 0, prev = 0;
+
+    for (let i = s.length - 1; i >= 0; i--) {
+      const val = map[s[i]];
+      if (!val) return null;
+      if (val < prev) total -= val;
+      else { total += val; prev = val; }
+    }
+    return total;
+  }
+
+  function semToClass(sem) {
+    const n = romanToInt(sem);
+    if (!n) return "";
+
+    if (n === 1 || n === 2) return "FE";
+    if (n === 3 || n === 4) return "SE";
+    if (n === 5 || n === 6) return "TE";
+    if (n === 7 || n === 8) return "BE";
+    return "";
+  }
 
   window.restoreSemester = function () {
     const selected = [...mentees].filter(cb => cb.checked);
-    const semesters = [...new Set(selected.map(cb => cb.dataset.semester))];
+
+    const semesters = [...new Set(selected.map(cb => cb.dataset.semester).filter(Boolean))];
     semesterField.value = semesters.join(", ");
+
+    const classes = [...new Set(semesters.map(semToClass).filter(Boolean))];
+    classField.value = classes.join(", ");
   };
 
-  mentees.forEach(cb => cb.addEventListener("change", restoreSemester));
+  mentees.forEach(cb => cb.addEventListener("change", window.restoreSemester));
 });
+
 
 
 // Make bootstrap toasts auto-hide
@@ -469,61 +515,94 @@ function toggleSummary(id) {
 }
 
 // ✅ AJAX AI Summary Regenerator
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function setProgress(progressBar, pct, text, isError=false) {
+  progressBar.classList.remove("bg-danger", "bg-success");
+  if (isError) progressBar.classList.add("bg-danger");
+  progressBar.style.width = pct + "%";
+  progressBar.innerText = text;
+}
+
 function regenerateAISummary(id) {
-  if (!confirm("Regenerate AI Summary?")) return;
+  if (!confirm("Generate AI Summary?")) return;
 
   const progressWrap = document.getElementById("ai_progress_wrap_" + id);
   const progressBar = document.getElementById("ai_progress_" + id);
+  const summaryBox = document.getElementById("ai_summary_" + id);
 
   progressWrap.classList.remove("d-none");
-  progressBar.style.width = "5%";
-  progressBar.innerText = "5%";
+  setProgress(progressBar, 5, "5%");
 
   let fakeProgress = 5;
-
-  // ✅ Simulated live progress while AI runs
   const progressTimer = setInterval(() => {
     if (fakeProgress < 90) {
       fakeProgress += Math.floor(Math.random() * 6) + 3;
-      progressBar.style.width = fakeProgress + "%";
-      progressBar.innerText = fakeProgress + "%";
+      setProgress(progressBar, fakeProgress, fakeProgress + "%");
     }
   }, 500);
 
   fetch(`/mentor/regenerate-ai-summary/${id}/`, {
     method: "POST",
     headers: {
-      "X-CSRFToken": "{{ csrf_token }}"
+      "X-CSRFToken": getCookie("csrftoken"),
+      "X-Requested-With": "XMLHttpRequest"
     }
   })
-  .then(res => res.json())
+  .then(async (res) => {
+    // If server returned HTML/redirect/403, res.json() will fail.
+    const contentType = res.headers.get("content-type") || "";
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`HTTP ${res.status}. ${body.slice(0, 200)}`);
+    }
+    if (!contentType.includes("application/json")) {
+      const body = await res.text();
+      throw new Error(`Expected JSON but got: ${contentType}. ${body.slice(0, 200)}`);
+    }
+    return res.json();
+  })
   .then(data => {
     clearInterval(progressTimer);
 
-    if (data.success) {
-      progressBar.style.width = "100%";
-      progressBar.innerText = "100%";
+    if (data && data.success) {
+      setProgress(progressBar, 100, "Done");
+      progressBar.classList.add("bg-success");
 
-      document.getElementById("ai_summary_" + id).innerHTML =
-        "<b>AI Summary:</b> " + data.summary;
+      // ✅ Show the "View AI Summary" button immediately
+      const viewBtn = document.getElementById("view_summary_btn_" + id);
+      if (viewBtn) viewBtn.classList.remove("d-none");
 
-      document.getElementById("ai_summary_" + id).classList.remove("d-none");
+      // ✅ Fill the UL list
+      const ul = document.getElementById("ai_summary_list_" + id);
+      if (ul) {
+        const lines = (data.summary || "").split("\n").filter(Boolean);
+        ul.innerHTML = lines.map(line => `<li>${line.replace("• ", "")}</li>`).join("");
+      }
 
-      setTimeout(() => {
-        progressWrap.classList.add("d-none");
-      }, 800);
-    }
-    else {
-      progressBar.classList.add("bg-danger");
-      progressBar.innerText = "Failed";
+      // ✅ Optionally auto-open the summary box after generating
+      const summaryBox = document.getElementById("ai_summary_" + id);
+      if (summaryBox) summaryBox.classList.remove("d-none");
+
+      setTimeout(() => progressWrap.classList.add("d-none"), 800);
+    } else {
+      setProgress(progressBar, 100, "Failed", true);
     }
   })
-  .catch(() => {
+  .catch(err => {
     clearInterval(progressTimer);
-    progressBar.classList.add("bg-danger");
-    progressBar.innerText = "Error";
+    setProgress(progressBar, 100, "Error", true);
+
+    // Optional: log the real reason so you can see it in DevTools console
+    console.error("AI Summary AJAX error:", err);
   });
 }
+
 
 
 // ✅ Spinner Loader on Save Interaction

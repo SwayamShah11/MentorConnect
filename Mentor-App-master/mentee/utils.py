@@ -2,6 +2,9 @@ from .models import (Profile, InternshipPBL, Project, CertificationCourse, Paper
     OtherEvent, SemesterResult, EducationalDetail, StudentInterest, StudentProfileOverview)
 from django.utils import timezone
 from zoneinfo import ZoneInfo
+from functools import wraps
+from django.shortcuts import redirect
+from django.contrib import messages
 
 def compute_profile_completeness(user):
     """
@@ -118,3 +121,31 @@ def to_ist(dt):
     if timezone.is_naive(dt):
         dt = timezone.make_aware(dt, timezone.utc)
     return dt.astimezone(IST).strftime("%d-%m-%Y %H:%M:%S")
+
+
+def mentee_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # login_required will handle if you also use it; otherwise redirect yourself
+            return redirect("login")  # change to your mentee login url name
+
+        # strict mentee check (recommended)
+        if not hasattr(request.user, "mentee") or not request.user.is_mentee:
+            messages.error(request, "You are not authorized to access the mentee portal. Please use mentor login page.")
+            return redirect("home")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+def mentor_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("login1")  # change to your mentor login url name
+
+        if not hasattr(request.user, "mentor") or not request.user.is_mentor:
+            messages.error(request, "You are not authorized to access the mentor portal. Please use mentee login page")
+            return redirect("home")
+        return view_func(request, *args, **kwargs)
+    return _wrapped

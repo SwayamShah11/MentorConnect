@@ -36,11 +36,11 @@ def create_student_profile_overview(sender, instance, created, **kwargs):
     if created:
         StudentProfileOverview.objects.create(user=instance)
 
-@receiver(post_save, sender=MentorMenteeInteraction)
-def generate_summary(sender, instance, created, **kwargs):
-    if instance.agenda and not instance.ai_summary:
-        instance.ai_summary = generate_ai_summary(instance.agenda)
-        instance.save(update_fields=["ai_summary"])
+# @receiver(post_save, sender=MentorMenteeInteraction)
+# def generate_summary(sender, instance, created, **kwargs):
+#     if instance.agenda and not instance.ai_summary:
+#         instance.ai_summary = generate_ai_summary(instance.agenda)
+#         instance.save(update_fields=["ai_summary"])
 
 
 def notify_mentors_on_upload(user):
