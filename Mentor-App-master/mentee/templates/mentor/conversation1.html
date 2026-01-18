@@ -7,7 +7,7 @@
 {% block content %}
 <style>
 /* your CSS (kept same as before for look) */
-.chat-wrapper { display:flex; flex-direction:column; height:100vh; background:#111; }
+.chat-wrapper { display:flex; flex-direction:column; height:100vh;}
 .chat-header { background:#202c33; color:white; padding:15px; font-size:18px; display:flex; align-items:center; gap:10px; }
 .chat-header .status { font-size:13px; color:#8ecae6; }
 .chat-body { flex:1; overflow-y:auto; padding:20px; background:#0b141a; }
@@ -111,10 +111,26 @@
 .jump-latest-btn:hover {
   background: #007b63;
 }
+.search-hit {
+  background: #ffd54f;
+  color: #111;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.search-current {
+  animation: searchPulse 1.2s ease-in-out infinite;
+  background: #ffb703;
+  color: #111;
+}
 
+@keyframes searchPulse {
+  0%   { box-shadow: 0 0 0px rgba(255,183,3, 0.6); }
+  50%  { box-shadow: 0 0 10px rgba(255,183,3, 0.9); }
+  100% { box-shadow: 0 0 0px rgba(255,183,3, 0.6); }
+}
 </style>
 
-<div class="chat-wrapper">
+<div class="chat-wrapper"><br><br><br>
   <div class="chat-header">
     {% if conv.receipient.profile.image  %}
       <img src="{{ conv.receipient.profile.image.url }}" width="50" height="50" style="border-radius:50%;">
@@ -128,6 +144,31 @@
       <div><strong>{{ conv.receipient.username }}</strong></div>
       {% endif %}
       <div class="status" id="presence-status">offline</div>
+    </div>
+    <!--Search in chat-->
+    <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+      <span id="searchCounter" style="font-size:12px; color:#8ecae6; display:none;">0 / 0</span>
+      <input
+        type="text"
+        id="chatSearchInput"
+        placeholder="Search…"
+        style="display:none; padding:6px 10px; border-radius:6px; border:none; outline:none; background:#2a3942; color:white; font-size:13px; width:160px;"
+      >
+      <button
+        id="searchUpBtn"
+        style="display:none; background:none; border:none; color:white; font-size:16px; cursor:pointer;"
+        title="Previous"
+      >⬆️</button>
+      <button
+        id="searchDownBtn"
+        style="display:none; background:none; border:none; color:white; font-size:16px; cursor:pointer;"
+        title="Next"
+      >⬇️</button>
+      <button
+        id="chatSearchBtn"
+        style="background:none; border:none; color:white; font-size:18px; cursor:pointer;"
+        title="Search"
+      >🔍</button>
     </div>
   </div>
 
@@ -815,6 +856,139 @@ function renderMessage(msg) {
   }
   // scroll logic
   smartScroll();
+}
+
+
+// Search in chat logic
+const searchBtn = document.getElementById("chatSearchBtn");
+const searchInput = document.getElementById("chatSearchInput");
+const searchCounter = document.getElementById("searchCounter");
+const searchUpBtn = document.getElementById("searchUpBtn");
+const searchDownBtn = document.getElementById("searchDownBtn");
+
+let searchResults = [];
+let currentSearchIndex = -1;
+
+/* Toggle search bar */
+searchBtn.addEventListener("click", () => {
+  const visible = searchInput.style.display === "inline-block";
+
+  searchInput.style.display = visible ? "none" : "inline-block";
+  searchCounter.style.display = visible ? "none" : "inline-block";
+  searchUpBtn.style.display = visible ? "none" : "inline-block";
+  searchDownBtn.style.display = visible ? "none" : "inline-block";
+
+  if (!visible) {
+    searchInput.focus();
+  } else {
+    clearSearchHighlights();
+    searchCounter.textContent = "0 / 0";
+  }
+});
+
+/* Search on typing */
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.trim().toLowerCase();
+
+  clearSearchHighlights();
+  searchResults = [];
+  currentSearchIndex = -1;
+
+  if (!query) {
+    updateCounter();
+    return;
+  }
+
+  const messages = document.querySelectorAll(".msg-text");
+
+  messages.forEach(msg => {
+    const text = msg.textContent.toLowerCase();
+    if (text.includes(query)) {
+      highlightText(msg, query);
+      searchResults.push(msg.closest(".msg-bubble"));
+    }
+  });
+
+  jumpToResult(0);
+  updateCounter();
+});
+
+/* Keyboard navigation */
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    jumpToResult(currentSearchIndex + 1);
+  }
+
+  if (e.key === "Enter" && e.shiftKey) {
+    e.preventDefault();
+    jumpToResult(currentSearchIndex - 1);
+  }
+
+  if (e.key === "Escape") {
+    searchBtn.click();
+  }
+});
+
+/* Buttons */
+searchDownBtn.addEventListener("click", () => {
+  jumpToResult(currentSearchIndex + 1);
+});
+
+searchUpBtn.addEventListener("click", () => {
+  jumpToResult(currentSearchIndex - 1);
+});
+
+/* Highlight matches */
+function highlightText(el, query) {
+  const safe = el.textContent;
+  const regex = new RegExp(`(${query})`, "gi");
+  el.innerHTML = safe.replace(regex, `<span class="search-hit">$1</span>`);
+}
+
+/* Clear highlights */
+function clearSearchHighlights() {
+  document.querySelectorAll(".msg-text").forEach(el => {
+    el.innerHTML = el.textContent;
+  });
+}
+
+/* Jump to result */
+function jumpToResult(index) {
+  if (!searchResults.length) return;
+
+  if (index < 0) index = searchResults.length - 1;
+  if (index >= searchResults.length) index = 0;
+
+  currentSearchIndex = index;
+  const target = searchResults[currentSearchIndex];
+
+  // Remove previous glow
+  document.querySelectorAll(".search-current").forEach(el => {
+    el.classList.remove("search-current");
+  });
+
+  // Add glow to current match inside this bubble
+  const hit = target.querySelector(".search-hit");
+  if (hit) {
+    hit.classList.add("search-current");
+  }
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  updateCounter();
+}
+
+/* Counter display */
+function updateCounter() {
+  if (!searchResults.length) {
+    searchCounter.textContent = "0 / 0";
+  } else {
+    searchCounter.textContent = `${currentSearchIndex + 1} / ${searchResults.length}`;
+  }
 }
 
 </script>

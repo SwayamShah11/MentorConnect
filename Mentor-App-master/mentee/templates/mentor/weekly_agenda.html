@@ -5,12 +5,17 @@
 <div class="container py-4">
 
   <h3 class="fw-bold mb-1">Weekly Agenda</h3>
+    {% if user.is_authenticated and user.is_staff %}
+    <small class="text-muted mb-3">Add, Edit, Delete, View and Download the Agenda for your session.</small><hr>
+    {% endif %}
+    {% if not user.is_staff %}
   <small class="text-muted mb-3">View and download the Agenda for your session.</small><hr>
+    {% endif %}
 
   <!-- Filters -->
   <form method="get" class="row g-2 mb-3">
       <div class="col-md-3 mb-3">
-        <label>Week</label>
+        <label class="fw-bold">Week</label>
         <select name="week" class="form-select">
           <option value="">All Weeks</option>
           {% for val, label in WEEK_CHOICES %}
@@ -22,7 +27,7 @@
       </div>
 
       <div class="col-md-3">
-        <label>Year</label>
+        <label class="fw-bold">Year</label>
         <select name="year" class="form-select">
           <option value="">All Classes</option>
           {% for val, label in YEAR_CHOICES %}
@@ -34,7 +39,7 @@
       </div>
 
       <div class="col-md-3">
-        <label>Semester</label>
+        <label class="fw-bold">Semester</label>
         <select name="sem" class="form-select">
           <option value="">All Semesters</option>
           {% for val, label in SEM_CHOICES %}
@@ -46,9 +51,9 @@
       </div>
 
       <div class="col-md-3 gap-2">
-        <label>Filter</label><br>
+        <label class="fw-bold">Filter</label><br>
         <button class="btn btn-primary" type="submit">Search</button>
-        <a class="btn btn-outline-secondary" href="{% url 'weekly-agenda' %}">Reset</a>
+        <a class="btn btn-dark" href="{% url 'weekly-agenda' %}">Reset</a>
       </div>
   </form>
 
@@ -56,8 +61,8 @@
   {% if can_edit %}
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <span>
-        {% if editing %}Edit Entry #{{ editing_entry.pk }}{% else %}Add New Entry{% endif %}
+      <span class="fw-bold">
+        {% if editing %}Edit Agenda #{{ editing_entry.pk }}{% else %}Add New Agenda{% endif %}
       </span>
 
       {% if editing %}
@@ -78,12 +83,12 @@
           <input type="hidden" name="entry_id" value="{{ editing_entry.pk }}">
         {% endif %}
 
-        <div class="col-md-3">{{ form.date.label_tag }}{{ form.date }}</div>
-        <div class="col-md-3">{{ form.academic_year.label_tag }}{{ form.academic_year }}</div>
-        <div class="col-md-2">{{ form.week.label_tag }}{{ form.week }}</div>
-        <div class="col-md-4">{{ form.year.label_tag }}{{ form.year }}</div>
-        <div class="col-md-2">{{ form.sem.label_tag }}{{ form.sem }}</div>
-        <div class="col-md-6">
+        <div class="col-md-3 fw-bold">{{ form.date.label_tag }}{{ form.date }}</div>
+        <div class="col-md-3 fw-bold">{{ form.academic_year.label_tag }}{{ form.academic_year }}</div>
+        <div class="col-md-2 fw-bold">{{ form.week.label_tag }}{{ form.week }}</div>
+        <div class="col-md-4 fw-bold">{{ form.year.label_tag }}{{ form.year }}</div>
+        <div class="col-md-2 fw-bold">{{ form.sem.label_tag }}{{ form.sem }}</div>
+        <div class="col-md-6 fw-bold">
           {{ form.agenda_file.label_tag }}{{ form.agenda_file }}
           {% if editing_entry and editing_entry.agenda_file %}
             <small class="d-block mt-1">
@@ -106,7 +111,7 @@
 {% endif %}
   <!-- Table -->
   <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center bg-dark text-light">Entries
+    <div class="card-header d-flex justify-content-between align-items-center bg-dark text-light">Agendas
         {% if user.is_staff %}
           <form method="post" action="{% url 'weekly-agenda' %}"
                 onsubmit="return confirm('This will delete ALL agenda entries permanently. Continue?');"
@@ -152,8 +157,8 @@
             <td class="text-center">{{ e.created_by.username|default:"-" }}</td>
 
             {% if can_edit and user.is_staff %}
-            <td class="text-center">
-                <div class="d-flex gap-2">
+            <td class="align-items-center">
+                <div class="d-flex align-items-center gap-2">
                 <!-- Edit link keeps current filters -->
                   <a class="btn btn-sm btn-outline-warning"
                      href="{% url 'weekly-agenda' %}?edit={{ e.pk }}&week={{ filters.week }}&class={{ filters.class }}&sem={{ filters.sem }}">

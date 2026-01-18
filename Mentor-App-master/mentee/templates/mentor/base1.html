@@ -39,7 +39,7 @@
           <div class="collapse navbar-collapse" id="navbarToggle">
             <div class="navbar-nav mr-auto">
                 <div class="navbar-nav mx-5">
-                    {% if user.is_authenticated and request.user.is_staff %}
+                    {% if user.is_authenticated and request.user.is_superuser %}
                           <a class="nav-link" href="{% url 'admin:index' %}">
                             <i class="bi bi-house-fill"></i> Admin
                           </a>
