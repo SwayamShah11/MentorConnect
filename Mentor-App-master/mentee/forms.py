@@ -1,11 +1,10 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.contrib.auth.models import User
 from .models import (Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent,
                      CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                      EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply, MentorMenteeInteraction,
-                     StudentProfileOverview)
+                     StudentProfileOverview, WeeklyAgenda)
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
@@ -216,7 +215,8 @@ class SelfAssessmentForm(forms.ModelForm):
         model = SelfAssessment
         fields = ["semester", "goals", "year", "reason"]
         widgets = {
-            "semester": forms.Select(attrs={"class": "form-control"}),
+            "semester": forms.Select(attrs={"class": "form-select"}),
+            "year": forms.Select(attrs={"class": "form-select"}),
             "reason": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Reason"}),
         }
 
@@ -264,7 +264,7 @@ class SemesterResultForm(forms.ModelForm):
         model = SemesterResult
         fields = ["semester", "pointer", "no_of_kt", "marksheet"]
         widgets = {
-            "semester": forms.Select(attrs={"class": "form-control"}),
+            "semester": forms.Select(attrs={"class": "form-select"}),
             "pointer": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 9.05"}),
             "no_of_kt": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 2 (If none enter 0)"}),
             "marksheet": forms.FileInput(attrs={"required": "required"})
@@ -435,3 +435,18 @@ class StudentProfileOverviewForm(forms.ModelForm):
             "key_skills": "Key Skills (comma separated)",
             "is_public": "Make my portfolio public (sharable link)",
         }
+
+
+class WeeklyAgendaForm(forms.ModelForm):
+    class Meta:
+        model = WeeklyAgenda
+        fields = ["date", "academic_year", "week", "year", "sem", "agenda_file"]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "academic_year": forms.Select(attrs={"class": "form-select"}),
+            "week": forms.Select(attrs={"class": "form-select"}),
+            "year": forms.Select(attrs={"class": "form-select"}),
+            "sem": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    agenda_file = forms.FileField(required=True, widget=forms.ClearableFileInput(attrs={"class": "form-control"}))

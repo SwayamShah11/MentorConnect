@@ -121,7 +121,7 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.academic_year|add_class:"form-control" }}
+                                            {{ form.academic_year|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-4">
@@ -146,7 +146,7 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label">Prize Won <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.prize_won|add_class:"form-control" }}
+                                            {{ form.prize_won|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-6">
@@ -256,17 +256,6 @@ a[aria-expanded="true"] .toggle-icon {
 
     p.text-muted {
         color: #ff0000 !important;
-    }
-    select[name="academic_year"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-
-    select[name="prize_won"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
     }
 </style>
 {% endblock %}

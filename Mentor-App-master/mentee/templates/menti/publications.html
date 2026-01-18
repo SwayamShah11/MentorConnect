@@ -121,24 +121,24 @@
                                             {{ form.title|add_class:"form-control" }}
                                         </div>
 
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.academic_year|add_class:"form-control" }}
+                                            {{ form.academic_year|add_class:"form-select" }}
                                         </div>
 
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.semester|add_class:"form-control" }}
+                                            {{ form.semester|add_class:"form-select" }}
                                         </div>
 
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.year|add_class:"form-control" }}
+                                            {{ form.year|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-6">
                                             <label class="form-label">Type <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.type|add_class:"form-control" }}
+                                            {{ form.type|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-6">
@@ -153,7 +153,7 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label">Level <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.level|add_class:"form-control" }}
+                                            {{ form.level|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-6">
@@ -264,31 +264,6 @@ a[aria-expanded="true"] .toggle-icon {
 
     p.text-muted {
         color: #ff0000 !important;
-    }
-    select[name="academic_year"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-    select[name="semester"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-    select[name="type"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-    select[name="level"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-    select[name="year"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
     }
 </style>
 {% endblock %}

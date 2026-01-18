@@ -41,7 +41,7 @@
                 <div class="navbar-nav mx-5">
                     {% if user.is_authenticated and request.user.is_staff %}
                           <a class="nav-link" href="{% url 'admin:index' %}">
-                            <i class="bi bi-house-fill"></i> Home
+                            <i class="bi bi-house-fill"></i> Admin
                           </a>
                     {% endif %}
                     {% if user.is_authenticated and request.user.is_mentor %}
@@ -56,6 +56,7 @@
                       <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url 'mentor_interaction' %}">Mentor-Mentee Interaction</a></li>
                         <li><a class="dropdown-item" href="{% url 'mentee_documents' %}">Mentee Uploaded Documents</a></li>
+                        <li><a class="dropdown-item" href="{% url 'weekly-agenda' %}">Weekly Agenda</a></li>
                       </ul>
                     </li>
                     <li class="nav-item dropdown mx-2">

@@ -149,3 +149,16 @@ def mentor_required(view_func):
             return redirect("home")
         return view_func(request, *args, **kwargs)
     return _wrapped
+
+
+def mentor_or_staff_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("login1")
+        is_mentor = hasattr(request.user, "mentor") and getattr(request.user, "is_mentor", False)
+        if not (request.user.is_staff or is_mentor):
+            messages.error(request, "You are not authorized to access this page.")
+            return redirect("account1")
+        return view_func(request, *args, **kwargs)
+    return _wrapped

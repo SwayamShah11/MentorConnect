@@ -150,6 +150,7 @@ urlpatterns = [
     path("student-visualization/", mentor.student_visualization, name="student_visualization"),
     path("mentor/export-dept-excel/", mentor.export_department_students_excel, name="export_dept_excel"),
     path("get-chart-data/", mentor.get_chart_data, name="get_chart_data"),
+    path("weekly-agenda/", mentor.weekly_agenda_page, name="weekly-agenda"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

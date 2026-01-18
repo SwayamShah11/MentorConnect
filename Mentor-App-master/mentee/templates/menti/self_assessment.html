@@ -89,13 +89,13 @@
                                         <!-- Semester -->
                                         <div class="col-md-6">
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.semester|add_class:"form-control" }}
+                                            {{ form.semester|add_class:"form-select" }}
                                         </div>
 
                                         <!-- Class -->
                                         <div class="col-md-6">
                                             <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.year|add_class:"form-control" }}
+                                            {{ form.year|add_class:"form-select" }}
                                         </div>
 
                                         <!-- Goals/Plan -->
@@ -182,16 +182,7 @@ a[aria-expanded="true"] .toggle-icon {
 .slide-toggle.show {
     max-height: 800px; /* set bigger than your form height */
 }
-select[name="semester"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
-select[name="year"] {
-      -webkit-appearance: menulist !important;
-      -moz-appearance: menulist !important;
-      appearance: menulist !important;
-    }
+
 #internshipForm {
   max-height: 0;
   overflow: hidden;

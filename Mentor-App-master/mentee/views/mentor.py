@@ -6,13 +6,14 @@ import io
 from django.utils.decorators import method_decorator
 import os
 import re
-
+from urllib.parse import urlencode
+from ..models import WEEK_CHOICES, YEAR_CHOICES, SEM_CHOICES
 from django.views.decorators.http import require_POST
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from html import escape
 from django.contrib import messages
-from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatReplyForm, MentorInteractionForm
+from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatReplyForm, MentorInteractionForm, WeeklyAgendaForm
 from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
@@ -23,8 +24,8 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
-                      MentorMenteeInteraction, Notification, ReminderLog)
-from ..utils import get_document_progress, mentor_required
+                      MentorMenteeInteraction, Notification, ReminderLog, WeeklyAgenda)
+from ..utils import get_document_progress, mentor_required, mentor_or_staff_required
 from django.views.decorators.csrf import csrf_exempt
 from mentee.ai_utils import generate_ai_summary
 from datetime import datetime, timedelta
@@ -2325,3 +2326,93 @@ def export_department_students_excel(request):
     wb.save(response)
     return response
 #-----------------Student data visualization logic ends------------------
+
+
+#-----------------Agenda page logic strats-------------------
+@mentor_or_staff_required
+def weekly_agenda_page(request):
+    # ---------- Filters (GET) ----------
+    week = request.GET.get("week", "").strip()
+    year = request.GET.get("class", "").strip()
+    sem = request.GET.get("sem", "").strip()
+
+    qs = WeeklyAgenda.objects.all()
+    if week:
+        qs = qs.filter(week=week)
+    if year:
+        qs = qs.filter(year=year)
+    if sem:
+        qs = qs.filter(sem=sem)
+
+    # ---------- Edit mode (GET ?edit=ID) ----------
+    edit_id = request.GET.get("edit")
+    entry = None
+    if edit_id:
+        entry = get_object_or_404(WeeklyAgenda, pk=edit_id)
+
+    can_edit = request.user.is_staff or (hasattr(request.user, "mentor") and request.user.is_mentor)
+
+    # helper: redirect back preserving filters
+    def redirect_with_filters():
+        params = {}
+        if week: params["week"] = week
+        if year: params["year"] = year
+        if sem: params["sem"] = sem
+        url = reverse("weekly-agenda")
+        if params:
+            url = f"{url}?{urlencode(params)}"
+        return redirect(url)
+
+    # ---------- POST actions ----------
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # ✅ PASTE DELETE ALL HERE (right after action)
+        if action == "delete_all":
+            if not request.user.is_staff:
+                messages.error(request, "Only staff can delete all entries.")
+                return redirect_with_filters()
+
+            WeeklyAgenda.objects.all().delete()
+            messages.success(request, "All entries deleted.")
+            return redirect_with_filters()
+
+        # DELETE
+        if action == "delete":
+            delete_id = request.POST.get("delete_id")
+            obj = get_object_or_404(WeeklyAgenda, pk=delete_id)
+            obj.delete()
+            messages.success(request, "Entry deleted.")
+            return redirect_with_filters()
+
+        # CREATE / UPDATE
+        entry_id = request.POST.get("entry_id")
+        obj_instance = None
+        if entry_id:
+            obj_instance = get_object_or_404(WeeklyAgenda, pk=entry_id)
+
+        form = WeeklyAgendaForm(request.POST, request.FILES, instance=obj_instance)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            if not obj.pk:
+                obj.created_by = request.user
+            obj.save()
+            messages.success(request, "Entry updated." if entry_id else "Entry created.")
+            return redirect_with_filters()
+
+    else:
+        form = WeeklyAgendaForm(instance=entry)
+
+    context = {
+        "form": form,
+        "entries": qs,
+        "filters": {"week": week, "year": year, "sem": sem},
+        "can_edit": can_edit,
+        "editing": entry is not None,
+        "editing_entry": entry,
+        "WEEK_CHOICES": WEEK_CHOICES,
+        "YEAR_CHOICES": YEAR_CHOICES,
+        "SEM_CHOICES": SEM_CHOICES,
+    }
+    return render(request, "mentor/weekly_agenda.html", context)
+#----------------------Agenda page logic ends---------------------

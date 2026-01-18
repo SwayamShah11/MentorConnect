@@ -35,6 +35,46 @@ DEPARTMENT_CHOICES = [
     ('CSE - DS', 'DATA SCIENCE'),
 ]
 
+WEEK_CHOICES = [
+        ('Week-1', 'Week-1'),
+        ('Week-2', 'Week-2'),
+        ('Week-3', 'Week-3'),
+        ('Week-4', 'Week-4'),
+        ('Week-5', 'Week-5'),
+        ('Week-6', 'Week-6'),
+        ('Week-7', 'Week-7'),
+        ('Week-8', 'Week-8'),
+        ('Week-9', 'Week-9'),
+        ('Week-10', 'Week-10'),
+        ('Week-11', 'Week-11'),
+        ('Week-12', 'Week-12'),
+    ]
+
+AY = [
+        ('2017-18', '2017-18'),
+        ('2018-19', '2018-19'),
+        ('2019-20', '2019-20'),
+        ('2020-21', '2020-21'),
+        ('2021-22', '2021-22'),
+        ('2022-23', '2022-23'),
+        ('2023-24', '2023-24'),
+        ('2024-25', '2024-25'),
+        ('2025-26', '2025-26'),
+        ('2026-27', '2026-27'),
+    ]
+
+SEM_CHOICES = [
+        ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
+        ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
+    ]
+
+YEAR_CHOICES = [
+        ('FE', 'FE'),  # First Year
+        ('SE', 'SE'),  # Second Year
+        ('TE', 'TE'),  # Third Year
+        ('BE', 'BE'),  # Final Year
+    ]
+
 class Mentor(models.Model):
     """Mentor models"""
     user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
@@ -52,59 +92,8 @@ class Mentor(models.Model):
             return f"Mentor {self.pk}"
 
 
-AY = [
-        ('2017-18', '2017-18'),
-        ('2018-19', '2018-19'),
-        ('2019-20', '2019-20'),
-        ('2020-21', '2020-21'),
-        ('2021-22', '2021-22'),
-        ('2022-23', '2022-23'),
-        ('2023-24', '2023-24'),
-        ('2024-25', '2024-25'),
-        ('2025-26', '2025-26'),
-    ]
-
-SEMESTER = [
-        ('I', 'I'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'),
-        ('V', 'V'), ('VI', 'VI'), ('VII', 'VII'), ('VIII', 'VIII'),
-    ]
-
-YEAR_CHOICES = [
-        ('FE', 'FE'),  # First Year
-        ('SE', 'SE'),  # Second Year
-        ('TE', 'TE'),  # Third Year
-        ('BE', 'BE'),  # Final Year
-    ]
-
 class Profile(models.Model):
     """Extended Profile Model"""
-
-    SEMESTER_CHOICES = [
-        ('I', 'I'),
-        ('II', 'II'),
-        ('III', 'III'),
-        ('IV', 'IV'),
-        ('V', 'V'),
-        ('VI', 'VI'),
-        ('VII', 'VII'),
-        ('VIII', 'VIII'),
-    ]
-
-    YEAR_CHOICES = [
-        ('FE', 'FE'),  # First Year
-        ('SE', 'SE'),  # Second Year
-        ('TE', 'TE'),  # Third Year
-        ('BE', 'BE'),  # Final Year
-    ]
-
-    BRANCH_CHOICES = [
-        ('IT', 'Information Technology'),
-        ('CSE', 'Computer Science'),
-        ('AIML', 'Computer Science - Artificial Intelligence & Machine Learning'),
-        ('DS', 'Computer Science - Data Science'),
-        ('MECH', 'Mechanical Engineering'),
-        ('CIVIL', 'Civil Engineering'),
-    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     forget_password_token = models.CharField(max_length=500, blank=True, null=True)
@@ -113,9 +102,9 @@ class Profile(models.Model):
     # --- Personal Details ---
     moodle_id = models.CharField(max_length=20, blank=True, null=True)
     student_name = models.CharField(max_length=200, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, blank=True, null=True)
-    branch = models.CharField(max_length=100, choices=BRANCH_CHOICES, blank=True, null=True)
+    branch = models.CharField(max_length=100, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     career_domain = models.CharField(max_length=200, blank=True)
 
     address = models.TextField(blank=True, null=True)
@@ -187,7 +176,7 @@ class InternshipPBL(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=200, choices=TYPE_CHOICES, blank=True, null=True)
     company_name = models.CharField(max_length=100, blank=True, null=True)
@@ -218,7 +207,7 @@ class Project(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     project_type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
     details = models.TextField(max_length=1000, blank=True, null=True)
@@ -257,7 +246,7 @@ class SportsCulturalEvent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     name_of_event = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, blank=True, null=True)
     venue = models.CharField(max_length=500, blank=True, null=True)
@@ -296,7 +285,7 @@ class OtherEvent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     name_of_event = models.CharField(max_length=200, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     level = models.CharField(max_length=50, choices=LEVEL_CHOICES, blank=True, null=True)
     details = models.TextField(max_length=1000, blank=True, null=True)
@@ -318,7 +307,7 @@ class CertificationCourse(models.Model):
     certifying_authority = models.CharField(max_length=100, blank=True, null=True)
     valid_upto = models.CharField(max_length=50, null=True, blank=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
@@ -353,7 +342,7 @@ class PaperPublication(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     title = models.CharField(max_length=255, blank=True, null=True)
     academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, blank=True, null=True)
     conf_name = models.CharField(max_length=255, null=True, blank=True)
@@ -380,7 +369,7 @@ class SelfAssessment(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     goals = models.JSONField(default=list)  # stores multiple goals
     reason = models.TextField(max_length=500, blank=True, null=True)
@@ -446,7 +435,7 @@ class EducationalDetail(models.Model):
 
 class SemesterResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,blank=True, null=True)
-    semester = models.CharField(max_length=10, choices=SEMESTER, blank=True, null=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     pointer = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True)  # Example: 9.25
     no_of_kt = models.PositiveIntegerField(default=0, blank=True, null=True)
     marksheet = models.FileField(upload_to="marksheets/", blank=True, null=True)
@@ -766,7 +755,7 @@ class Query(models.Model):
 class MentorMenteeInteraction(models.Model):
     mentor = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(null=True, blank=True)
-    semester = models.CharField(max_length=10, choices=Profile.SEMESTER_CHOICES, null=True, blank=True)
+    semester = models.CharField(max_length=10, choices=SEM_CHOICES, null=True, blank=True)
     class_year = models.CharField(max_length=10, blank=True, null=True)
     agenda = models.TextField(null=True, blank=True)
     mentees = models.ManyToManyField(User, related_name="mentor_interactions")
@@ -821,3 +810,21 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action} @ {self.timestamp.strftime('%d-%m-%Y %H:%M')}"
+
+
+class WeeklyAgenda(models.Model):
+    date = models.DateField(null=True, blank=True)
+    academic_year = models.CharField(max_length=20, choices=AY, null=True, blank=True)
+    week = models.CharField(max_length=15, choices=WEEK_CHOICES, null=True, blank=True)
+    year = models.CharField(max_length=5, choices=YEAR_CHOICES, null=True, blank=True)
+    sem = models.CharField(max_length=5, choices=SEM_CHOICES, null=True, blank=True)
+    agenda_file = models.FileField(upload_to="agendas/", null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="weekly_agendas")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date", "-week", "-sem", "-created_at"]
+
+    def __str__(self):
+        return f"Week {self.week} - {self.year} - Sem {self.sem}"
