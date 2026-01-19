@@ -150,6 +150,10 @@ urlpatterns = [
     path("student-visualization/", mentor.student_visualization, name="student_visualization"),
     path("mentor/export-dept-excel/", mentor.export_department_students_excel, name="export_dept_excel"),
     path("get-chart-data/", mentor.get_chart_data, name="get_chart_data"),
+    path("get-chart-data-compare/", mentor.get_chart_data_compare, name="get_chart_data_compare"),
+    path("get-department-trends/", mentor.get_department_trends, name="get_department_trends"),
+    path("get-heatmap-data/", mentor.get_heatmap_data, name="get_heatmap_data"),
+    path("export-progress-pdf/", mentor.export_progress_pdf, name="export_progress_pdf"),
     path("weekly-agenda/", mentor.weekly_agenda_page, name="weekly-agenda"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -61,6 +61,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import (SimpleDocTemplate, Table as RLTable, TableStyle as RLTableStyle, Paragraph, Spacer, Image as RLImage, PageBreak)
 from reportlab.lib import colors
 from reportlab.lib.units import cm
+from itertools import chain
 
 SEMESTER = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']       #used in Mentor-Mentee interaction function
 
@@ -548,8 +549,14 @@ def download_all_documents(request):
 
     files_to_zip = []  # list of tuples: (fs_path, arcname_in_zip)
 
-    def safe(s: str) -> str:
-        return "".join(c if c.isalnum() or c in " ._-" else "_" for c in (s or ""))
+    def safe_name(s: str) -> str:
+        """Sanitize a single filename/folder name (NOT a path)."""
+        s = (s or "").strip()
+        return "".join(c if c.isalnum() or c in " ._-" else "_" for c in s)
+
+    def safe_path(path: str) -> str:
+        """Sanitize a path while keeping folder separators."""
+        return "/".join(safe_name(part) for part in (path or "").split("/"))
 
     def try_add(filefield, arcname):
         if not filefield:
@@ -567,36 +574,36 @@ def download_all_documents(request):
         student_name = (getattr(profile, "student_name", "") or getattr(profile, "name", "") or "Student").strip()
 
         # Put each mentee into its own folder in the zip
-        base_folder = safe(f"{moodle}_{student_name}")
+        base_folder = safe_name(f"{moodle}_{student_name}")
 
         if "Internship / PBL" in allowed_types:
             for item in InternshipPBL.objects.filter(user=mentee_user):
-                title = safe((item.title or "").strip()[:40])
+                title = safe_name((item.title or "").strip()[:40])
                 try_add(item.certificate, f"{base_folder}/Internship_PBL/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
         if "Sports / Cultural" in allowed_types:
             for item in SportsCulturalEvent.objects.filter(user=mentee_user):
-                ev = safe((item.name_of_event or "").strip()[:40])
+                ev = safe_name((item.name_of_event or "").strip()[:40])
                 try_add(item.certificate, f"{base_folder}/Sports_Cultural/{ev or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
         if "Other Event" in allowed_types:
             for item in OtherEvent.objects.filter(user=mentee_user):
-                ev = safe((item.name_of_event or "").strip()[:40])
+                ev = safe_name((item.name_of_event or "").strip()[:40])
                 try_add(item.certificate, f"{base_folder}/Other_Event/{ev or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
         if "Course" in allowed_types:
             for item in CertificationCourse.objects.filter(user=mentee_user):
-                title = safe((item.title or "").strip()[:40])
+                title = safe_name((item.title or "").strip()[:40])
                 try_add(item.certificate, f"{base_folder}/Course/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
         if "Publication" in allowed_types:
             for item in PaperPublication.objects.filter(user=mentee_user):
-                title = safe((item.title or "").strip()[:40])
+                title = safe_name((item.title or "").strip()[:40])
                 try_add(item.certificate, f"{base_folder}/Publication/{title or 'certificate'}_{os.path.basename(item.certificate.name)}")
 
         if "Semester Result" in allowed_types:
             for item in SemesterResult.objects.filter(user=mentee_user):
-                sem = safe(str(item.semester or ""))
+                sem = safe_name(str(item.semester or ""))
                 try_add(item.marksheet, f"{base_folder}/Semester_Result/Sem_{sem}_{os.path.basename(item.marksheet.name)}")
 
     if not files_to_zip:
@@ -608,9 +615,8 @@ def download_all_documents(request):
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         used = set()
         for fs_path, arcname in files_to_zip:
-            arcname = safe(arcname)
+            arcname = safe_path(arcname)  # IMPORTANT: keep slashes
 
-            # Ensure unique names
             candidate = arcname
             base, ext = os.path.splitext(candidate)
             i = 1
@@ -759,7 +765,7 @@ def download_student_data(request):
             base = {
                 "moodle_id": prof.moodle_id if prof else getattr(obj.user, "username", ""),
                 "student_name": prof.student_name if prof else getattr(obj.user, "username", ""),
-                "email": prof.email if prof and prof.email else (obj.user.email if hasattr(obj.user, "email") else ""),
+                "email": getattr(obj.user, "email", "") or "",
                 "branch": prof.branch if prof else "",
                 "_model": model.__name__,
                 "_pk": obj.pk,
@@ -2180,6 +2186,20 @@ def student_visualization(request):
         .values("user__profile__branch")
         .annotate(total=Count("id"))
     )
+    # ✅ Collect all academic years from all models
+    year_sets = [
+        InternshipPBL.objects.values_list("academic_year", flat=True),
+        Project.objects.values_list("academic_year", flat=True),
+        SportsCulturalEvent.objects.values_list("academic_year", flat=True),
+        CertificationCourse.objects.values_list("academic_year", flat=True),
+        OtherEvent.objects.values_list("academic_year", flat=True),
+        PaperPublication.objects.values_list("academic_year", flat=True),
+    ]
+
+    academic_years = sorted(
+        set(y for y in chain(*year_sets) if y),
+        reverse=True
+    )
 
     return render(request, "mentor/student_visualization.html", {
         "internship_data": internship_data,
@@ -2188,12 +2208,16 @@ def student_visualization(request):
         "course_data": course_data,
         "hackathon_data": hackathon_data,
         "paper_data": paper_data,
+        "academic_years": academic_years,
     })
 
 
 @login_required
 def get_chart_data(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
     category = request.GET.get("category")
+    academic_year = request.GET.get("year")
 
     model_map = {
         "internship": InternshipPBL,
@@ -2208,16 +2232,29 @@ def get_chart_data(request):
     if not model:
         return JsonResponse({"labels": [], "data": []})
 
+    # ✅ Only this mentor’s mentees
+    mentee_user_ids = (
+        MentorMentee.objects
+        .filter(mentor=mentor_obj)
+        .values_list("mentee__user_id", flat=True)
+    )
+
+    qs = model.objects.filter(user_id__in=mentee_user_ids)
+
+    # ✅ Filter by academic year if selected
+    if academic_year:
+        qs = qs.filter(academic_year=academic_year)
+
     data = (
-        model.objects
-        .values("user__profile__branch")
+        qs.values("user__profile__branch")
         .annotate(count=Count("id"))
         .order_by("user__profile__branch")
     )
+
     labels = [d["user__profile__branch"] or "Unknown" for d in data]
     counts = [d["count"] for d in data]
 
-    return JsonResponse({"labels": labels, "data": counts,})
+    return JsonResponse({"labels": labels, "data": counts})
 
 
 @login_required
@@ -2225,8 +2262,9 @@ def export_department_students_excel(request):
     # ✅ must be a mentor user
     mentor_obj = get_object_or_404(Mentor, user=request.user)
 
-    category = request.GET.get("category")   # internship/project/sports/course/other/paper
-    dept = request.GET.get("dept")           # branch string as stored in Profile.branch
+    category = request.GET.get("category")
+    dept = request.GET.get("dept")
+    academic_year = request.GET.get("year")
 
     if not category or not dept:
         return HttpResponse("Missing category or dept", status=400)
@@ -2259,7 +2297,14 @@ def export_department_students_excel(request):
         Model.objects
         .select_related("user", "user__profile")
         .filter(user_id__in=mentee_user_ids, user__profile__branch=dept)
-        .order_by("user__profile__student_name", "-uploaded_at" if hasattr(Model, "uploaded_at") else "id")
+    )
+
+    if academic_year:
+        qs = qs.filter(academic_year=academic_year)
+
+    qs = qs.order_by(
+        "user__profile__student_name",
+        "-uploaded_at" if hasattr(Model, "uploaded_at") else "id"
     )
 
     # ✅ Build Excel
@@ -2325,6 +2370,235 @@ def export_department_students_excel(request):
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
+
+
+@login_required
+def get_chart_data_compare(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
+    category = request.GET.get("category")
+
+    model_map = {
+        "internship": InternshipPBL,
+        "project": Project,
+        "sports": SportsCulturalEvent,
+        "course": CertificationCourse,
+        "other": OtherEvent,
+        "paper": PaperPublication,
+    }
+
+    model = model_map.get(category)
+    if not model:
+        return JsonResponse({"labels": [], "datasets": []})
+
+    mentee_user_ids = (
+        MentorMentee.objects
+        .filter(mentor=mentor_obj)
+        .values_list("mentee__user_id", flat=True)
+    )
+
+    qs = model.objects.filter(user_id__in=mentee_user_ids)
+
+    years = sorted(
+        qs.values_list("academic_year", flat=True).distinct()
+    )
+
+    departments = sorted(
+        qs.values_list("user__profile__branch", flat=True)
+        .distinct()
+    )
+
+    datasets = []
+
+    for year in years:
+        data = []
+        for dept in departments:
+            count = qs.filter(
+                academic_year=year,
+                user__profile__branch=dept
+            ).count()
+            data.append(count)
+
+        datasets.append({
+            "label": year,
+            "data": data
+        })
+
+    return JsonResponse({
+        "labels": list(departments),
+        "datasets": datasets
+    })
+
+
+@login_required
+def get_heatmap_data(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+    category = request.GET.get("category")
+
+    model_map = {
+        "internship": InternshipPBL,
+        "project": Project,
+        "sports": SportsCulturalEvent,
+        "course": CertificationCourse,
+        "other": OtherEvent,
+        "paper": PaperPublication,
+    }
+
+    model = model_map.get(category)
+    if not model:
+        return JsonResponse({"years": [], "departments": [], "matrix": []})
+
+    mentee_user_ids = (
+        MentorMentee.objects
+        .filter(mentor=mentor_obj)
+        .values_list("mentee__user_id", flat=True)
+    )
+
+    qs = model.objects.filter(user_id__in=mentee_user_ids)
+
+    years = sorted(qs.values_list("academic_year", flat=True).distinct())
+    departments = sorted(qs.values_list("user__profile__branch", flat=True).distinct())
+
+    matrix = []
+    for year in years:
+        row = []
+        for dept in departments:
+            row.append(qs.filter(
+                academic_year=year,
+                user__profile__branch=dept
+            ).count())
+        matrix.append(row)
+
+    return JsonResponse({
+        "years": years,
+        "departments": departments,
+        "matrix": matrix
+    })
+
+
+@login_required
+def export_progress_pdf(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
+    mentees = MentorMentee.objects.filter(mentor=mentor_obj).select_related("mentee__user")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = "attachment; filename=Mentor_Mentee_Progress.pdf"
+
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    styles = getSampleStyleSheet()
+
+    elements = []
+    elements.append(Paragraph("Mentee Progress Report", styles["Title"]))
+    elements.append(Spacer(1, 14))
+
+    for rel in mentees:
+        user = rel.mentee.user
+        profile = getattr(user, "profile", None)
+
+        elements.append(Paragraph(
+            f"{profile.student_name} ({profile.branch})",
+            styles["Heading2"]
+        ))
+
+        table_data = [["Year", "Internships", "Projects", "Events", "Courses", "Papers"]]
+
+        for year in InternshipPBL.objects.values_list("academic_year", flat=True).distinct():
+            row = [
+                year,
+                InternshipPBL.objects.filter(user=user, academic_year=year).count(),
+                Project.objects.filter(user=user, academic_year=year).count(),
+                SportsCulturalEvent.objects.filter(user=user, academic_year=year).count(),
+                CertificationCourse.objects.filter(user=user, academic_year=year).count(),
+                PaperPublication.objects.filter(user=user, academic_year=year).count(),
+            ]
+            table_data.append(row)
+
+        table = RLTable(table_data)
+        table.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),  # horizontal alignment
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),  # vertical alignment
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 20))
+
+    doc.build(elements)
+    return response
+
+
+@login_required
+def get_department_trends(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+    category = request.GET.get("category")
+
+    model_map = {
+        "internship": InternshipPBL,
+        "project": Project,
+        "sports": SportsCulturalEvent,
+        "course": CertificationCourse,
+        "other": OtherEvent,
+        "paper": PaperPublication,
+    }
+
+    model = model_map.get(category)
+    if not model:
+        return JsonResponse({})
+
+    mentee_user_ids = MentorMentee.objects.filter(
+        mentor=mentor_obj
+    ).values_list("mentee__user_id", flat=True)
+
+    qs = model.objects.filter(user_id__in=mentee_user_ids)
+
+    years = sorted(qs.values_list("academic_year", flat=True).distinct())
+
+    if len(years) < 2:
+        return JsonResponse({})
+
+    current = years[-1]
+    previous = years[-2]
+
+    trends = {}
+
+    departments = qs.values_list("user__profile__branch", flat=True).distinct()
+
+    for dept in departments:
+        curr_count = qs.filter(
+            academic_year=current,
+            user__profile__branch=dept
+        ).count()
+
+        prev_count = qs.filter(
+            academic_year=previous,
+            user__profile__branch=dept
+        ).count()
+
+        if curr_count > prev_count:
+            trends[dept] = "up"
+        elif curr_count < prev_count:
+            trends[dept] = "down"
+        else:
+            trends[dept] = "same"
+
+    return JsonResponse({
+        "current": current,
+        "previous": previous,
+        "trends": trends,
+        "percentages": {
+            dept: (
+                round(
+                    ((qs.filter(academic_year=current, user__profile__branch=dept).count() -
+                      qs.filter(academic_year=previous, user__profile__branch=dept).count()) /
+                     max(qs.filter(academic_year=previous, user__profile__branch=dept).count(), 1)) * 100,
+                    1
+                )
+            )
+            for dept in departments
+        }
+    })
+
 #-----------------Student data visualization logic ends------------------
 
 
@@ -2333,7 +2607,7 @@ def export_department_students_excel(request):
 def weekly_agenda_page(request):
     # ---------- Filters (GET) ----------
     week = request.GET.get("week", "").strip()
-    year = request.GET.get("class", "").strip()
+    year = request.GET.get("year", "").strip()
     sem = request.GET.get("sem", "").strip()
 
     qs = WeeklyAgenda.objects.all()

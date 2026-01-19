@@ -1,6 +1,7 @@
 {% extends "mentor/base1.html" %}
 {% load static %}
 {% block title %} Agenda {% endblock %}
+
 {% block content %}
 <div class="container py-4">
 
@@ -9,7 +10,7 @@
     <small class="text-muted mb-3">Add, Edit, Delete, View and Download the Agenda for your session.</small><hr>
     {% endif %}
     {% if not user.is_staff %}
-  <small class="text-muted mb-3">View and download the Agenda for your session.</small><hr>
+  <small class="text-muted mb-3">Find, View and download the Agenda for your session.</small><hr>
     {% endif %}
 
   <!-- Filters -->

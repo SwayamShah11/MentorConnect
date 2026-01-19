@@ -15,9 +15,8 @@
           </div>
 
           <!-- ✅ CATEGORY SELECTION -->
-          <div class="card p-3 mb-4" style="background:#7c8bd6;">
+          <div class="card p-3 mb-4" style="background:#000;">
             <div class="row align-items-center">
-
               <div class="col-md-4 text-white fw-bold">
                 Select Category
               </div>
@@ -33,10 +32,27 @@
                   <option value="paper">Department Wise Paper Publications</option>
                 </select>
               </div>
+                  <div class="col-md-4 text-white fw-bold mt-2">
+                    Select Academic Year
+                  </div>
 
-              <div class="col-md-3">
+                  <div class="col-md-5 mt-2">
+                    <select class="form-select" id="yearSelect">
+                      <option value="">-- All Years --</option>
+                      {% for year in academic_years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+              <div class="d-flex col-md-3 mt-2">
                 <button class="btn btn-warning w-100 fw-bold" onclick="loadCharts()">
-                  View Chart 📊
+                  View Charts 📊
+                </button>
+                <!--Progress report button-->
+                <button class="btn btn-danger ms-2" onclick="downloadProgressPDF()">
+                    <i class="bi bi-file-pdf"></i> Export Progress Report
                 </button>
               </div>
             </div>
@@ -48,21 +64,20 @@
               <button class="btn btn-light me-2" onclick="showChart('bar')"><i class="bi bi-bar-chart-fill"></i></button>
               <button class="btn btn-light me-2" onclick="showChart('area')"><i class="fa fa-chart-area"></i></button>
               <button class="btn btn-light me-2" onclick="showChart('line')"><i class="bi bi-graph-up-arrow"></i></button>
+              <button class="btn btn-light me-2" onclick="showHeatmap()"><i class="bi bi-grid-3x3-gap-fill"></i></button>
+               <button class="btn btn-dark ms-2" onclick="compareYears()">📈 Compare Years</button>
           </div>
 
           <!-- ✅ CHART DISPLAY AREA -->
           <div class="row justify-content-center">
             <div class="col-lg-7">
-
               <div class="card shadow-sm p-4">
-
                 <canvas id="barChart" class="chartBox d-none"></canvas>
                 <canvas id="pieChart" class="chartBox d-none"></canvas>
                 <canvas id="areaChart" class="chartBox d-none"></canvas>
                 <canvas id="lineChart" class="chartBox d-none"></canvas>
-
+                <canvas id="heatmapChart" class="chartBox d-none"></canvas>
               </div>
-
             </div>
               <div class="text-center mt-3 d-none" id="exportBtnBox">
                   <button class="btn btn-danger fw-bold me-2" onclick="exportSingleChartPDF()">
@@ -73,8 +88,7 @@
                     🖼 Download Current Chart (JPG)
                   </button>
                 </div>
-          </div>
-        </div>
+            </div>
     </div>
 </div>
 
@@ -84,14 +98,14 @@
 
 <style>
 .chartBox {
-  max-height: 600px;
+  max-height: 2000px;
 }
 </style>
 
 <script>
 // ✅ Institute Logo (Base64 OR Direct URL)
 const instituteLogoURL = "/media/logo.png";
-
+let pluginsRegistered = false;
 let currentCategory = null;
 
 const internshipData = {{ internship_data|safe }};
@@ -104,7 +118,7 @@ const paperData = {{ paper_data|safe }};
 let labels = [];
 let values = [];
 
-let barChart, pieChart, areaChart, lineChart;
+let barChart, pieChart, areaChart, lineChart, heatmapChart;
 
 //Chart title
 function getChartTitle(type) {
@@ -132,46 +146,28 @@ function getChartTitle(type) {
 // ✅ VIEW CHART BUTTON
 function loadCharts() {
   const category = document.getElementById("categorySelect").value;
+  const year = document.getElementById("yearSelect").value;
+
   if (!category) {
     alert("Please select a category first!");
     return;
   }
+
   currentCategory = category;
-  if (category === "internship") {
-    labels = internshipData.map(i => i.user__profile__branch || "N/A");
-    values = internshipData.map(i => i.total);
-  }
 
-  if (category === "project") {
-    labels = projectData.map(i => i.user__profile__branch || "N/A");
-    values = projectData.map(i => i.total);
-  }
+  fetch(`/get-chart-data/?category=${category}&year=${year}`)
+    .then(res => res.json())
+    .then(data => {
+      labels = data.labels;
+      values = data.data;
 
-  if (category === "sports") {
-    labels = sportsData.map(i => i.user__profile__branch || "N/A");
-    values = sportsData.map(i => i.total);
-  }
+      document.getElementById("graphButtons").classList.remove("d-none");
+      document.getElementById("exportBtnBox").classList.remove("d-none");
 
-  if (category === "course") {
-    labels = courseData.map(i => i.user__profile__branch || "N/A");
-    values = courseData.map(i => i.total);
-  }
-
-  if (category === "other") {
-    labels = hackathonData.map(i => i.user__profile__branch || "N/A");
-    values = hackathonData.map(i => i.total);
-  }
-
-  if (category === "paper") {
-    labels = paperData.map(i => i.user__profile__branch || "N/A");
-    values = paperData.map(i => i.total);
-  }
-
-  document.getElementById("graphButtons").classList.remove("d-none");
-  document.getElementById("exportBtnBox").classList.remove("d-none");
-
-  showChart("bar"); // ✅ Default
+      showChart("bar");
+    });
 }
+
 
 
 // ✅ DESTROY ALL CHARTS SAFELY
@@ -180,6 +176,7 @@ function destroyCharts() {
   if (pieChart) pieChart.destroy();
   if (areaChart) areaChart.destroy();
   if (lineChart) lineChart.destroy();
+  if (heatmapChart) heatmapChart.destroy();
 }
 
 // ✅ SHOW ONLY ONE CHART
@@ -249,6 +246,7 @@ function showChart(type) {
           onClick: function(evt, elements) {
             if (!elements || !elements.length) return;
 
+            const year = document.getElementById("yearSelect").value;
             const index = elements[0].index;
             const dept = labels[index]; // department label from x-axis
 
@@ -258,31 +256,129 @@ function showChart(type) {
             }
 
             // ✅ download Excel
-            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&dept=${encodeURIComponent(dept)}`;
+            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}`;
             window.location.href = url;
           }
         }
       });
-  }
+      fetch(`/get-department-trends/?category=${currentCategory}`)
+      .then(res => res.json())
+      .then(data => {
 
-  if (type === "pie") {
-    const ctx = document.getElementById("pieChart");
-    ctx.classList.remove("d-none");
+        // 🔥 Glow plugin
+        const glowPlugin = {
+          id: "glowEffect",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
 
-    pieChart = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: labels,
-        datasets: [{
-          data: values,
-          backgroundColor: [
-            "#0d6efd","#198754","#dc3545","#ffc107",
-            "#6610f2","#20c997","#fd7e14"
-          ]
-        }]
-      },
-      options: commonOptions
-    });
+            chart.getDatasetMeta(0).data.forEach((bar, i) => {
+              const dept = chart.data.labels[i];
+              const trend = data.trends[dept];
+
+              if (!trend) return;
+
+              ctx.save();
+
+              if (trend === "up") {
+                ctx.shadowColor = "rgba(25, 135, 84, 0.8)";
+              } else if (trend === "down") {
+                ctx.shadowColor = "rgba(220, 53, 69, 0.8)";
+              } else {
+                ctx.shadowColor = "rgba(255, 193, 7, 0.8)";
+              }
+
+              ctx.shadowBlur = 15;
+              ctx.shadowOffsetX = 0;
+              ctx.shadowOffsetY = 0;
+
+              bar.draw(ctx);
+              ctx.restore();
+            });
+          }
+        };
+
+        // 📊 Tooltip with % change
+        barChart.options.plugins.tooltip = {
+          callbacks: {
+            afterLabel: function(ctx) {
+              const dept = ctx.label;
+              const trend = data.trends[dept];
+              const pct = data.percentages[dept] || 0;
+
+              let arrow = "→";
+              let word = "Stable";
+
+              if (trend === "up") {
+                arrow = "↑";
+                word = "Growth";
+              } else if (trend === "down") {
+                arrow = "↓";
+                word = "Decline";
+              }
+
+              const sign = pct > 0 ? "+" : "";
+              return `Trend: ${arrow} ${word} (${sign}${pct}%)`;
+            }
+          }
+        };
+
+        // 🏷 % labels above bars
+        const labelPlugin = {
+          id: "percentLabels",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+
+            ctx.save();
+            ctx.font = "bold 12px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+
+            chart.getDatasetMeta(0).data.forEach((bar, i) => {
+              const dept = chart.data.labels[i];
+              const pct = data.percentages[dept];
+
+              if (pct === undefined) return;
+
+              const sign = pct > 0 ? "+" : "";
+              ctx.fillText(
+                `${sign}${pct}%`,
+                bar.x,
+                bar.y - 8
+              );
+            });
+
+            ctx.restore();
+          }
+        };
+
+        if (!pluginsRegistered) {
+          Chart.register(glowPlugin);
+          Chart.register(labelPlugin);
+          pluginsRegistered = true;
+        }
+
+        barChart.update();
+      });
+      }
+
+      if (type === "pie") {
+        const ctx = document.getElementById("pieChart");
+        ctx.classList.remove("d-none");
+
+        pieChart = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: labels,
+            datasets: [{
+              data: values,
+              backgroundColor: [
+                "#0d6efd","#198754","#dc3545","#ffc107",
+                "#6610f2","#20c997","#fd7e14"
+              ]
+            }]
+          },
+          options: commonOptions
+        });
   }
 
   if (type === "area") {
@@ -441,5 +537,141 @@ function exportChartJPG() {
   link.click();
   document.body.removeChild(link);
 }
+
+// Compare years
+function compareYears() {
+  const category = document.getElementById("categorySelect").value;
+
+  if (!category) {
+    alert("Select a category first!");
+    return;
+  }
+
+  fetch(`/get-chart-data-compare/?category=${category}`)
+    .then(res => res.json())
+    .then(res => {
+
+      labels = res.labels;
+      destroyCharts();
+
+      document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+      const ctx = document.getElementById("lineChart");
+      ctx.classList.remove("d-none");
+
+      lineChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: res.datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            tension: 0.3,
+            fill: false
+          }))
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: "Department-wise Comparison Across Academic Years",
+              font: { size: 18 }
+            },
+            legend: {
+              position: "bottom"
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Departments"
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Count"
+              }
+            }
+          }
+        }
+      });
+
+    });
+}
+
+// Heatmap
+function showHeatmap() {
+  const category = document.getElementById("categorySelect").value;
+  if (!category) {
+    alert("Select a category first!");
+    return;
+  }
+
+  fetch(`/get-heatmap-data/?category=${category}`)
+    .then(res => res.json())
+    .then(res => {
+
+      destroyCharts();
+      document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+
+      const ctx = document.getElementById("heatmapChart");
+      ctx.classList.remove("d-none");
+
+      const datasets = [];
+      const maxValue = Math.max(...res.matrix.flat(), 1);
+
+      res.years.forEach((year, rowIndex) => {
+        res.matrix[rowIndex].forEach((value, colIndex) => {
+          const intensity = value / maxValue;
+          datasets.push({
+            label: `${year} - ${res.departments[colIndex]}`,
+            data: [{ x: res.departments[colIndex], y: year, v: value }],
+            backgroundColor: `rgba(220, 53, 69, ${0.2 + intensity * 0.8})`,
+            borderWidth: 1
+          });
+        });
+      });
+
+      heatmapChart = new Chart(ctx, {
+        type: "scatter",
+        data: { datasets: datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `Count: ${ctx.raw.v}`
+              }
+            },
+            title: {
+              display: true,
+              text: "Department vs Academic Year Heatmap"
+            }
+          },
+          scales: {
+            x: {
+              type: "category",
+              labels: res.departments,
+              title: { display: true, text: "Departments" }
+            },
+            y: {
+              type: "category",
+              labels: res.years,
+              title: { display: true, text: "Academic Years" }
+            }
+          }
+        }
+      });
+    });
+}
+
+// Progress report
+function downloadProgressPDF() {
+  window.location.href = "/export-progress-pdf/";
+}
+
 </script>
 {% endblock %}
