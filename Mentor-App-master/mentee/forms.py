@@ -262,8 +262,9 @@ class EducationalDetailForm(forms.ModelForm):
 class SemesterResultForm(forms.ModelForm):
     class Meta:
         model = SemesterResult
-        fields = ["semester", "pointer", "no_of_kt", "marksheet"]
+        fields = ["academic_year", "semester", "pointer", "no_of_kt", "marksheet"]
         widgets = {
+            "academic_year": forms.Select(attrs={"class": "form-select"}),
             "semester": forms.Select(attrs={"class": "form-select"}),
             "pointer": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 9.05"}),
             "no_of_kt": forms.TextInput(attrs={"class": "form-control", "placeholder": "eg. 2 (If none enter 0)"}),

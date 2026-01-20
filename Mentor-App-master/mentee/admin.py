@@ -63,7 +63,7 @@ class StudentInterestAdmin(admin.ModelAdmin):
 
 @admin.register(SemesterResult)
 class SemesterResultAdmin(admin.ModelAdmin):
-    list_display = ("user", "semester", "pointer", "no_of_kt", "created_at")
+    list_display = ("user", "academic_year", "semester", "pointer", "no_of_kt", "created_at")
 
 
 class ConversationAdmin(admin.ModelAdmin):

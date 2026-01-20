@@ -17,7 +17,7 @@ from ..forms import MentorRegisterForm, MentorProfileForm, MoodleIdForm, ChatRep
 from django.views.generic import (View, TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView)
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg, Sum
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -62,6 +62,8 @@ from reportlab.platypus import (SimpleDocTemplate, Table as RLTable, TableStyle 
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from itertools import chain
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.lineplots import LinePlot
 
 SEMESTER = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']       #used in Mentor-Mentee interaction function
 
@@ -2241,20 +2243,34 @@ def get_chart_data(request):
 
     qs = model.objects.filter(user_id__in=mentee_user_ids)
 
-    # ✅ Filter by academic year if selected
     if academic_year:
         qs = qs.filter(academic_year=academic_year)
 
+    # ✅ GROUP BY STUDENT (not department)
     data = (
-        qs.values("user__profile__branch")
+        qs.values(
+            "user_id",
+            "user__profile__student_name",
+            "user__username",
+            "user__profile__branch",
+        )
         .annotate(count=Count("id"))
-        .order_by("user__profile__branch")
+        .order_by("user__profile__student_name")
     )
 
-    labels = [d["user__profile__branch"] or "Unknown" for d in data]
+    labels = [
+        d["user__profile__student_name"]
+        or d["user__username"]
+        for d in data
+    ]
+
     counts = [d["count"] for d in data]
 
-    return JsonResponse({"labels": labels, "data": counts})
+    return JsonResponse({
+        "labels": labels,
+        "data": counts
+    })
+
 
 
 @login_required
@@ -2263,11 +2279,11 @@ def export_department_students_excel(request):
     mentor_obj = get_object_or_404(Mentor, user=request.user)
 
     category = request.GET.get("category")
-    dept = request.GET.get("dept")
+    student_name = request.GET.get("student")
     academic_year = request.GET.get("year")
 
-    if not category or not dept:
-        return HttpResponse("Missing category or dept", status=400)
+    if not category or not student_name:
+        return HttpResponse("Missing category or student", status=400)
 
     model_map = {
         "internship": (InternshipPBL, "Internships_PBL"),
@@ -2278,26 +2294,19 @@ def export_department_students_excel(request):
         "paper": (PaperPublication, "Paper_Publications"),
     }
 
-    if category not in model_map:
-        return HttpResponse("Invalid category", status=400)
-
     Model, category_label = model_map[category]
 
-    # ✅ ONLY mentees assigned to THIS mentor
-    mentee_user_ids = (
-        MentorMentee.objects
-        .filter(mentor=mentor_obj)
-        .values_list("mentee__user_id", flat=True)
+    mentee_users = User.objects.filter(
+        id__in=MentorMentee.objects.filter(
+            mentor=mentor_obj
+        ).values_list("mentee__user_id", flat=True),
+        profile__student_name=student_name
     )
 
-    # ✅ filter records:
-    # 1) record belongs to assigned mentee
-    # 2) mentee department matches clicked bar label
-    qs = (
-        Model.objects
-        .select_related("user", "user__profile")
-        .filter(user_id__in=mentee_user_ids, user__profile__branch=dept)
-    )
+    if not mentee_users.exists():
+        return HttpResponse("Student not found", status=404)
+
+    qs = Model.objects.filter(user__in=mentee_users)
 
     if academic_year:
         qs = qs.filter(academic_year=academic_year)
@@ -2362,7 +2371,7 @@ def export_department_students_excel(request):
             max_len = max(max_len, len(v))
         ws.column_dimensions[letter].width = min(max_len + 2, 45)
 
-    filename = f"{dept}_{category_label}_MyMentees_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    filename = f"{student_name}_{category_label}_MyMentees_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -2375,7 +2384,6 @@ def export_department_students_excel(request):
 @login_required
 def get_chart_data_compare(request):
     mentor_obj = get_object_or_404(Mentor, user=request.user)
-
     category = request.GET.get("category")
 
     model_map = {
@@ -2399,34 +2407,39 @@ def get_chart_data_compare(request):
 
     qs = model.objects.filter(user_id__in=mentee_user_ids)
 
-    years = sorted(
-        qs.values_list("academic_year", flat=True).distinct()
+    years = sorted(qs.values_list("academic_year", flat=True).distinct())
+
+    # ✅ STUDENTS instead of departments
+    students = list(
+        qs.values(
+            "user_id",
+            "user__profile__student_name",
+            "user__username"
+        ).distinct()
     )
 
-    departments = sorted(
-        qs.values_list("user__profile__branch", flat=True)
-        .distinct()
-    )
-
+    labels = years  # X-axis = years
     datasets = []
 
-    for year in years:
+    for s in students:
+        student_label = s["user__profile__student_name"] or s["user__username"]
         data = []
-        for dept in departments:
+
+        for year in years:
             count = qs.filter(
-                academic_year=year,
-                user__profile__branch=dept
+                user_id=s["user_id"],
+                academic_year=year
             ).count()
             data.append(count)
 
         datasets.append({
-            "label": year,
+            "label": student_label,
             "data": data
         })
 
     return JsonResponse({
-        "labels": list(departments),
-        "datasets": datasets
+        "labels": labels,     # years on X-axis
+        "datasets": datasets # one line per student
     })
 
 
@@ -2446,7 +2459,7 @@ def get_heatmap_data(request):
 
     model = model_map.get(category)
     if not model:
-        return JsonResponse({"years": [], "departments": [], "matrix": []})
+        return JsonResponse({"years": [], "students": [], "matrix": []})
 
     mentee_user_ids = (
         MentorMentee.objects
@@ -2457,30 +2470,154 @@ def get_heatmap_data(request):
     qs = model.objects.filter(user_id__in=mentee_user_ids)
 
     years = sorted(qs.values_list("academic_year", flat=True).distinct())
-    departments = sorted(qs.values_list("user__profile__branch", flat=True).distinct())
+
+    students = list(
+        qs.values(
+            "user_id",
+            "user__profile__student_name",
+            "user__username"
+        ).distinct()
+    )
+
+    student_labels = [
+        s["user__profile__student_name"] or s["user__username"]
+        for s in students
+    ]
 
     matrix = []
+
     for year in years:
         row = []
-        for dept in departments:
-            row.append(qs.filter(
-                academic_year=year,
-                user__profile__branch=dept
-            ).count())
+        for s in students:
+            row.append(
+                qs.filter(
+                    user_id=s["user_id"],
+                    academic_year=year
+                ).count()
+            )
         matrix.append(row)
 
     return JsonResponse({
         "years": years,
-        "departments": departments,
+        "students": student_labels,
         "matrix": matrix
     })
+
+
+def signature_block(mentor_name):
+    data = [
+        ["", ""],
+        ["__________________________", "__________________________"],
+        [f"Mentor Signature\n{mentor_name}", "HOD Signature\nHead of Department"],
+    ]
+
+    table = RLTable(data, colWidths=[8 * cm, 8 * cm])
+
+    table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONT", (0, 2), (-1, 2), "Helvetica-Bold"),
+        ("TOPPADDING", (0, 1), (-1, 1), 20),
+        ("TOPPADDING", (0, 2), (-1, 2), 6),
+        ("TOPPADDING", (0, 3), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, -1), (-1, -1), 10),
+    ]))
+
+    return table
+
+
+def generate_performance_insights(user, mentor_user):
+    # ================= SEMESTER RESULTS =================
+    sem_results = SemesterResult.objects.filter(user=user).order_by("created_at")
+
+    sgpas = [float(s.pointer) for s in sem_results if s.pointer]
+
+    # ---------- SGPA TREND ----------
+    trend = "No Data"
+    if len(sgpas) >= 2:
+        if sgpas[-1] > sgpas[0]:
+            trend = "Improving"
+        elif sgpas[-1] < sgpas[0]:
+            trend = "Declining"
+        else:
+            trend = "Stable"
+
+    # ---------- AVERAGE SGPA ----------
+    avg_sgpa = round(sum(sgpas) / len(sgpas), 2) if sgpas else None
+
+    # ---------- KT RISK ----------
+    total_kts = sem_results.aggregate(total=Sum("no_of_kt"))["total"] or 0
+
+    if total_kts == 0:
+        kt_risk = "Low"
+    elif total_kts <= 2:
+        kt_risk = "Moderate"
+    else:
+        kt_risk = "High"
+
+    # ================= ATTENDANCE =================
+    # total sessions conducted by this mentor
+    total_sessions = MentorMenteeInteraction.objects.filter(
+        mentor=mentor_user
+    ).count()
+
+    # sessions where this student was present
+    attended_sessions = MentorMenteeInteraction.objects.filter(
+        mentor=mentor_user,
+        mentees=user
+    ).count()
+
+    attendance_text = "N/A"
+    attendance_pct = 0
+
+    if total_sessions > 0:
+        attendance_pct = round((attended_sessions / total_sessions) * 100, 1)
+
+        if attendance_pct >= 80:
+            attendance_text = f"Regular ({attendance_pct}%)"
+        elif attendance_pct >= 60:
+            attendance_text = f"Occasional ({attendance_pct}%)"
+        else:
+            attendance_text = f"Poor ({attendance_pct}%)"
+
+    # ================= OVERALL SCORE =================
+    score = 0
+
+    if avg_sgpa:
+        score += avg_sgpa * 10
+
+    if total_kts == 0:
+        score += 20
+
+    if attendance_pct >= 80:
+        score += 20
+    elif attendance_pct >= 60:
+        score += 10
+
+    if score >= 85:
+        overall = "Excellent"
+    elif score >= 65:
+        overall = "Good"
+    else:
+        overall = "Needs Attention"
+
+    return {
+        "trend": trend,
+        "avg": avg_sgpa,
+        "kt_risk": kt_risk,
+        "attendance": attendance_text,
+        "attendance_pct": attendance_pct,
+        "overall": overall
+    }
 
 
 @login_required
 def export_progress_pdf(request):
     mentor_obj = get_object_or_404(Mentor, user=request.user)
+    mentor_name = mentor_obj.name or request.user.username
 
-    mentees = MentorMentee.objects.filter(mentor=mentor_obj).select_related("mentee__user")
+    mentees = MentorMentee.objects.filter(
+        mentor=mentor_obj
+    ).select_related("mentee__user", "mentee__user__profile")
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = "attachment; filename=Mentor_Mentee_Progress.pdf"
@@ -2489,43 +2626,295 @@ def export_progress_pdf(request):
     styles = getSampleStyleSheet()
 
     elements = []
-    elements.append(Paragraph("Mentee Progress Report", styles["Title"]))
-    elements.append(Spacer(1, 14))
+
+    # =====================================================
+    # HEADER / FOOTER
+    # =====================================================
+    logo_path = os.path.join(settings.MEDIA_ROOT, "logo.png")
+    today = datetime.now().strftime("%d %b %Y")
+
+    def draw_header_footer(canvas, doc):
+        canvas.saveState()
+        width, height = A4
+        # ===== WHITE BG FOR LOGO =====
+        canvas.setFillColor(colors.white)
+        canvas.rect(30, height - 70, 90, 50, fill=1, stroke=0)
+
+        # ===== LOGO =====
+        if os.path.exists(logo_path):
+            canvas.drawImage(
+                logo_path,
+                35,
+                height - 80,
+                width=100,
+                height=60,
+                preserveAspectRatio=True,
+                mask="auto"  # enables PNG transparency
+            )
+
+        # ===== INSTITUTE NAME =====
+        canvas.setFont("Helvetica-Bold", 16)
+        canvas.setFillColor(colors.black)
+        canvas.drawString(
+                150,
+                height - 50,
+                "A. P. Shah Institute of Technology (APSIT)"
+        )
+
+        # ===== FOOTER =====
+        canvas.setFont("Helvetica", 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawString(
+            1.5 * cm,
+            1 * cm,
+            f"Mentor: {mentor_name}"
+        )
+        canvas.drawRightString(
+            20 * cm,
+            1 * cm,
+            f"Mentee Progress Report | Generated on {today} | Page {doc.page}"
+        )
+
+        canvas.restoreState()
+
+    # ================= MENTOR SUMMARY PAGE =================
+
+    elements.append(Paragraph("Mentee Performance Summary", styles["Title"]))
+    elements.append(Spacer(1, 12))
+
+    summary_table = [[
+        "Mentee Name",
+        "Avg SGPA",
+        "Internships",
+        "Projects",
+        "Events",
+        "Courses",
+        "Papers",
+        "Other Events",
+        "Total KTs"
+    ]]
 
     for rel in mentees:
         user = rel.mentee.user
         profile = getattr(user, "profile", None)
+        name = profile.student_name if profile else user.username
+
+        avg_sgpa = SemesterResult.objects.filter(
+            user=user
+        ).aggregate(avg=Avg("pointer"))["avg"]
+
+        total_kts = SemesterResult.objects.filter(
+            user=user
+        ).aggregate(total=Sum("no_of_kt"))["total"] or 0
+
+        summary_table.append([
+            name,
+            round(avg_sgpa, 2) if avg_sgpa else "-",
+            InternshipPBL.objects.filter(user=user).count(),
+            Project.objects.filter(user=user).count(),
+            SportsCulturalEvent.objects.filter(user=user).count(),
+            CertificationCourse.objects.filter(user=user).count(),
+            PaperPublication.objects.filter(user=user).count(),
+            OtherEvent.objects.filter(user=user).count(),
+            total_kts
+        ])
+
+    table = RLTable(summary_table, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 20))
+
+    # =====================================================
+    # COLLECT ALL YEARS
+    # =====================================================
+    year_sets = [
+        InternshipPBL.objects.values_list("academic_year", flat=True),
+        Project.objects.values_list("academic_year", flat=True),
+        SportsCulturalEvent.objects.values_list("academic_year", flat=True),
+        CertificationCourse.objects.values_list("academic_year", flat=True),
+        PaperPublication.objects.values_list("academic_year", flat=True),
+        OtherEvent.objects.values_list("academic_year", flat=True),
+        SemesterResult.objects.values_list("academic_year", flat=True),
+    ]
+
+    all_years = sorted(set(y for y in chain(*year_sets) if y))
+
+    # =====================================================
+    # PER STUDENT PAGES
+    # =====================================================
+    for rel in mentees:
+        user = rel.mentee.user
+        profile = getattr(user, "profile", None)
+
+        student_name = profile.student_name if profile else user.username
+        branch = profile.branch if profile else "N/A"
 
         elements.append(Paragraph(
-            f"{profile.student_name} ({profile.branch})",
+            f"{student_name} ({branch})",
             styles["Heading2"]
         ))
+        elements.append(Spacer(1, 8))
 
-        table_data = [["Year", "Internships", "Projects", "Events", "Courses", "Papers"]]
+        # ================= TABLE 1: ACTIVITY SUMMARY =================
+        summary_table_data = [[
+            "Year", "Semesters", "Internships", "Projects",
+            "Events", "Courses", "Papers", "Other Events"
+        ]]
 
-        for year in InternshipPBL.objects.values_list("academic_year", flat=True).distinct():
-            row = [
+        for year in all_years:
+            sem_qs = SemesterResult.objects.filter(
+                user=user, academic_year=year
+            )
+
+            semesters = list(sem_qs.values_list("semester", flat=True))
+            sem_display = ", ".join(semesters) if semesters else "-"
+
+            summary_table_data.append([
                 year,
+                sem_display,
                 InternshipPBL.objects.filter(user=user, academic_year=year).count(),
                 Project.objects.filter(user=user, academic_year=year).count(),
                 SportsCulturalEvent.objects.filter(user=user, academic_year=year).count(),
                 CertificationCourse.objects.filter(user=user, academic_year=year).count(),
                 PaperPublication.objects.filter(user=user, academic_year=year).count(),
-            ]
-            table_data.append(row)
+                OtherEvent.objects.filter(user=user, academic_year=year).count(),
+            ])
 
-        table = RLTable(table_data)
-        table.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),  # horizontal alignment
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),  # vertical alignment
+        summary_table = RLTable(summary_table_data, repeatRows=1)
+        summary_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("ALIGN", (1, 1), (-1, -1), "CENTER"),
         ]))
 
-        elements.append(table)
-        elements.append(Spacer(1, 20))
+        elements.append(summary_table)
+        elements.append(Spacer(1, 14))
 
-    doc.build(elements)
+        # ================= TABLE 2: SEMESTER PERFORMANCE =================
+        sem_results = SemesterResult.objects.filter(
+            user=user
+        ).order_by("academic_year", "semester")
+
+        sem_table = [["Year", "Semester", "SGPA", "KTs"]]
+        spark_data = []
+        x = 0
+
+        for sr in sem_results:
+            sgpa = float(sr.pointer) if sr.pointer else None
+            kts = sr.no_of_kt or 0
+
+            sem_table.append([
+                sr.academic_year or "-",
+                sr.semester or "-",
+                f"{sgpa:.2f}" if sgpa else "-",
+                kts
+            ])
+
+            if sgpa:
+                spark_data.append((x, sgpa))
+                x += 1
+
+        sems = RLTable(sem_table, repeatRows=1)
+
+        style_cmds = [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+            ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+        ]
+
+        for i in range(1, len(sem_table)):
+            try:
+                if float(sem_table[i][2]) >= 8:
+                    style_cmds.append(("TEXTCOLOR", (2, i), (2, i), colors.green))
+            except:
+                pass
+
+            if sem_table[i][3] > 0:
+                style_cmds.append(("TEXTCOLOR", (3, i), (3, i), colors.red))
+
+        sems.setStyle(TableStyle(style_cmds))
+
+        elements.append(Paragraph("Semester Performance", styles["Heading3"]))
+        elements.append(sems)
+        elements.append(Spacer(1, 8))
+
+        # ================= SGPA SPARKLINE =================
+        if spark_data:
+            from reportlab.graphics.shapes import String
+
+            drawing = Drawing(400, 140)
+            lp = LinePlot()
+            lp.x = 40
+            lp.y = 30
+            lp.width = 320
+            lp.height = 80
+            lp.data = [spark_data]
+
+            lp.lines[0].strokeColor = colors.darkblue
+            lp.lines[0].strokeWidth = 2
+
+            # Axes
+            lp.yValueAxis.valueMin = 0
+            lp.yValueAxis.valueMax = 10
+            lp.yValueAxis.visible = True
+            lp.xValueAxis.visible = False
+
+            drawing.add(lp)
+
+            # 🏷 SGPA LABELS ABOVE POINTS
+            for i, (x_val, y_val) in enumerate(spark_data):
+                # Convert data coords → drawing coords
+                x_pos = lp.x + (i / max(len(spark_data) - 1, 1)) * lp.width
+                y_pos = lp.y + ((y_val - lp.yValueAxis.valueMin) /
+                                (lp.yValueAxis.valueMax - lp.yValueAxis.valueMin)) * lp.height
+
+                label = String(
+                    x_pos,
+                    y_pos + 6,  # slightly above the point
+                    f"{round(y_val, 2)}",
+                    fontSize=7,
+                    fillColor=colors.black,
+                    textAnchor="middle"
+                )
+                drawing.add(label)
+
+            elements.append(Paragraph("SGPA Trend", styles["Italic"]))
+            elements.append(Spacer(1, 4))
+            elements.append(drawing)
+
+        # ================= PERFORMANCE INSIGHTS =================
+        insights = generate_performance_insights(user, request.user)
+
+        insight_text = f"""
+        <b>Performance Insights</b><br/>
+        📈 SGPA Trend: {insights['trend']}<br/>
+        🎯 Academic Strength: {'Strong' if insights['avg'] and insights['avg'] >= 8 else 'Moderate'} (Avg SGPA: {insights['avg'] or 'N/A'})<br/>
+        ⚠️ KT Risk: {insights['kt_risk']}<br/>
+        🧑‍🏫 Mentoring Attendance: {insights['attendance']}<br/>
+        🏆 Overall Performance: <b>{insights['overall']}</b><br/><br/>
+        <b>Mentor Note:</b> ________________________________________________
+        """
+
+        elements.append(Paragraph(insight_text, styles["Normal"]))
+
+        elements.append(Spacer(1, 20))
+        elements.append(signature_block(mentor_name))
+        elements.append(PageBreak())
+
+    doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
     return response
+
+
+
 
 
 @login_required
@@ -2561,44 +2950,45 @@ def get_department_trends(request):
     previous = years[-2]
 
     trends = {}
+    percentages = {}
 
-    departments = qs.values_list("user__profile__branch", flat=True).distinct()
+    students = qs.values(
+        "user_id",
+        "user__profile__student_name",
+        "user__username"
+    ).distinct()
 
-    for dept in departments:
+    for s in students:
+        student_label = s["user__profile__student_name"] or s["user__username"]
+
         curr_count = qs.filter(
-            academic_year=current,
-            user__profile__branch=dept
+            user_id=s["user_id"],
+            academic_year=current
         ).count()
 
         prev_count = qs.filter(
-            academic_year=previous,
-            user__profile__branch=dept
+            user_id=s["user_id"],
+            academic_year=previous
         ).count()
 
         if curr_count > prev_count:
-            trends[dept] = "up"
+            trends[student_label] = "up"
         elif curr_count < prev_count:
-            trends[dept] = "down"
+            trends[student_label] = "down"
         else:
-            trends[dept] = "same"
+            trends[student_label] = "same"
+
+        percentages[student_label] = round(
+            ((curr_count - prev_count) / max(prev_count, 1)) * 100,
+            1
+        )
 
     return JsonResponse({
         "current": current,
         "previous": previous,
         "trends": trends,
-        "percentages": {
-            dept: (
-                round(
-                    ((qs.filter(academic_year=current, user__profile__branch=dept).count() -
-                      qs.filter(academic_year=previous, user__profile__branch=dept).count()) /
-                     max(qs.filter(academic_year=previous, user__profile__branch=dept).count(), 1)) * 100,
-                    1
-                )
-            )
-            for dept in departments
-        }
+        "percentages": percentages
     })
-
 #-----------------Student data visualization logic ends------------------
 
 

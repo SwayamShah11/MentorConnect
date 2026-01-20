@@ -24,12 +24,12 @@
               <div class="col-md-5">
                 <select class="form-select" id="categorySelect">
                   <option value="">-- Select Category --</option>
-                  <option value="internship">Department Wise Internships / PBL</option>
-                  <option value="project">Department Wise Projects</option>
-                  <option value="sports">Department Wise Sports / Cultural</option>
-                  <option value="course">Department Wise Courses / Certifications</option>
-                  <option value="other">Department Wise Other Achievements / Hackathons</option>
-                  <option value="paper">Department Wise Paper Publications</option>
+                  <option value="internship">Internships / PBL</option>
+                  <option value="project">Projects</option>
+                  <option value="sports">Sports / Cultural</option>
+                  <option value="course">Courses / Certifications</option>
+                  <option value="other">Other Achievements / Hackathons</option>
+                  <option value="paper">Paper Publications</option>
                 </select>
               </div>
                   <div class="col-md-4 text-white fw-bold mt-2">
@@ -62,10 +62,10 @@
           <div class="text-center mb-3 d-none" id="graphButtons">
               <button class="btn btn-light me-2" onclick="showChart('pie')"><i class="bi bi-pie-chart-fill"></i></button>
               <button class="btn btn-light me-2" onclick="showChart('bar')"><i class="bi bi-bar-chart-fill"></i></button>
-              <button class="btn btn-light me-2" onclick="showChart('area')"><i class="fa fa-chart-area"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('area')"><i class="bi bi-bar-chart-steps"></i></button>
               <button class="btn btn-light me-2" onclick="showChart('line')"><i class="bi bi-graph-up-arrow"></i></button>
               <button class="btn btn-light me-2" onclick="showHeatmap()"><i class="bi bi-grid-3x3-gap-fill"></i></button>
-               <button class="btn btn-dark ms-2" onclick="compareYears()">📈 Compare Years</button>
+<!--              <button class="btn btn-dark ms-2" onclick="compareYears()">📈 Compare Years</button>-->
           </div>
 
           <!-- ✅ CHART DISPLAY AREA -->
@@ -98,7 +98,7 @@
 
 <style>
 .chartBox {
-  max-height: 2000px;
+  max-height: 100% !important;
 }
 </style>
 
@@ -123,12 +123,12 @@ let barChart, pieChart, areaChart, lineChart, heatmapChart;
 //Chart title
 function getChartTitle(type) {
   const categoryMap = {
-    "internship": "Dept Wise Internships / PBL",
-    "project": "Dept Wise Projects",
-    "sports": "Dept Wise Sports / Cultural",
-    "course": "Dept Wise Courses / Certifications",
-    "other": "Dept Wise Other Achievements / Hackathons",
-    "paper": "Dept Wise Paper Publications"
+    "internship": "Internships / PBL",
+    "project": "Projects",
+    "sports": "Sports / Cultural",
+    "course": "Courses / Certifications",
+    "other": "Other Achievements / Hackathons",
+    "paper": "Paper Publications"
   };
 
   const chartMap = {
@@ -184,15 +184,13 @@ function showChart(type) {
 
   document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
 
-  if (barChart) barChart.destroy();
-  if (pieChart) pieChart.destroy();
-  if (areaChart) areaChart.destroy();
-  if (lineChart) lineChart.destroy();
+  destroyCharts();
 
   const chartTitle = getChartTitle(type);
 
   const commonOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       title: {
         display: true,
@@ -206,25 +204,29 @@ function showChart(type) {
       }
     },
     scales: {
-      x: {
-        title: {
-          display: true,
-          text: "Departments"
-        }
+    x: {
+      title: {
+        display: true,
+        text: "Students"
       },
-      y: {
-        title: {
-          display: true,
-          text: "Count"
-        },
-        beginAtZero: true
+      ticks: {
+        autoSkip: false // prevents label hiding
       }
+    },
+    y: {
+      title: {
+        display: true,
+        text: "Count"
+      },
+      beginAtZero: true
     }
-  };
+  }
+};
 
   if (type === "bar") {
       const ctx = document.getElementById("barChart");
       ctx.classList.remove("d-none");
+      resizeCanvas("barChart", labels.length, 450);
 
       barChart = new Chart(ctx, {
         type: "bar",
@@ -248,15 +250,15 @@ function showChart(type) {
 
             const year = document.getElementById("yearSelect").value;
             const index = elements[0].index;
-            const dept = labels[index]; // department label from x-axis
+            const student = labels[index]; // student label from x-axis
 
-            if (!dept || dept === "N/A" || dept === "Unknown") {
+            if (!student || student === "N/A" || student === "Unknown") {
               alert("Invalid department selected.");
               return;
             }
 
             // ✅ download Excel
-            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}`;
+            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&student=${encodeURIComponent(student)}&year=${encodeURIComponent(year)}`;
             window.location.href = url;
           }
         }
@@ -272,8 +274,10 @@ function showChart(type) {
             const { ctx } = chart;
 
             chart.getDatasetMeta(0).data.forEach((bar, i) => {
-              const dept = chart.data.labels[i];
-              const trend = data.trends[dept];
+              const student = chart.data.labels?.[i];
+              if (!student) return;
+              if (!data.trends || !data.trends[student]) return;
+              const trend = data.trends[student];
 
               if (!trend) return;
 
@@ -301,9 +305,14 @@ function showChart(type) {
         barChart.options.plugins.tooltip = {
           callbacks: {
             afterLabel: function(ctx) {
-              const dept = ctx.label;
-              const trend = data.trends[dept];
-              const pct = data.percentages[dept] || 0;
+              const student = ctx.label;
+
+              if (!data.trends || !data.trends[student]) {
+                return "Trend: No data";
+              }
+
+              const trend = data.trends[student];
+              const pct = data.percentages?.[student] ?? 0;
 
               let arrow = "→";
               let word = "Stable";
@@ -319,6 +328,7 @@ function showChart(type) {
               const sign = pct > 0 ? "+" : "";
               return `Trend: ${arrow} ${word} (${sign}${pct}%)`;
             }
+
           }
         };
 
@@ -334,8 +344,8 @@ function showChart(type) {
             ctx.textAlign = "center";
 
             chart.getDatasetMeta(0).data.forEach((bar, i) => {
-              const dept = chart.data.labels[i];
-              const pct = data.percentages[dept];
+              const student = chart.data.labels[i];
+              const pct = data.percentages?.[student];
 
               if (pct === undefined) return;
 
@@ -364,7 +374,7 @@ function showChart(type) {
       if (type === "pie") {
         const ctx = document.getElementById("pieChart");
         ctx.classList.remove("d-none");
-
+        resizeCanvas("pieChart", labels.length, 400);
         pieChart = new Chart(ctx, {
           type: "pie",
           data: {
@@ -384,6 +394,7 @@ function showChart(type) {
   if (type === "area") {
     const ctx = document.getElementById("areaChart");
     ctx.classList.remove("d-none");
+    resizeCanvas("areaChart", labels.length, 450);
 
     areaChart = new Chart(ctx, {
       type: "line",
@@ -405,6 +416,7 @@ function showChart(type) {
   if (type === "line") {
     const ctx = document.getElementById("lineChart");
     ctx.classList.remove("d-none");
+    resizeCanvas("lineChart", labels.length, 450);
 
     lineChart = new Chart(ctx, {
       type: "line",
@@ -557,6 +569,7 @@ function compareYears() {
       document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
       const ctx = document.getElementById("lineChart");
       ctx.classList.remove("d-none");
+      resizeCanvas("lineChart", res.labels.length, 450);
 
       lineChart = new Chart(ctx, {
         type: "line",
@@ -585,7 +598,7 @@ function compareYears() {
             x: {
               title: {
                 display: true,
-                text: "Departments"
+                text: "Academic Years"
               }
             },
             y: {
@@ -620,6 +633,8 @@ function showHeatmap() {
       const ctx = document.getElementById("heatmapChart");
       ctx.classList.remove("d-none");
 
+      resizeCanvas("heatmapChart", res.students.length, res.years.length * 80);
+
       const datasets = [];
       const maxValue = Math.max(...res.matrix.flat(), 1);
 
@@ -627,8 +642,8 @@ function showHeatmap() {
         res.matrix[rowIndex].forEach((value, colIndex) => {
           const intensity = value / maxValue;
           datasets.push({
-            label: `${year} - ${res.departments[colIndex]}`,
-            data: [{ x: res.departments[colIndex], y: year, v: value }],
+            label: `${year} - ${res.students[colIndex]}`,
+            data: [{ x: res.students[colIndex], y: year, v: value }],
             backgroundColor: `rgba(220, 53, 69, ${0.2 + intensity * 0.8})`,
             borderWidth: 1
           });
@@ -640,6 +655,7 @@ function showHeatmap() {
         data: { datasets: datasets },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             tooltip: {
               callbacks: {
@@ -648,14 +664,14 @@ function showHeatmap() {
             },
             title: {
               display: true,
-              text: "Department vs Academic Year Heatmap"
+              text: "Academic Year v/s Students Heatmap"
             }
           },
           scales: {
             x: {
               type: "category",
-              labels: res.departments,
-              title: { display: true, text: "Departments" }
+              labels: res.students,
+              title: { display: true, text: "Students" }
             },
             y: {
               type: "category",
@@ -672,6 +688,19 @@ function showHeatmap() {
 function downloadProgressPDF() {
   window.location.href = "/export-progress-pdf/";
 }
+
+// Resize the charts
+function resizeCanvas(canvasId, labelCount, baseHeight = 400) {
+  const canvas = document.getElementById(canvasId);
+
+  // Increase height based on data size
+  const dynamicHeight = Math.max(baseHeight, labelCount * 60);
+
+  canvas.style.height = dynamicHeight + "px";
+  canvas.style.width = "100%";
+  canvas.height = dynamicHeight;
+}
+
 
 </script>
 {% endblock %}

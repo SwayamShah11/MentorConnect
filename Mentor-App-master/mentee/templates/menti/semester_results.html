@@ -45,6 +45,7 @@
                 <table class="table table-bordered table-hover align-middle shadow-sm rounded">
                     <thead class="table-dark">
                         <tr>
+                            <th class="text-center">Academic Year</th>
                             <th class="text-center">Semester</th>
                             <th class="text-center">Pointer</th>
                             <th class="text-center">No. of KT's</th>
@@ -54,6 +55,7 @@
                     <tbody>
                         {% for item in semesters %}
                             <tr>
+                                <td class="text-center">{{ item.academic_year }}</td>
                                 <td class="text-center">{{ item.semester }}</td>
                                 <td class="text-center">{{ item.pointer }}</td>
                                 <td class="text-center">{{ item.no_of_kt }}</td>
@@ -102,8 +104,13 @@
                                         </small>
 
                                         <div class="col-md-4">
+                                            <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.academic_year|add_class:"form-select" }}
+                                        </div>
+
+                                        <div class="col-md-4">
                                             <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
-                                            {{ form.semester|add_class:"form-control" }}
+                                            {{ form.semester|add_class:"form-select" }}
                                         </div>
 
                                         <div class="col-md-4">

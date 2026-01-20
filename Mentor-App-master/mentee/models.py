@@ -435,6 +435,7 @@ class EducationalDetail(models.Model):
 
 class SemesterResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,blank=True, null=True)
+    academic_year = models.CharField(max_length=20, choices=AY, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     pointer = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True)  # Example: 9.25
     no_of_kt = models.PositiveIntegerField(default=0, blank=True, null=True)
