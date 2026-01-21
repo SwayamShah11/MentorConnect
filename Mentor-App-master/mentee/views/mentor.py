@@ -2907,14 +2907,37 @@ def export_progress_pdf(request):
         elements.append(Paragraph(insight_text, styles["Normal"]))
 
         elements.append(Spacer(1, 20))
-        elements.append(signature_block(mentor_name))
-        elements.append(PageBreak())
+        # elements.append(PageBreak())
+
+    # ================= FINAL SIGNATURE PAGE =================
+    elements.append(PageBreak())
+
+    mentor_name = request.user.get_full_name() or request.user.username
+
+    elements.append(Spacer(1, 200))
+
+    elements.append(Paragraph("Signatures", styles["Title"]))
+    elements.append(Spacer(1, 40))
+
+    sig_table_data = [
+        ["__________________________", "__________________________"],
+        [f"Mentor Signature\n{mentor_obj.name}", "HOD Signature\nHead of Department"],
+        [f"Date: {datetime.now().strftime('%d %b %Y')}", ""]
+    ]
+
+    sig_table = RLTable(sig_table_data, [8 * cm, 8 * cm])
+    sig_table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONT", (0, 1), (-1, 1), "Helvetica-Bold"),
+        ("TOPPADDING", (0, 0), (-1, 0), 20),
+        ("TOPPADDING", (0, 1), (-1, 1), 10),
+        ("TOPPADDING", (0, 2), (-1, 2), 10),
+    ]))
+
+    elements.append(sig_table)
 
     doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
     return response
-
-
-
 
 
 @login_required
