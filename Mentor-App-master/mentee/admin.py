@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 
 @admin.register(InternshipPBL)
 class InternshipPBLAdmin(admin.ModelAdmin):
-    list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days")
+    list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days", "uploaded_at")
     search_fields = ("title", "company_name", "user__username")  # 🔍 search filter
     list_filter = ("user", "academic_year", "semester", "type")  # ✅ dropdown filters
     ordering = ("-start_date",)  # ⬅️ latest internships first

@@ -5,7 +5,6 @@ from channels.auth import AuthMiddlewareStack
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mentorship.settings")
 
-# MUST come FIRST
 django_asgi_app = get_asgi_application()
 
 # Import AFTER Django is initialized

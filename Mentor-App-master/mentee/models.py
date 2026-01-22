@@ -185,6 +185,7 @@ class InternshipPBL(models.Model):
     end_date = models.DateField(blank=True, null=True)
     no_of_days = models.IntegerField(blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/internships/", blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if self.start_date and self.end_date:

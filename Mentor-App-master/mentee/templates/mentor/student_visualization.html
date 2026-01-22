@@ -52,7 +52,11 @@
                 </button>
                 <!--Progress report button-->
                 <button class="btn btn-danger ms-2" onclick="downloadProgressPDF()">
-                    <i class="bi bi-file-pdf"></i> Export Progress Report
+                    <i class="bi bi-file-pdf"></i> Export Overall Progress Report
+                </button>
+                <!--Filtered Progress report button-->
+                <button class="btn btn-primary ms-2" onclick="downloadFilteredPDFWithChart()">
+                  📄 Export Year + Category Report
                 </button>
               </div>
             </div>
@@ -179,7 +183,14 @@ function destroyCharts() {
   if (heatmapChart) heatmapChart.destroy();
 }
 
+
+
 // ✅ SHOW ONLY ONE CHART
+function getSelectedYearText() {
+  const year = document.getElementById("yearSelect").value;
+  return year ? `Academic Year: ${year}` : "Academic Year: All Years";
+}
+
 function showChart(type) {
 
   document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
@@ -196,7 +207,16 @@ function showChart(type) {
         display: true,
         text: chartTitle,
         font: { size: 18 },
-        padding: { top: 10, bottom: 20 }
+        padding: { top: 10, bottom: 25 }
+      },
+      subtitle: {
+        display: true,
+        text: getSelectedYearText(),
+        font: {
+          size: 14,
+          style: "italic"
+        },
+        padding: { bottom: 15 }
       },
       legend: {
         display: true,
@@ -699,6 +719,54 @@ function resizeCanvas(canvasId, labelCount, baseHeight = 400) {
   canvas.style.height = dynamicHeight + "px";
   canvas.style.width = "100%";
   canvas.height = dynamicHeight;
+}
+
+
+function getCSRFToken() {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith("csrftoken="))
+    ?.split("=")[1];
+}
+
+// Export filtered report
+function downloadFilteredPDFWithChart() {
+  const canvas = document.querySelector(".chartBox:not(.d-none)");
+  if (!canvas) {
+    alert("Please generate a chart first");
+    return;
+  }
+
+  const year = document.getElementById("yearSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
+  if (!year || !category) {
+    alert("Select category and academic year");
+    return;
+  }
+
+  const chartImage = canvas.toDataURL("image/png");
+
+  fetch("/export-filtered-progress-pdf/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCSRFToken()
+    },
+    body: JSON.stringify({
+      year: year,
+      category: category,
+      chart: chartImage
+    })
+  })
+  .then(res => res.blob())
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${category}_${year}_Progress_Report.pdf`;
+    a.click();
+  });
 }
 
 

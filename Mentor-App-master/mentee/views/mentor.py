@@ -1,5 +1,6 @@
 import traceback
 import uuid
+import base64
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 import io
@@ -2907,7 +2908,6 @@ def export_progress_pdf(request):
         elements.append(Paragraph(insight_text, styles["Normal"]))
 
         elements.append(Spacer(1, 20))
-        # elements.append(PageBreak())
 
     # ================= FINAL SIGNATURE PAGE =================
     elements.append(PageBreak())
@@ -3012,6 +3012,232 @@ def get_department_trends(request):
         "trends": trends,
         "percentages": percentages
     })
+
+
+@login_required
+@csrf_exempt
+def export_filtered_progress_pdf(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+
+    if request.method != "POST":
+        return HttpResponse("Use POST to export PDF", status=405)
+
+    try:
+        raw = request.body.decode("utf-8")
+        data = json.loads(raw)
+    except Exception:
+        return HttpResponse("Invalid JSON body", status=400)
+
+    year = data.get("year")
+    category = data.get("category")
+    chart_b64 = data.get("chart")
+
+    if not all([year, category, chart_b64]):
+        return HttpResponse("Missing data", status=400)
+
+    # ================= DECODE CHART =================
+    try:
+        if "," in chart_b64:
+            chart_b64 = chart_b64.split(",")[1]
+        chart_bytes = base64.b64decode(chart_b64)
+    except Exception:
+        return HttpResponse("Invalid chart image", status=400)
+
+    model_map = {
+        "internship": (InternshipPBL, "Internships / PBL"),
+        "project": (Project, "Projects"),
+        "sports": (SportsCulturalEvent, "Sports / Cultural"),
+        "course": (CertificationCourse, "Courses / Certifications"),
+        "other": (OtherEvent, "Other Achievements"),
+        "paper": (PaperPublication, "Paper Publications"),
+    }
+
+    if category not in model_map:
+        return HttpResponse("Invalid category", status=400)
+
+    Model, category_label = model_map[category]
+
+    mentees = MentorMentee.objects.filter(
+        mentor=mentor_obj
+    ).select_related("mentee__user", "mentee__user__profile")
+
+    # ================= PDF SETUP =================
+    response = HttpResponse(content_type="application/pdf")
+    filename = f"{category_label}_{year}_Mentee_Report.pdf".replace(" ", "_")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # ================= HEADER / FOOTER =================
+    logo_path = os.path.join(settings.MEDIA_ROOT, "logo.png")
+    mentor_name = request.user.get_full_name() or request.user.username
+    today = datetime.now().strftime("%d %b %Y")
+
+    def draw_header_footer(canvas, doc):
+        canvas.saveState()
+        width, height =A4
+
+        # Logo
+        if os.path.exists(logo_path):
+            canvas.drawImage(logo_path, 1 * cm, 27 * cm, width=100, height=60, preserveAspectRatio=True, mask="auto")
+            canvas.setFont("Helvetica-Bold", 10)
+            # ===== INSTITUTE NAME =====
+            canvas.setFont("Helvetica-Bold", 16)
+            canvas.setFillColor(colors.black)
+            canvas.drawString(
+                150,
+                height - 50,
+                "A. P. Shah Institute of Technology (APSIT)"
+            )
+
+        # Footer
+        canvas.setFont("Helvetica", 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawRightString(
+            20 * cm,
+            1 * cm,
+            f"{mentor_obj.name} | Generated {today} | Page {doc.page}"
+        )
+
+        canvas.restoreState()
+
+    # ================= COVER PAGE =================
+    elements.append(Paragraph("Academic Progress Report", styles["Title"]))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(
+        f"Category: {category_label} | Academic Year: {year}",
+        styles["Italic"]
+    ))
+    elements.append(Spacer(1, 16))
+
+    elements.append(Paragraph("Performance Overview Chart", styles["Heading3"]))
+    elements.append(Spacer(1, 6))
+    chart_img = RLImage(BytesIO(chart_bytes))
+    chart_img.drawWidth = 16 * cm
+    chart_img.drawHeight = 9 * cm
+
+    elements.append(chart_img)
+    elements.append(PageBreak())
+
+    # ================= STUDENT SECTIONS =================
+    for rel in mentees:
+        user = rel.mentee.user
+        profile = getattr(user, "profile", None)
+
+        name = profile.student_name if profile else user.username
+        branch = profile.branch if profile else "N/A"
+
+        qs = Model.objects.filter(
+            user=user,
+            academic_year=year
+        )
+
+        if not qs.exists():
+            continue
+
+        elements.append(Paragraph(
+            f"{name} ({branch})",
+            styles["Heading2"]
+        ))
+        elements.append(Spacer(1, 6))
+
+        # ---------- COLUMN SET ----------
+        if category in ["internship", "course"]:
+            headers = ["Title", "Company / Authority", "Semester", "Start Date", "End Date", "Days"]
+        elif category == "project":
+            headers = ["Title", "Type", "Semester", "Guide Name", "Link"]
+        elif category in ["sports", "other"]:
+            headers = ["Event Name", "Semester", "Level", "Prize Won"]
+        else:
+            headers = ["Title", "Type", "Level", "Authors", "Semester"]
+
+        table_data = [headers]
+
+        for obj in qs:
+            if category == "internship":
+                table_data.append([
+                    obj.title or "",
+                    obj.company_name or "",
+                    obj.semester or "-",
+                    obj.start_date.strftime("%d-%b-%Y") if obj.start_date else "-",
+                    obj.end_date.strftime("%d-%b-%Y") if obj.end_date else "-",
+                    obj.no_of_days or "-"
+                ])
+            elif category == "course":
+                table_data.append([
+                    obj.title or "",
+                    obj.certifying_authority or "",
+                    obj.semester or "-",
+                    obj.start_date.strftime("%d-%b-%Y") if obj.start_date else "-",
+                    obj.end_date.strftime("%d-%b-%Y") if obj.end_date else "-",
+                    obj.no_of_days or "-"
+                ])
+            elif category == "project":
+                table_data.append([
+                    obj.title or "",
+                    obj.project_type or "",
+                    obj.semester or "-",
+                    obj.guide_name or "",
+                    obj.link or ""
+                ])
+            elif category == "sports":
+                table_data.append([
+                    obj.name_of_event or "",
+                    obj.semester or "-",
+                    obj.level or "",
+                    obj.prize_won or ""
+                ])
+            elif category == "other":
+                table_data.append([
+                    obj.name_of_event or "",
+                    obj.semester or "-",
+                    obj.level or "",
+                    obj.prize_won or ""
+                ])
+            else:
+                table_data.append([
+                    obj.title or "",
+                    obj.type or "",
+                    obj.level or "",
+                    obj.authors or "",
+                    obj.semester or "-"
+                ])
+
+        table = RLTable(table_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (2, 1), (-1, -1), "CENTER"),
+        ]))
+
+        elements.append(table)
+        elements.append(PageBreak())
+
+    # ================= SIGNATURE PAGE =================
+    elements.append(Paragraph("Verification & Signatures", styles["Title"]))
+    elements.append(Spacer(1, 40))
+
+    sign_table = RLTable([
+        ["Mentor Signature", "HOD Signature"],
+        ["\n\n\n_________________________", "\n\n\n_________________________"],
+        [mentor_name, "Head of Department"]
+    ], colWidths=[9 * cm, 9 * cm])
+
+    sign_table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("TOPPADDING", (0, 1), (-1, 1), 30),
+    ]))
+
+    elements.append(sign_table)
+
+    # ================= BUILD =================
+    doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
+    return response
 #-----------------Student data visualization logic ends------------------
 
 

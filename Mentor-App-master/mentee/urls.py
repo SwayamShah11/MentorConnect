@@ -154,6 +154,7 @@ urlpatterns = [
     path("get-department-trends/", mentor.get_department_trends, name="get_department_trends"),
     path("get-heatmap-data/", mentor.get_heatmap_data, name="get_heatmap_data"),
     path("export-progress-pdf/", mentor.export_progress_pdf, name="export_progress_pdf"),
+    path("export-filtered-progress-pdf/", mentor.export_filtered_progress_pdf, name="export_filtered_progress_pdf"),
     path("weekly-agenda/", mentor.weekly_agenda_page, name="weekly-agenda"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
