@@ -77,12 +77,9 @@ class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = [
-            'moodle_id',   # 👈 added so it shows up
-            'image', 'student_name', 'semester', 'year', 'branch',
-            'address', 'contact_number', 'dob', 'hobby', 'about_me',
-            'mother_name', 'mother_occupation', 'mother_contact',
-            'father_name', 'father_occupation', 'father_contact',
-            'sibling1_name', 'sibling2_name', 'career_domain'
+            'moodle_id', 'image', 'student_name', 'semester', 'year', 'branch', 'address', 'contact_number', 'dob',
+            'hobby', 'about_me', 'mother_name', 'mother_occupation', 'mother_contact', 'father_name', 'father_occupation',
+            'father_contact', 'sibling1_name', 'sibling2_name', 'career_domain'
         ]
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date'}),
@@ -123,7 +120,7 @@ class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
-            "certificate": forms.FileInput(attrs={"required":"required"}),
+            "certificate": forms.FileInput(attrs={"required": "required"}),
         }
 
 

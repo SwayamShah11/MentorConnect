@@ -54,8 +54,12 @@ from django.conf import settings
 # Excel libs
 import openpyxl
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.drawing.image import Image as XLImage
+from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.label import DataLabelList
+from openpyxl.worksheet.datavalidation import DataValidation
 
 # ReportLab libs
 from reportlab.lib.pagesizes import A4
@@ -2941,6 +2945,238 @@ def export_progress_pdf(request):
 
 
 @login_required
+def export_progress_excel(request):
+    mentor_obj = get_object_or_404(Mentor, user=request.user)
+    mentor_name = mentor_obj.name or request.user.username
+
+    mentees = MentorMentee.objects.filter(
+        mentor=mentor_obj
+    ).select_related("mentee__user", "mentee__user__profile")
+
+    wb = openpyxl.Workbook()
+
+    header_fill = PatternFill("solid", fgColor="DDDDDD")
+    green = PatternFill("solid", fgColor="C6EFCE")
+    red = PatternFill("solid", fgColor="F4CCCC")
+
+    # =====================================================
+    # SHEET 1 — MENTOR SUMMARY
+    # =====================================================
+    ws = wb.active
+    ws.title = "Mentor Summary"
+
+    headers = [
+        "Mentee Name",
+        "Avg SGPA",
+        "Internships",
+        "Projects",
+        "Events",
+        "Courses",
+        "Papers",
+        "Other Events",
+        "Total KTs"
+    ]
+
+    ws.append(headers)
+
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = Font(bold=True)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    for rel in mentees:
+        user = rel.mentee.user
+        profile = getattr(user, "profile", None)
+        name = profile.student_name if profile else user.username
+
+        avg_sgpa = SemesterResult.objects.filter(
+            user=user
+        ).aggregate(avg=Avg("pointer"))["avg"]
+
+        total_kts = SemesterResult.objects.filter(
+            user=user
+        ).aggregate(total=Sum("no_of_kt"))["total"] or 0
+
+        ws.append([
+            name,
+            round(avg_sgpa, 2) if avg_sgpa else "",
+            InternshipPBL.objects.filter(user=user).count(),
+            Project.objects.filter(user=user).count(),
+            SportsCulturalEvent.objects.filter(user=user).count(),
+            CertificationCourse.objects.filter(user=user).count(),
+            PaperPublication.objects.filter(user=user).count(),
+            OtherEvent.objects.filter(user=user).count(),
+            total_kts
+        ])
+
+    # Auto width
+    for col in ws.columns:
+        width = max(len(str(c.value or "")) for c in col)
+        ws.column_dimensions[col[0].column_letter].width = min(width + 3, 35)
+
+    # =====================================================
+    # COLLECT YEARS
+    # =====================================================
+    year_sets = [
+        InternshipPBL.objects.values_list("academic_year", flat=True),
+        Project.objects.values_list("academic_year", flat=True),
+        SportsCulturalEvent.objects.values_list("academic_year", flat=True),
+        CertificationCourse.objects.values_list("academic_year", flat=True),
+        PaperPublication.objects.values_list("academic_year", flat=True),
+        OtherEvent.objects.values_list("academic_year", flat=True),
+        SemesterResult.objects.values_list("academic_year", flat=True),
+    ]
+
+    all_years = sorted(set(y for y in chain(*year_sets) if y))
+
+    # =====================================================
+    # PER STUDENT SHEETS
+    # =====================================================
+    for rel in mentees:
+        user = rel.mentee.user
+        profile = getattr(user, "profile", None)
+
+        student_name = profile.student_name if profile else user.username
+        branch = profile.branch if profile else "N/A"
+
+        sheet = wb.create_sheet(student_name[:31])
+
+        # ---------- TITLE ----------
+        sheet["A1"] = f"{student_name} ({branch})"
+        sheet["A1"].font = Font(bold=True, size=14)
+
+        row = 3
+
+        # ================= ACTIVITY SUMMARY =================
+        sheet[f"A{row}"] = "Yearly Activity Summary"
+        sheet[f"A{row}"].font = Font(bold=True)
+        row += 1
+
+        headers = [
+            "Year", "Semesters", "Internships",
+            "Projects", "Events", "Courses",
+            "Papers", "Other Events"
+        ]
+
+        sheet.append(headers)
+        for col in range(1, len(headers) + 1):
+            cell = sheet.cell(row=row, column=col)
+            cell.font = Font(bold=True)
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        row += 1
+
+        for year in all_years:
+            sems = SemesterResult.objects.filter(
+                user=user, academic_year=year
+            ).values_list("semester", flat=True)
+
+            sem_display = ", ".join(sems) if sems else ""
+
+            sheet.append([
+                year,
+                sem_display,
+                InternshipPBL.objects.filter(user=user, academic_year=year).count(),
+                Project.objects.filter(user=user, academic_year=year).count(),
+                SportsCulturalEvent.objects.filter(user=user, academic_year=year).count(),
+                CertificationCourse.objects.filter(user=user, academic_year=year).count(),
+                PaperPublication.objects.filter(user=user, academic_year=year).count(),
+                OtherEvent.objects.filter(user=user, academic_year=year).count(),
+            ])
+            row += 1
+
+        row += 2
+
+        # ================= SEMESTER PERFORMANCE =================
+        sheet[f"A{row}"] = "Semester Performance"
+        sheet[f"A{row}"].font = Font(bold=True)
+        row += 1
+
+        headers = ["Year", "Semester", "SGPA", "KTs"]
+        sheet.append(headers)
+
+        for col in range(1, 5):
+            cell = sheet.cell(row=row, column=col)
+            cell.font = Font(bold=True)
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        row += 1
+
+        sem_results = SemesterResult.objects.filter(
+            user=user
+        ).order_by("academic_year", "semester")
+
+        for sr in sem_results:
+            sgpa = float(sr.pointer) if sr.pointer else ""
+            kts = sr.no_of_kt or 0
+
+            sheet.append([
+                sr.academic_year or "",
+                sr.semester or "",
+                sgpa,
+                kts
+            ])
+
+            # Highlight rules
+            if sgpa and sgpa >= 8:
+                sheet.cell(row=row, column=3).fill = green
+
+            if kts > 0:
+                sheet.cell(row=row, column=4).fill = red
+
+            row += 1
+
+        row += 2
+
+        # ================= PERFORMANCE INSIGHTS =================
+        insights = generate_performance_insights(user, request.user)
+
+        sheet[f"A{row}"] = "Performance Insights"
+        sheet[f"A{row}"].font = Font(bold=True)
+        row += 1
+
+        insight_text = (
+            f"SGPA Trend: {insights['trend']}\n"
+            f"Academic Strength: {'Strong' if insights['avg'] and insights['avg'] >= 8 else 'Moderate'} "
+            f"(Avg SGPA: {insights['avg'] or 'N/A'})\n"
+            f"KT Risk: {insights['kt_risk']}\n"
+            f"Mentoring Attendance: {insights['attendance']}\n"
+            f"Overall Performance: {insights['overall']}\n\n"
+            f"Mentor Note: ________________________________"
+        )
+
+        sheet[f"A{row}"] = insight_text
+        sheet.row_dimensions[row].height = 90
+
+        # Auto width
+        for col in sheet.columns:
+            width = max(len(str(c.value or "")) for c in col)
+            sheet.column_dimensions[col[0].column_letter].width = min(width + 3, 40)
+
+    # =====================================================
+    # EXPORT
+    # =====================================================
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    response["Content-Disposition"] = (
+        f'attachment; filename="Mentor_Mentee_Progress.xlsx"'
+    )
+
+    return response
+
+
+
+@login_required
 def get_department_trends(request):
     mentor_obj = get_object_or_404(Mentor, user=request.user)
     category = request.GET.get("category")
@@ -3215,16 +3451,16 @@ def export_filtered_progress_pdf(request):
         ]))
 
         elements.append(table)
-        elements.append(PageBreak())
+        # elements.append(PageBreak())
 
     # ================= SIGNATURE PAGE =================
-    elements.append(Paragraph("Verification & Signatures", styles["Title"]))
+    elements.append(Paragraph("Verified & Signed by", styles["Title"]))
     elements.append(Spacer(1, 40))
 
     sign_table = RLTable([
         ["Mentor Signature", "HOD Signature"],
-        ["\n\n\n_________________________", "\n\n\n_________________________"],
-        [mentor_name, "Head of Department"]
+        ["\n\n_________________________", "\n\n_________________________"],
+        [mentor_obj.name, "Head of Department"]
     ], colWidths=[9 * cm, 9 * cm])
 
     sign_table.setStyle(TableStyle([
@@ -3238,6 +3474,326 @@ def export_filtered_progress_pdf(request):
     # ================= BUILD =================
     doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
     return response
+
+
+@login_required
+@csrf_exempt
+def export_filtered_progress_excel(request):
+    # ---------- SECURITY ----------
+    if request.method != "POST":
+        return HttpResponse("POST required", status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return HttpResponse("Invalid JSON", status=400)
+
+    year = data.get("year")
+    category = data.get("category")
+    chart_b64 = data.get("chart")
+
+    if not year or not category:
+        return HttpResponse("Missing filters", status=400)
+
+    mentor = get_object_or_404(Mentor, user=request.user)
+
+    # ---------- CATEGORY MAP ----------
+    model_map = {
+        "internship": (InternshipPBL, ["company_name", "start_date", "end_date", "no_of_days", "type"]),
+        "project": (Project, ["guide_name", "project_type", "link"]),
+        "sports": (SportsCulturalEvent, ["level", "prize_won", "venue", "type"]),
+        "course": (CertificationCourse, ["certifying_authority", "start_date", "end_date", "no_of_days", "domain", "level"]),
+        "other": (OtherEvent, ["level", "prize_won", "details"]),
+        "paper": (PaperPublication, ["type", "level", "conf_name", "authors"]),
+    }
+
+    if category not in model_map:
+        return HttpResponse("Invalid category", status=400)
+
+    Model, extra_fields = model_map[category]
+
+    # ---------- MENTEES ----------
+    mentee_user_ids = MentorMentee.objects.filter(
+        mentor=mentor
+    ).values_list("mentee__user_id", flat=True)
+
+    qs = Model.objects.filter(
+        user_id__in=mentee_user_ids,
+        academic_year=year
+    ).select_related("user", "user__profile")
+
+    # ---------- EXCEL ----------
+    wb = openpyxl.Workbook()
+
+    # ================= SHEET 1: RAW DATA =================
+    ws = wb.active
+    ws.title = "Student Records"
+
+    headers = [
+        "Student Name",
+        "Department",
+        "Semester",
+        "Academic Year",
+        "Title / Event"
+    ]
+
+    headers += [h.replace("_", " ").title() for h in extra_fields]
+    headers.append("Uploaded At")
+
+    ws.append(headers)
+
+    # ---------- HEADER STYLE ----------
+    header_fill = PatternFill("solid", fgColor="DDDDDD")
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = Font(bold=True)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    def safe(v):
+        return "" if v is None else str(v)
+
+    student_totals = {}
+    student_moodle = {}
+
+    for obj in qs:
+        profile = getattr(obj.user, "profile", None)
+        student = profile.student_name if profile else obj.user.username
+        moodle_id = getattr(profile, "moodle_id", "")
+        student_moodle[student] = moodle_id
+
+        student_totals[student] = student_totals.get(student, 0) + 1
+
+        row = [
+            student,
+            safe(getattr(profile, "branch", "")),
+            safe(getattr(obj, "semester", "")),
+            safe(getattr(obj, "academic_year", "")),
+            safe(
+                getattr(obj, "title", None)
+                or getattr(obj, "name_of_event", None)
+                or ""
+            ),
+        ]
+
+        for f in extra_fields:
+            row.append(safe(getattr(obj, f, "")))
+
+        row.append(safe(getattr(obj, "uploaded_at", "")))
+        ws.append(row)
+
+    # ================= COLOR CODE ROWS =================
+    green = PatternFill("solid", fgColor="C6EFCE")   # 10+
+    yellow = PatternFill("solid", fgColor="FFF2CC") # 5–10
+    red = PatternFill("solid", fgColor="F4CCCC")    # 0–5
+    #
+    # for r in range(2, ws.max_row + 1):
+    #     student_name = ws.cell(row=r, column=1).value
+    #     total = student_totals.get(student_name, 0)
+    #
+    #     fill = green if total >= 10 else yellow if total >= 5 else red
+    #
+    #     for c in range(1, ws.max_column + 1):
+    #         ws.cell(row=r, column=c).fill = fill
+
+    # ================= AUTO WIDTH =================
+    for col in ws.columns:
+        max_len = 0
+        letter = col[0].column_letter
+        for cell in col:
+            val = str(cell.value) if cell.value else ""
+            max_len = max(max_len, len(val))
+        ws.column_dimensions[letter].width = min(max_len + 3, 40)
+
+    # ================= SHEET 2: SUMMARY =================
+    pivot = wb.create_sheet("Summary")
+
+    pivot_headers = ["Moodle ID", "Student Name", "Total Records", "Performance"]
+    pivot.append(pivot_headers)
+
+    for col in range(1, 5):
+        cell = pivot.cell(row=1, column=col)
+        cell.font = Font(bold=True)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    for student, total in sorted(student_totals.items()):
+        label = "Excellent" if total >= 10 else "Moderate" if total >= 5 else "Needs Attention"
+        pivot.append([student_moodle.get(student, ""),student, total, label])
+
+    # ---------- COLOR SUMMARY ----------
+    for r in range(2, pivot.max_row + 1):
+        total = pivot.cell(row=r, column=3).value
+        try:
+            total = int(total)
+        except:
+            total = 0
+        fill = green if total >= 10 else yellow if total >= 5 else red
+
+        for c in range(1, 5):
+            pivot.cell(row=r, column=c).fill = fill
+
+    # ================= SHEET 3: CHART DATA + LIVE CHART =================
+    chart_sheet = wb.create_sheet("Performance Chart")
+
+    # ---------- TABLE HEADER ----------
+    chart_sheet.append(["Moodle ID", "Student", "Total Records", "Category", "Year"])
+
+    # ---------- TABLE DATA ----------
+    for student, total in sorted(student_totals.items()):
+        chart_sheet.append([
+            student_moodle.get(student, ""),  # Moodle ID
+            student,
+            total,
+            category.title(),
+            year
+        ])
+
+    # ---------- AUTO WIDTH ----------
+    for col in chart_sheet.columns:
+        width = max(len(str(c.value or "")) for c in col)
+        chart_sheet.column_dimensions[col[0].column_letter].width = min(width + 3, 40)
+
+    # ---------- TITLE ----------
+    chart_sheet["G1"] = f"{category.title()} - {year} Performance Chart"
+    chart_sheet["G1"].font = Font(bold=True)
+
+    # ================= LIVE BAR CHART =================
+    bar_chart = BarChart()
+    bar_chart.title = "Student Performance"
+    bar_chart.y_axis.title = "Total Records"
+    bar_chart.x_axis.title = "Students"
+
+    # Data range
+    data = Reference(
+        chart_sheet,
+        min_col=3,  # Total Records
+        min_row=1,
+        max_row=chart_sheet.max_row
+    )
+
+    # Category labels
+    cats = Reference(
+        chart_sheet,
+        min_col=2,  # Student Names
+        min_row=2,
+        max_row=chart_sheet.max_row
+    )
+
+    bar_chart.add_data(data, titles_from_data=True)
+    bar_chart.set_categories(cats)
+
+    # Show values on bars
+    bar_chart.dataLabels = DataLabelList()
+    bar_chart.dataLabels.showVal = True
+
+    bar_chart.width = 22
+    bar_chart.height = 12
+
+    # ---------- PLACE CHART BESIDE TABLE ----------
+    chart_sheet.add_chart(bar_chart, "G3")
+
+    # ================= SHEET 5: TREND LINE CHART =================
+    trend_sheet = wb.create_sheet("Trend Chart")
+
+    trend_sheet["A1"] = "Student Trend Over Time"
+    trend_sheet["A1"].font = Font(bold=True)
+
+    # Build year-based trend table
+    trend_data = {}
+    for student in student_totals:
+        trend_data.setdefault(student, {})
+        trend_data[student][year] = student_totals[student]
+
+    headers = ["Student", year]
+    trend_sheet.append(headers)
+
+    for student, data_map in trend_data.items():
+        trend_sheet.append([student, data_map.get(year, 0)])
+
+    line_chart = LineChart()
+    line_chart.title = "Performance Trend"
+    line_chart.y_axis.title = "Records"
+    line_chart.x_axis.title = "Student"
+
+    data = Reference(
+        trend_sheet,
+        min_col=2,
+        min_row=1,
+        max_row=trend_sheet.max_row
+    )
+
+    cats = Reference(
+        trend_sheet,
+        min_col=1,
+        min_row=2,
+        max_row=trend_sheet.max_row
+    )
+
+    line_chart.add_data(data, titles_from_data=True)
+    line_chart.set_categories(cats)
+
+    line_chart.width = 22
+    line_chart.height = 12
+
+    trend_sheet.add_chart(line_chart, "D3")
+
+    #===============SHEET 6: CATEGORY COMPARISON CHART================
+    compare_sheet = wb.create_sheet("Category Compare")
+
+    compare_sheet.append(["Category", "Total Records"])
+
+    compare_models = {
+        "Internship": InternshipPBL,
+        "Project": Project,
+        "Sports": SportsCulturalEvent,
+        "Course": CertificationCourse,
+        "Other": OtherEvent,
+        "Paper": PaperPublication,
+    }
+
+    for cat_name, CatModel  in compare_models.items():
+        total = CatModel.objects.filter(
+            user_id__in=mentee_user_ids,
+            academic_year=year
+        ).count()
+        compare_sheet.append([cat_name, total])
+
+    cat_chart = BarChart()
+    cat_chart.title = "Category Comparison"
+    cat_chart.y_axis.title = "Total Records"
+    cat_chart.x_axis.title = "Category"
+
+    data = Reference(compare_sheet, min_col=2, min_row=1, max_row=compare_sheet.max_row)
+    cats = Reference(compare_sheet, min_col=1, min_row=2, max_row=compare_sheet.max_row)
+
+    cat_chart.add_data(data, titles_from_data=True)
+    cat_chart.set_categories(cats)
+
+    cat_chart.dataLabels = DataLabelList()
+    cat_chart.dataLabels.showVal = True
+
+    cat_chart.width = 18
+    cat_chart.height = 10
+
+    compare_sheet.add_chart(cat_chart, "D3")
+
+
+    # ================= EXPORT =================
+    filename = f"{category}_{year}_Filtered_Progress_Report.xlsx"
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
 #-----------------Student data visualization logic ends------------------
 
 

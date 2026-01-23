@@ -4,310 +4,287 @@
 body {
   min-height: 100vh;
   margin-top: 5rem;
-  color: #212529; /* default dark text */
-  background: linear-gradient(135deg, #b8b8b8, #8d8d8d);
-  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #eaeaf0;
+
+  /* GitHub Copilot style neon gradient */
+  background: radial-gradient(circle at top, #1a1f3c, #05070f 70%);
   background-attachment: fixed;
+}
+
+/* Subtle animated glow */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(79,172,254,0.12), rgba(167,95,255,0.12));
+  animation: glowShift 10s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes glowShift {
+  0% { opacity: 0.4; }
+  100% { opacity: 0.8; }
 }
 
 /* ------------------------------
    TYPOGRAPHY
 ------------------------------- */
 h1, h2, h3, h4, h5, h6 {
-  color: #222; /* dark headings */
+  color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
 a {
-  color: #4a64c6;
+  color: #4facfe;
   text-decoration: none;
+  transition: all 0.25s ease;
 }
 a:hover {
-  color: #2c3e91;
-  text-decoration: underline;
+  color: #a75fff;
+  text-shadow: 0 0 8px rgba(167,95,255,0.6);
 }
 
 /* ------------------------------
-   NAVBAR
+   NAVBAR (GLASS EFFECT)
 ------------------------------- */
 .bg-steel {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 18, 35, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
 
 .site-header .navbar-nav .nav-link {
-  color: #e9ecf8;
-  transition: color 0.3s ease;
+  color: #cdd9ff;
+  font-weight: 500;
+  position: relative;
 }
 
-.site-header .navbar-nav .nav-link:hover {
-  color: #ffffff;
+.site-header .navbar-nav .nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, #4facfe, #a75fff);
+  transition: width 0.3s ease;
+}
+
+.site-header .navbar-nav .nav-link:hover::after {
+  width: 100%;
 }
 
 .site-header .navbar-nav .nav-link.active {
-  font-weight: 600;
   color: #ffffff;
 }
 
 /* ------------------------------
-   CARDS / CONTENT SECTIONS
+   SIDEBAR (GLASS PANEL)
 ------------------------------- */
+.sidebar {
+  width: 250px;
+  height: calc(100vh - 56px);
+  position: fixed;
+  top: 56px;
+  left: 0;
+  overflow-y: auto;
+  z-index: 1050;
+
+  background: rgba(10, 14, 30, 0.85);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid rgba(255,255,255,0.1);
+
+  box-shadow: 10px 0 40px rgba(0,0,0,0.6);
+  transition: left 0.3s ease-in-out;
+}
+
+.sidebar:not(.active) {
+  left: -250px;
+}
+
+/* Sidebar links */
+.sidebar .nav-link {
+  font-size: 14px;
+  padding: 8px 14px;
+  color: #d6e0ff;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.sidebar .nav-link:hover {
+  background: linear-gradient(90deg, rgba(79,172,254,0.2), rgba(167,95,255,0.2));
+  box-shadow: 0 0 12px rgba(79,172,254,0.4);
+  transform: translateX(4px);
+}
+
+/* Submenu */
+.sidebar .collapse .nav-link {
+  font-size: 13px;
+  padding-left: 24px;
+}
+
+/* ------------------------------
+   MAIN CONTENT
+------------------------------- */
+.content {
+  margin-left: 0;
+  margin-top: 56px;
+  padding: 1.5rem;
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.content.shifted {
+  margin-left: 250px;
+}
+
+/* ------------------------------
+   CARDS (FLOATING GLOW PANELS)
+------------------------------- */
+.card,
 .content-section,
 .profile-card {
-  background: #121212;
-  color: #ffffff;      /* white text inside */
+  background: rgba(18, 22, 45, 0.9);
+  color: #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.7),
+    inset 0 0 30px rgba(79,172,254,0.05);
+
   padding: 25px;
-  border: none;
-  border-radius: 15px;
   margin-bottom: 20px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  transition: transform 0.3s ease;
-}
-.content-section:hover,
-.profile-card:hover {
-  transform: translateY(-4px);
+  transition: all 0.3s ease;
 }
 
-.article-title {
-  color: #222;
-  font-weight: bold;
-}
-a.article-title:hover {
-  color: #4a64c6;
-  text-decoration: none;
+.card:hover,
+.content-section:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow:
+    0 30px 60px rgba(0,0,0,0.9),
+    0 0 20px rgba(79,172,254,0.4);
 }
 
-.article-content {
-  white-space: pre-line;
-  color: #333;
+/* ------------------------------
+   FLOATING DARK HEADER
+------------------------------- */
+.header-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+
+  background: linear-gradient(90deg, rgba(79,172,254,0.25), rgba(167,95,255,0.25));
+  backdrop-filter: blur(12px);
+
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  padding: 1rem;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+}
+
+.header-dark h4,
+.header-dark i {
+  color: #ffffff !important;
+}
+
+/* Push card content down */
+.card-body {
+  color: #fff;
+  padding-top: 80px;
 }
 
 /* ------------------------------
    IMAGES / METADATA
 ------------------------------- */
-.article-img {
-  height: 65px;
-  width: 65px;
-  margin-right: 16px;
+.article-img,
+.account-img {
   border-radius: 50%;
-  border: 2px solid #4a64c6;
+  border: 3px solid transparent;
+  background: linear-gradient(#000, #000) padding-box,
+              linear-gradient(90deg, #4facfe, #a75fff) border-box;
+  box-shadow: 0 0 20px rgba(79,172,254,0.6);
 }
 
 .article-metadata {
-  padding-bottom: 5px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #ddd;
-  font-size: 0.9rem;
-  color: #666;
-}
-.article-metadata a:hover {
-  color: #4a64c6;
-  text-decoration: none;
-}
-
-.article-svg {
-  width: 25px;
-  height: 25px;
-  vertical-align: middle;
-  fill: #4a64c6;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  color: #b5c6ff;
+  font-size: 0.85rem;
 }
 
 /* ------------------------------
-   ACCOUNT PROFILE
+   INPUTS / FORMS
 ------------------------------- */
-.account-img {
-  height: 125px;
-  width: 125px;
-  margin-right: 20px;
-  margin-bottom: 16px;
-  border-radius: 50%;
-  border: 3px solid #4a64c6;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+.form-label {
+  font-weight: 600;
+  color: #000;
 }
 
-.account-heading {
-  font-size: 2.5rem;
-  color: #222;
+.form-control,
+.form-select {
+  background: #fff;
+  color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 10px 14px;
+  transition: all 0.25s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #4facfe;
+  box-shadow: 0 0 0 0.25rem rgba(79,172,254,0.3);
+  background: #fff;
 }
 
 /* ------------------------------
-   BUTTONS
+   BUTTONS (NEON GLOW)
 ------------------------------- */
+
 .btn-custom,
-.btn-warning {
-  background: linear-gradient(to right, #4a64c6, #5b86e5);
+.btn-warning,
+.header-btn {
+  background: linear-gradient(90deg, #4facfe, #a75fff);
   color: #ffffff !important;
   border: none;
-  border-radius: 12px;
-  padding: 10px 20px;
+  border-radius: 14px;
+  padding: 10px 22px;
   font-weight: 600;
-  transition: all 0.3s ease;
-}
-.btn-custom:hover,
-.btn-warning:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 8px 18px rgba(74, 100, 198, 0.4);
+
+  box-shadow: 0 10px 25px rgba(79,172,254,0.5);
+  transition: all 0.25s ease;
 }
 
+.btn:hover,
+.header-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 15px 40px rgba(167,95,255,0.7),
+    0 0 20px rgba(79,172,254,0.8);
+}
 
-/* Sidebar styling */
-        .sidebar {
-            width: 250px;
-            height: calc(100vh - 56px);   /* Full height minus navbar */
-            position: fixed;
-            top: 56px;                    /* Push below navbar */
-            left: 0;
-            overflow-y: auto;             /* Scrollable */
-            transition: left 0.3s ease-in-out;
-            z-index: 1050; /* stays above content */
-            scrollbar-width: thin;        /* Firefox */
-            scrollbar-color: #6c757d #212529; /* Custom scrollbar colors */
-            /*background-color: #343a40;*/    /* Dark sidebar (Bootstrap dark) */
-        }
-        .sidebar:not(.active) {
-           left: -250px;
-        }
-        /* Custom scrollbar for WebKit (Chrome, Edge, Safari) */
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .sidebar::-webkit-scrollbar-thumb {
-            background-color: #6c757d;
-            border-radius: 3px;
-        }
-        .sidebar::-webkit-scrollbar-track {
-            background-color: #212529;
-        }
+/* ------------------------------
+   MOBILE TWEAKS
+------------------------------- */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
 
-        /* Sidebar nav links */
-        .sidebar .nav-link {
-            font-size: 14px;
-            padding: 6px 12px;
-            color: #f8f9fa;               /* White text */
-        }
-        .sidebar .nav-link:hover {
-            background-color: #495057;
-            border-radius: 4px;
-        }
+  .sidebar.show {
+    transform: translateX(0);
+  }
 
-        /* Collapsible submenu links */
-        .sidebar .collapse .nav-link {
-            font-size: 13px;
-            padding-left: 20px;
-        }
+  .content {
+    margin-left: 0;
+  }
 
-        .sidebar.active {
-          left: 0;
-        }
-
-        /* Mobile view */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                left: 0;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar img {
-                width: 60px !important;
-                height: 60px !important;
-            }
-
-            .sidebar h5 {
-                font-size: 16px;
-            }
-
-            .sidebar small {
-                font-size: 13px;
-            }
-        }
-
-        /* Content area */
-        .content {
-            margin-left: 0;
-            margin-top: 56px;             /* Push below navbar */
-            padding: 1rem;
-            transition: margin-left 0.3s ease-in-out;
-        }
-        .content.shifted{
-            margin-left: 250px;
-        }
-
-        .card, .card-body{
-          background: #fff;
-          position: relative;
-          overflow: hidden;
-          border-radius: 15px;
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Dark floating header inside the card */
-        .header-dark {
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          z-index: 10;
-          background: rgba(0,0,0,0.9) !important; /* beat Bootstrap */
-          color: #fff !important;
-          backdrop-filter: blur(4px);
-          border-bottom: 1px solid rgba(255,255,255,0.12);
-          padding: 1rem;
-        }
-
-        /* Make sure header text/icons are white */
-        .header-dark h4,
-        .header-dark i { color: #fff !important; }
-
-        /* Push body content down so it's not hidden under header */
-        .card-body {
-          color: #121212;
-          padding-top: 80px; /* adjust equal to header height */
-          position: relative;
-          z-index: 1;
-        }
-
-        /* Header toggle button (replace btn-light) */
-        .header-btn {
-          background: rgba(255,255,255,0.12) !important;
-          color: #fff !important;
-          border: 1px solid rgba(255,255,255,0.2) !important;
-          transition: background .2s, transform .2s;
-        }
-        .header-btn:hover { background: rgba(255,255,255,0.22) !important; transform: scale(1.05); }
-        .header-btn i { color: #fff !important; }
-
-        /* Labels */
-        .form-label {
-          font-weight: 600;
-          color: #000;
-        }
-
-        /* Inputs */
-        .form-control, .form-select {
-          border-radius: 10px;
-          border: 1px solid #ddd;
-          padding: 10px 14px;
-          transition: all 0.2s ease-in-out;
-        }
-
-        .form-control:focus, .form-select:focus {
-          border-color: #4facfe;
-          box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25);
-        }
-
-        /* Buttons */
-        .btn {
-          border-radius: 12px;
-          font-weight: 500;
-          transition: transform 0.2s;
-        }
-        .btn:hover {
-          transform: translateY(-2px);
-        }
+  .sidebar img {
+    width: 60px !important;
+    height: 60px !important;
+  }
+}

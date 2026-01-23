@@ -46,17 +46,25 @@
                   </div>
                 </div>
 
-              <div class="d-flex col-md-3 mt-2">
+              <div class="d-flex justify-content-between col-12 mt-2">
                 <button class="btn btn-warning w-100 fw-bold" onclick="loadCharts()">
-                  View Charts 📊
+                  📊 Visualize Charts
                 </button>
-                <!--Progress report button-->
+                <!--Progress report PDF-->
                 <button class="btn btn-danger ms-2" onclick="downloadProgressPDF()">
-                    <i class="bi bi-file-pdf"></i> Export Overall Progress Report
+                    <i class="bi bi-filetype-pdf"></i> Export Overall Progress PDF
                 </button>
-                <!--Filtered Progress report button-->
-                <button class="btn btn-primary ms-2" onclick="downloadFilteredPDFWithChart()">
-                  📄 Export Year + Category Report
+                <!--Progress report Excel-->
+                <button class="btn btn-success ms-2" onclick="downloadProgressExcel()">
+                  <i class="bi bi-filetype-xlsx"></i> Export Overall Progress Excel
+                </button>
+                <!--Filtered Progress report PDF-->
+                <button class="btn btn-outline-warning ms-2" onclick="downloadFilteredPDFWithChart()">
+                  <i class="bi bi-file-earmark-pdf"></i> Export Filtered Report
+                </button>
+                <!--Filtered Progress report Excel-->
+                <button class="btn btn-outline-primary ms-2" onclick="downloadFilteredExcel()">
+                  <i class="bi bi-file-earmark-excel"></i> Export Filtered Excel
                 </button>
               </div>
             </div>
@@ -704,10 +712,52 @@ function showHeatmap() {
     });
 }
 
-// Progress report
+// Overall Progress report PDF
 function downloadProgressPDF() {
   window.location.href = "/export-progress-pdf/";
 }
+
+// Overall Progress report Excel
+function downloadProgressExcel() {
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "Generating Excel...";
+  }
+
+  fetch("/export-progress-excel/", {
+    method: "GET",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Failed to generate Excel file");
+    }
+    return response.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Mentor_Mentee_Progress.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  })
+  .catch(err => {
+    alert("Export failed: " + err.message);
+  })
+  .finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "Export Excel Report";
+    }
+  });
+}
+
 
 // Resize the charts
 function resizeCanvas(canvasId, labelCount, baseHeight = 400) {
@@ -769,6 +819,51 @@ function downloadFilteredPDFWithChart() {
   });
 }
 
+// Export filtered Excel
+function downloadFilteredExcel() {
+  const year = document.getElementById("yearSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
+  if (!year || !category) {
+    alert("Please select academic year and category");
+    return;
+  }
+
+  const canvas = document.querySelector(".chartBox:not(.d-none)");
+  if (!canvas) {
+    alert("No chart visible");
+    return;
+  }
+
+  const chartB64 = canvas.toDataURL("image/png");
+
+  fetch("/export-filtered-progress-excel/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCSRFToken()
+    },
+    body: JSON.stringify({
+      year: year,
+      category: category,
+      chart: chartB64
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Excel export failed");
+    return res.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${category}_${year}_Progress_Report.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  })
+  .catch(err => alert(err.message));
+}
 
 </script>
 {% endblock %}
