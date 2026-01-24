@@ -3,13 +3,13 @@
 {% block title %}Download Student Data{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2 class="fw-bold text-center mb-3">Download Student's Data</h2>
-    <p class="text-center mb-3"><small>Select <b>Category, Academic Year and Department</b> to retrieve student data.</small></p>
-    <form method="POST" class="shadow p-4 rounded bg-white">
+    <h2 class="fw-bold text-center mb-3" style="color: #fff !important;">Download Student's Data</h2>
+    <p class="text-center mb-3" style="color: #fff !important;"><small>Select <b>Category, Academic Year and Department</b> to retrieve student data.</small></p>
+    <form method="POST" class="shadow p-4 rounded bg-black">
         {% csrf_token %}
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label fw-semibold">Select Category</label>
+                <label class="form-label fw-semibold" style="color: #fff;">Select Category</label>
                 <select class="form-select" name="category" required>
                     {% for val,label in categories %}
                         <option value="{{ val }}">{{ label }}</option>
@@ -18,7 +18,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label fw-semibold">Academic Year</label>
+                <label class="form-label fw-semibold" style="color: #fff;">Academic Year</label>
                 <select class="form-select" name="year" required>
                     <option value="ALL">ALL YEARS</option>
                     {% for y in years %}
@@ -28,7 +28,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label fw-semibold">Department</label>
+                <label class="form-label fw-semibold" style="color: #fff;">Department</label>
                 <select class="form-select" name="branch">
                     {% for b in branches %}
                         <option value="{{ b }}">{{ b }}</option>
@@ -74,7 +74,6 @@
     fetch("{% url 'clear_export_flag' %}");
 </script>
 {% endif %}
-
 <style>
     form select {
         height: 48px;
@@ -83,5 +82,4 @@
         font-size: 1.1rem;
     }
 </style>
-
 {% endblock %}

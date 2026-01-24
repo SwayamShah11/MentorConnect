@@ -6,8 +6,8 @@
   <!-- Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
-      <h2 class="fw-bold mb-0">Mentor–Mentee Interaction</h2>
-      <small class="text-muted">Record interactions and attendance for your mentees.</small>
+      <h2 class="fw-bold mb-0 text-light">Mentor–Mentee Interaction</h2>
+      <small class="text-muted" style="color:#ffffff !important;">Record interactions and attendance for your mentees.</small>
     </div>
     <button class="btn btn-warning fw-semibold mt-3 mt-md-0"
             data-bs-toggle="modal" data-bs-target="#interactionModal">
@@ -42,12 +42,12 @@
 
     <!-- Filter Form -->
 <form method="get" class="row g-2 mb-3">
-  <div class="col-md-4">
-    <label class="form-label fw-semibold">Date</label>
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Date</label>
     <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
   </div>
-  <div class="col-md-4">
-    <label class="form-label fw-semibold">Semester</label>
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Semester</label>
     <select name="semester" class="form-select">
       <option value="">-- Select Semester --</option>
       {% for s in semesters %}
@@ -57,19 +57,37 @@
       {% endfor %}
     </select>
   </div>
-  <div class="col-md-4">
-    <label class="form-label fw-semibold">Apply Filter</label>
-    <button class="btn btn-primary w-100">
-      <i class="bi bi-funnel"></i> Filter
-    </button>
+  <div class="col-md-3">
+      <label class="form-label fw-semibold text-light">Class</label>
+      <select name="class_year" class="form-select">
+        <option value="">-- Select Class --</option>
+        <option value="FE" {% if request.GET.class_year == "FE" %}selected{% endif %}>FE</option>
+        <option value="SE" {% if request.GET.class_year == "SE" %}selected{% endif %}>SE</option>
+        <option value="TE" {% if request.GET.class_year == "TE" %}selected{% endif %}>TE</option>
+        <option value="BE" {% if request.GET.class_year == "BE" %}selected{% endif %}>BE</option>
+      </select>
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Actions</label>
+    <div class="d-flex gap-2">
+        <!-- Filter -->
+        <button class="btn btn-primary w-100">
+          <i class="bi bi-funnel"></i> Filter
+        </button>
+        <!-- Reset -->
+        <a href="{% url 'mentor_interaction' %}" class="btn btn-outline-light w-100">
+          <i class="bi bi-x-circle"></i> Reset
+        </a>
+    </div>
   </div>
 </form>
 
   <!-- Interactions table -->
-  <div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover mb-0 align-middle">
+  <div class="card shadow-sm border-0 bg-black">
+    <div class="card-body p-0 bg-black">
+      <div class="table-responsive table-dark text-light">
+        <table class="table table-bordered table-hover mb-0 align-middle table-dark text-light">
           <thead class="table-light">
             <tr>
               <th scope="col" class="text-center">Date</th>
@@ -99,12 +117,30 @@
                           class="btn btn-sm btn-outline-warning mt-2 {% if not i.ai_summary or not i.ai_summary_generated %}d-none{% endif %}"
                           type="button"
                           onclick="toggleSummary('{{ i.id }}')">
-                          View AI Summary
+                          <i class="bi bi-eye"></i> View AI Summary
+                        </button>
+
+                      <!-- ✅ Remove Button -->
+                        <button
+                          id="remove_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-danger mt-2 ms-1 {% if not i.ai_summary or not i.ai_summary_generated %}d-none{% endif %}"
+                          type="button"
+                          onclick="removeAISummary('{{ i.id }}')">
+                          <i class="bi bi-trash"></i> Remove AI Summary
+                        </button>
+
+                      <!-- ✅ Undo Button -->
+                        <button
+                          id="undo_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-info mt-2 ms-1 d-none"
+                          type="button"
+                          onclick="undoAISummary('{{ i.id }}')">
+                          <i class="bi bi-undo"></i> Undo
                         </button>
 
                         <div
                           id="ai_summary_{{ i.id }}"
-                          class="alert alert-warning small mt-2 text-start d-none">
+                          class="text alert-warning small mt-2 text-start d-none">
                           <b>AI Summary:</b>
                           <ul class="mb-0 mt-1" id="ai_summary_list_{{ i.id }}">
                             {% if i.ai_summary and i.ai_summary_generated %}
@@ -122,7 +158,7 @@
                         </div>
 
                       <!-- ✅ Generate Button -->
-                      <button class="btn btn-sm btn-outline-dark mt-2"
+                      <button class="btn btn-sm btn-outline-secondary mt-2"
                               onclick="regenerateAISummary('{{ i.id }}')">
                         🔄 Generate
                       </button>
@@ -164,31 +200,104 @@
         </table>
       </div>
     </div>
+    <!-- Paginator -->
+      {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-center mt-4">
+          <nav>
+            <ul class="pagination cyber-pagination">
+
+              <!-- Prev -->
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.previous_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                    ‹
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">‹</span>
+                </li>
+              {% endif %}
+
+              <!-- Pages -->
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ num }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                      {{ num }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next -->
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.next_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                    ›
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">›</span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
   </div>
     <!-- Attendance Percentage -->
     <hr>
-<div class="card mt-4 shadow-sm border-0">
-  <div class="card-header fw-bold">
+<div class="card mt-4 shadow-sm border-0 bg-black">
+  <div class="card-header fw-bold bg-light">
     <i class="bi bi-person-check"></i> Attendance Percentage
   </div>
   <div class="table-responsive table-bordered">
     <table class="table mb-0">
       <tr>
-        <th>Moodle ID</th>
-        <th>Name</th>
-        <th>Semester</th>
-        <th>Year</th>
-        <th>Department</th>
-        <th>Attendance %</th>
+        <th class="text-center">Moodle ID</th>
+        <th class="text-center">Name</th>
+        <th class="text-center">Semester</th>
+        <th class="text-center">Year</th>
+        <th class="text-center">Department</th>
+        <th class="text-center">Attendance (%)</th>
       </tr>
       {% for a in attendance %}
-      <tr>
-        <td>{{ a.moodle }}</td>
-        <td>{{ a.name }}</td>
-        <td>{{ a.semester }}</td>
-        <td>{{ a.year }}</td>
-        <td>{{ a.branch }}</td>
-        <td>{{ a.percent }}%</td>
+      <tr class="{% if a.percent < 50 %}table-danger{% endif %}">
+        <td class="text-center">{{ a.moodle }}</td>
+        <td>
+          {% if a.percent < 50 %}
+            <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
+          {% endif %}
+          {{ a.name }}
+        </td>
+        <td class="text-center">{{ a.semester }}</td>
+        <td class="text-center">{{ a.year }}</td>
+        <td class="text-center">{{ a.branch }}</td>
+        <td class="text-center">
+          <span class="fw-semibold">
+            {{ a.present }} / {{ a.total }}
+          </span>
+          <br>
+          {% if a.percent >= 75 %}
+            <span class="badge bg-success mt-1">
+              {{ a.percent }}%
+            </span>
+          {% else %}
+            <span class="badge bg-danger mt-1">
+              {{ a.percent }}%
+            </span>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
       <tr>
@@ -602,6 +711,70 @@ function regenerateAISummary(id) {
     console.error("AI Summary AJAX error:", err);
   });
 }
+
+function getCSRFToken() {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith("csrftoken="))
+    ?.split("=")[1];
+}
+
+// Remove AI summary
+function removeAISummary(id) {
+  if (!confirm("Remove this AI summary? You can undo this.")) return;
+
+  fetch(`/ai-summary/remove/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCSRFToken(),
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById(`ai_summary_${id}`)?.classList.add("d-none");
+
+      document.getElementById(`view_summary_btn_${id}`)?.classList.add("d-none");
+      document.getElementById(`remove_summary_btn_${id}`)?.classList.add("d-none");
+
+      // ✅ Show undo
+      document.getElementById(`undo_summary_btn_${id}`)?.classList.remove("d-none");
+    }
+  });
+}
+
+function undoAISummary(id) {
+  fetch(`/ai-summary/undo/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCSRFToken(),
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      const list = document.getElementById(`ai_summary_list_${id}`);
+      list.innerHTML = "";
+
+      data.summary.split("\n").forEach(line => {
+        if (line.trim()) {
+          const li = document.createElement("li");
+          li.innerText = line.replace("• ", "");
+          list.appendChild(li);
+        }
+      });
+
+      document.getElementById(`ai_summary_${id}`)?.classList.remove("d-none");
+
+      document.getElementById(`view_summary_btn_${id}`)?.classList.remove("d-none");
+      document.getElementById(`remove_summary_btn_${id}`)?.classList.remove("d-none");
+
+      // ✅ Hide undo again
+      document.getElementById(`undo_summary_btn_${id}`)?.classList.add("d-none");
+    }
+  });
+}
+
 
 
 

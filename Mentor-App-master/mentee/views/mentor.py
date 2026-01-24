@@ -40,7 +40,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 from django.contrib.messages.views import SuccessMessageMixin
-from ..render import Render
+from django.core.paginator import Paginator
 import json
 import zipfile
 from io import BytesIO
@@ -1662,6 +1662,7 @@ def mentor_mentee_interactions(request):
     # ✅ Filtering
     semester_filter = request.GET.get("semester")
     date_filter = request.GET.get("date")
+    class_filter = request.GET.get("class_year")
 
     interactions = MentorMenteeInteraction.objects.filter(mentor=request.user)
 
@@ -1670,6 +1671,9 @@ def mentor_mentee_interactions(request):
 
     if date_filter:
         interactions = interactions.filter(date=date_filter)
+
+    if class_filter:
+        interactions = interactions.filter(class_year__icontains=class_filter)
 
     # ✅ CREATE + UPDATE INTERACTION (SAME FORM)
     if request.method == "POST":
@@ -1751,6 +1755,8 @@ def mentor_mentee_interactions(request):
             "year": p.year,
             "branch": p.branch,
             "moodle": p.moodle_id,
+            "present": present,
+            "total": total_interactions,
             "percent": percent
         })
     #monthly attendance
@@ -1771,10 +1777,17 @@ def mentor_mentee_interactions(request):
             "month": month_name,
             "percent": percent
         })
+
+    # ✅ Pagination
+    paginator = Paginator(interactions.order_by("-date"), 8)  # 8 rows per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     context = {
         "mentor": mentor,
         "mentees": mentee_profiles,
-        "interactions": interactions.order_by("-date"),
+        "interactions": page_obj,
+        "page_obj": page_obj,
         "common_agenda": COMMON_AGENDA_POINTS,
         "attendance": attendance,
         "semesters": [s for s in SEMESTER],
@@ -1803,6 +1816,59 @@ def regenerate_ai_summary(request, pk):
     interaction.ai_summary = summary
     interaction.ai_summary_generated = True  # ✅ mark manual generation
     interaction.save(update_fields=["ai_summary", "ai_summary_generated"])
+
+    return JsonResponse({
+        "success": True,
+        "summary": interaction.ai_summary
+    })
+
+
+@require_POST
+@login_required
+def remove_ai_summary(request, pk):
+    interaction = get_object_or_404(
+        MentorMenteeInteraction,
+        id=pk,
+        mentor=request.user
+    )
+
+    # ✅ Save for undo
+    interaction.last_ai_summary = interaction.ai_summary
+
+    # ✅ Clear active summary
+    interaction.ai_summary = None
+    interaction.ai_summary_generated = False
+
+    interaction.save(update_fields=[
+        "ai_summary",
+        "ai_summary_generated",
+        "last_ai_summary"
+    ])
+
+    return JsonResponse({"success": True})
+
+
+@require_POST
+@login_required
+def undo_ai_summary(request, pk):
+    interaction = get_object_or_404(
+        MentorMenteeInteraction,
+        id=pk,
+        mentor=request.user
+    )
+
+    if not interaction.last_ai_summary:
+        return JsonResponse({"success": False, "error": "Nothing to restore"})
+
+    interaction.ai_summary = interaction.last_ai_summary
+    interaction.ai_summary_generated = True
+    interaction.last_ai_summary = None
+
+    interaction.save(update_fields=[
+        "ai_summary",
+        "ai_summary_generated",
+        "last_ai_summary"
+    ])
 
     return JsonResponse({
         "success": True,
@@ -1944,7 +2010,7 @@ def export_interactions(request, export_type):
     """
 
     # ✅ TABLE DATA
-    data = [["Sr. No.", "Date", "Sem", "Year", "Agenda", "AI Summary", "Mentees"]]
+    data = [["Sr. No.", "Date", "Sem", "Year", "Agenda", "AI Summary", "Mentees Present"]]
 
     for idx, i in enumerate(qs, start=1):
         mentee_lines = []
@@ -3173,7 +3239,6 @@ def export_progress_excel(request):
     )
 
     return response
-
 
 
 @login_required

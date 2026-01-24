@@ -763,6 +763,8 @@ class MentorMenteeInteraction(models.Model):
     mentees = models.ManyToManyField(User, related_name="mentor_interactions")
     ai_summary = models.TextField(blank=True, null=True)
     ai_summary_generated = models.BooleanField(default=False, null=True, blank=True)
+    last_ai_summary = models.TextField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

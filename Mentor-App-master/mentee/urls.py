@@ -145,6 +145,8 @@ urlpatterns = [
     path("interactions/edit/<int:pk>/", mentor.mentor_mentee_interactions, name="edit_interaction"),
     path("interactions/delete/<int:pk>/", mentor.delete_interaction, name="delete_interaction"),
     path("mentor/regenerate-ai-summary/<int:pk>/", mentor.regenerate_ai_summary, name="regenerate_ai_summary"),
+    path("ai-summary/remove/<int:pk>/", mentor.remove_ai_summary, name="remove_ai_summary"),
+    path("ai-summary/undo/<int:pk>/", mentor.undo_ai_summary, name="undo_ai_summary"),
     path("remind-mentee/<int:mentee_id>/", mentor.remind_mentee, name="remind_mentee"),
     path("remind-all/", mentor.remind_all_mentees, name="remind_all_mentees"),
     path("student-visualization/", mentor.student_visualization, name="student_visualization"),
@@ -159,6 +161,3 @@ urlpatterns = [
     path("export-filtered-progress-excel/", mentor.export_filtered_progress_excel, name="export_filtered_progress_excel"),
     path("weekly-agenda/", mentor.weekly_agenda_page, name="weekly-agenda"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-
