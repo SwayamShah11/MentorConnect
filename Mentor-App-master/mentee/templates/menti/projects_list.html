@@ -21,7 +21,7 @@
                     Projects
                 </h2>
             </div>
-            <div class="card shadow-sm bg-dark border-0">
+            <div class="card shadow-sm bg-dark border-0 p-0">
                 <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                     <div>
                         <h5 class="mb-0 fw-semibold" style="color: #fff;">Uploaded Projects</h5>
@@ -100,7 +100,7 @@
 
                     <div class="card internship-card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-                            <h4 class="mb-0">{% if editing %}Update Project{% else %}Add Project{% endif %}</h4>
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">{% if editing %}Update Project{% else %}Add Project{% endif %}</h4>
                         </div><br><br>
                         <div class="card-body">
                             <div id="projectFormWrapper" class="{% if editing %}open{% endif %}">

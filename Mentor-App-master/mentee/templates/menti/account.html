@@ -14,13 +14,14 @@
             <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
               <i id="sidebarIcon" class="bi bi-list"></i>
             </a>
-            <h2 class="mb-0">Mentor-Mentee Interaction</h2>
+            <h2 class="mb-1">| Mentor-Mentee Interaction</h2>
           </div>
+          <p class='text-muted' style="color: #fff !important;">Your personal mentor hub — review interactions, manage sessions, raise queries, and gain insights that shape your future.</p>
           <ul class="list-group">
             {% for item in user_meeting_data %}
               {% with user=item.user meeting=item.meeting can_join=item.can_join %}
-              <li class="list-group-item border-0 mb-3 p-0">
-                <div class="card shadow-sm">
+              <li class="list-group-item border-0 bg-transparent mb-3 p-0">
+                <div class="card shadow-sm bg-black text-light">
                   <div class="card-body d-flex align-items-center">
                     {% if mentor.image %}
                       <img src="{{ mentor.image.url }}"
@@ -33,39 +34,39 @@
                       {% endif %}
                     <div class="flex-grow-1">
                       {% if user.mentor %}
-                          <h4 class="mb-1">{{ user.mentor.name }}</h4>
-                          <p class="text-muted mb-1 mx-2">Email: {{ user.email }}</p>
-                          <p class="text-muted mb-1 mx-2">Department: {{ user.mentor.department }}</p>
-                          <p class="text-muted mb-1 mx-2">Specialization: {{ user.mentor.expertise }}</p>
+                          <h4 class="mb-1 mx-3">{{ user.mentor.name }}</h4>
+                          <p class="text-muted mb-1 mx-3" style="color: #fff !important;">Email: {{ user.email }}</p>
+                          <p class="text-muted mb-1 mx-3" style="color: #fff !important;">Department: {{ user.mentor.department }}</p>
+                          <p class="text-muted mb-1 mx-3" style="color: #fff !important;">Specialization: {{ user.mentor.expertise }}</p>
                         {% else %}
                           <h5 class="text-warning">
                             <i class="bi bi-exclamation-triangle"></i> Mentor not assigned yet
                           </h5>
                       {% endif %}
 
-                      <div class="btn-group" role="group">
+                      <div class="btn-group mx-2" role="group">
                         <a class="btn btn-primary btn-sm" href="{% url 'send' pk=user.pk %}">
                           <i class="bi bi-envelope"></i> Send Request
                         </a>
                       </div>
-<!--                      <div class="btn-group" role="group">-->
+<!--                      <div class="btn-group mx-2" role="group">-->
 <!--                        <a class="btn btn-info btn-sm" href="{% url 'profile-detail' pk=user.pk %}">-->
 <!--                          <i class="bi bi-person"></i> View Profile-->
 <!--                        </a>-->
 <!--                      </div>-->
-                      <div class="btn-group" role="group">
+                      <div class="btn-group mx-2" role="group">
                         <a class="btn btn-success btn-sm" href="{% url 'schedule-meeting' pk=user.pk %}">
                           <i class="bi bi-calendar"></i> Schedule Meeting
                         </a>
                       </div>
-                      <div class="btn-group" role="group">
+                      <div class="btn-group mx-2" role="group">
                         <a class="btn btn-danger btn-sm" href="{% url 'query_suggestion' pk=user.pk %}">
                           <i class="bi bi-question-square"></i> Query/Suggestion
                         </a>
                       </div>
 
                       {% if meeting %}
-                        <p class="text-muted mt-2 mb-1">
+                        <p class="text-muted mt-2 mb-1" style="color: #fff !important;">
                           <i class="bi bi-clock"></i>
                           Scheduled on: {{ meeting.appointment_date|date:"F j, Y" }}
                           at {{ meeting.time_slot|time:"h:i A" }}
@@ -93,13 +94,13 @@
               </li>
               {% endwith %}
             {% empty %}
-              <li class="list-group-item">No mentors available at the moment.</li>
+              <li class="list-group-item">You've not been assigned to any mentor.</li>
             {% endfor %}
           </ul>
         </div>
 
         <hr class="my-4">
-        <h4 class="fw-bold mb-3"><i class="bi bi-journal-check"></i> Your Mentor–Mentee Interaction History</h4>
+        <h4 class="fw-bold mb-3 text-light"><i class="bi bi-journal-check"></i> Your Mentor–Mentee Interaction History</h4>
 
         <div class="row mt-4">
 
@@ -121,7 +122,7 @@
                 <tbody>
                   {% for row in interaction_rows %}
                   <tr>
-                    <td class="text-center">{{ forloop.counter }}</td>
+                    <td class="text-center">{{ forloop.counter0|add:page_obj.start_index }}</td>
                     <td class="text-center">{{ row.date }}</td>
                     <td class="text-center">{{ row.semester }}</td>
                     <td class="text-center">{{ row.moodle_id }}</td>
@@ -138,18 +139,53 @@
                   {% endfor %}
                 </tbody>
               </table>
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
             </div>
 
             <!-- SIDE BY SIDE SECTION -->
-            <hr>
+            <hr class="text-light">
             <div class="row mt-3">
               <!-- Monthly Attendance -->
               <div class="col-lg-8 mb-3">
-                <div class="card shadow-sm">
-                  <div class="card-body">
-                    <h5 class="fw-bold mb-3">📅 Monthly Attendance Breakdown</h5>
+                <div class="card shadow-sm bg-secondary">
+                  <div class="card-body bg-dark">
+                    <h5 class="fw-bold mb-3 text-light">📅 Monthly Attendance Breakdown</h5>
                     <table class="table table-bordered table-sm mb-0">
-                      <thead class="table-light text-center">
+                      <thead class="table-dark text-center">
                         <tr>
                           <th>Month</th>
                           <th>Present</th>
@@ -180,8 +216,8 @@
 
               <!-- Overall Attendance -->
               <div class="col-lg-4 mb-3">
-                <div class="card shadow-sm">
-                  <div class="card-body">
+                <div class="card shadow-sm {% if overall_percent < 75 %}bg-danger{% else %}bg-success{% endif %}">
+                  <div class="card-body bg-light">
                       <h5 class="fw-bold mb-4"><u>Overall Attendance</u></h5>
                     <div class="progress mb-4" style="height: 30px;">
                       <div class="progress-bar
@@ -221,10 +257,23 @@
         </div>
 
         <!-- Insight -->
-        <hr>
+        <hr class="text-light">
         <div class="card shadow-sm mt-3 border-primary">
-          <div class="card-body">
+          <div class="card-body p-0">
             <h5 class="fw-bold text-primary">🤖 Performance Insight</h5>
+            <p class="mb-0 fw-semibold">
+              {{ ai_insight }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Attendance Prediction -->
+        <div class="card shadow-sm mt-3 border-info p-0">
+          <div class="card-body text-center">
+            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>
+
+            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>
+
             <div class="
               fw-semibold
               {% if risk_level == 'Excellent' %}text-success
@@ -233,43 +282,20 @@
               {% else %}text-danger
               {% endif %}
             ">
-              Attendance Status: {{ risk_level }}
+              Predicted Status: {{ risk_level }}
             </div>
-            <p class="mb-0 fw-semibold">
-              {{ ai_insight }}
-            </p>
+
+            {% if risk_level == "Critical" %}
+            <div class="alert alert-danger mt-3 py-2">
+              ⚠ High risk of falling below minimum attendance!
+            </div>
+            {% elif risk_level == "Warning" %}
+            <div class="alert alert-warning mt-3 py-2">
+              ⚠ Attendance may drop. Maintain consistency!
+            </div>
+            {% endif %}
           </div>
         </div>
-
-        <!-- Attendance Prediction -->
-<!--        <div class="card shadow-sm mt-3 border-info">-->
-<!--          <div class="card-body text-center">-->
-<!--            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>-->
-
-<!--            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>-->
-
-<!--            <div class="-->
-<!--              fw-semibold-->
-<!--              {% if risk_level == 'Excellent' %}text-success-->
-<!--              {% elif risk_level == 'Stable' %}text-primary-->
-<!--              {% elif risk_level == 'Warning' %}text-warning-->
-<!--              {% else %}text-danger-->
-<!--              {% endif %}-->
-<!--            ">-->
-<!--              Predicted Status: {{ risk_level }}-->
-<!--            </div>-->
-
-<!--            {% if risk_level == "Critical" %}-->
-<!--            <div class="alert alert-danger mt-3 py-2">-->
-<!--              ⚠ High risk of falling below minimum attendance!-->
-<!--            </div>-->
-<!--            {% elif risk_level == "Warning" %}-->
-<!--            <div class="alert alert-warning mt-3 py-2">-->
-<!--              ⚠ Attendance may drop. Maintain consistency!-->
-<!--            </div>-->
-<!--            {% endif %}-->
-<!--          </div>-->
-<!--        </div>-->
 
       </div>
     </div>

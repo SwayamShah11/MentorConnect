@@ -31,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in goal %}
+                    {% for item in goals %}
                         <tr class="table-primary">
                             <th class="w-25">Post BE</th>
                             <td>
@@ -45,6 +45,23 @@
                         <tr class="table-primary mb-3">
                             <th>Reason</th>
                             <td>{{ item.reason }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end">
+                            <a href="{% url 'edit_goal' item.id %}" class="btn btn-sm btn-warning">
+                                Edit
+                            </a>
+
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="goal_id" value="{{ item.id }}">
+                                <button type="submit" name="delete_goal"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Delete this goal?');">
+                                    Delete
+                                </button>
+                            </form>
+                            </td>
                         </tr>
                         <!-- Spacer row to visually separate records -->
                         <tr class="bg-light">
@@ -62,16 +79,16 @@
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
                     <button class="btn btn-danger" id="showFormBtn">
-                        Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
+                        {% if goal_edit_id %}Update Goal{% else %}Add Goal{% endif %} <i id="toggleIcon" class="bi bi-plus-lg"></i>
                     </button><hr>
                     <div class="card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-                            <h4 class="mb-0 fw-semibold">Add Long Term Goals</h4>
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">Add Long Term Goals</h4>
                         </div><br><br>
                         <div class="card-body">
                             <div id="internshipForm">
                                 <form method="post" enctype="multipart/form-data"
-                                      action="{% url 'long_term_goals' %}">
+                                      action="{% if goal_edit_id %}{% url 'edit_goal' goal_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
                                         <small class="text-muted" style="color:#ff0000 !important;">
@@ -95,7 +112,12 @@
                                         </div>
                                     </div>
                                     <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
-                                        <button type="submit" name="save_goal" class="btn btn-success btn-lg w-100 w-md-50">Submit</button>
+                                        <button type="submit" name="save_goal" class="btn btn-success btn-lg w-100 w-md-50">{% if goal_edit_id %}Update Goal{% else %}Save Goal{% endif %}</button>
+                                        {% if goal_edit_id %}
+                                            <a href="{% url 'long_term_goals' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </form>
                             </div>
@@ -104,9 +126,10 @@
                 </div>
             </div>
             {% endif %}
+<!---------------------------------------------- Subject of Interest -------------------------------------------------->
             <hr style="border:none; border: 1px dashed #fff; opacity:1;">
             <!-- Subject of Interest Section -->
-            <div class="card shadow-sm rounded">
+            <div class="card shadow-sm rounded bg-dark p-0">
                 <div class="card-header bg-dark text-white fw-bold">
                     Subject of Interest
                 </div>
@@ -145,19 +168,19 @@
             <div class="row justify-content-center">
                 <div class="col-md-10"><br>
                     <button class="btn btn-danger" id="toggleSubjectBtn">
-                        {% if edit_id %} Edit {% else %} Add {% endif %}
-                        <i id="subjectIcon" class="bi {% if edit_id %}bi-pencil{% else %}bi-plus-lg{% endif %}"></i>
+                        {% if subject_edit_id %} Edit {% else %} Add {% endif %}
+                        <i id="subjectIcon" class="bi {% if subject_edit_id %}bi-pencil{% else %}bi-plus-lg{% endif %}"></i>
                     </button>
                     <hr>
                     <div class="card shadow-lg rounded-3">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-                            <h4 class="mb-0 fw-semibold">
-                                {% if edit_id %} Edit Subject of Interest {% else %} Add Subject of Interest {% endif %}
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">
+                                {% if subject_edit_id %} Edit Subject of Interest {% else %} Add Subject of Interest {% endif %}
                             </h4>
                         </div><br><br>
                         <div class="card-body">
                             <div id="subjectForm">
-                                <form method="post" action="{% if edit_id %}{% url 'edit_subject' edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
+                                <form method="post" action="{% if subject_edit_id %}{% url 'edit_subject' subject_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="col-12">
                                         <label class="form-label">Subject <span style="color:#ff0000 !important;">*</span></label>
@@ -165,9 +188,9 @@
                                     </div>
                                     <div class="d-flex justify-content-center gap-3 mt-4">
                                         <button type="submit" name="save_subject" class="btn btn-success btn-lg w-100 w-md-50">
-                                            {% if edit_id %} Update {% else %} Submit {% endif %}
+                                            {% if subject_edit_id %} Update {% else %} Submit {% endif %}
                                         </button>
-                                        {% if edit_id %}
+                                        {% if subject_edit_id %}
                                             <a href="{% url 'long_term_goals' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
                                                 Cancel
                                             </a>

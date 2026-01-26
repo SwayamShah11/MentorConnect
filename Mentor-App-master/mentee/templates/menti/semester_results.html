@@ -11,7 +11,6 @@
     <!-- Main Content -->
     <div class="content shifted flex-grow-1 p-4">
         <div class="container">
-
             <!-- Header -->
             <div class="d-flex align-items-center mb-3">
                 <h2 class="text-white p-3 bg-black rounded">
@@ -23,7 +22,7 @@
                     Semester Results
                 </h2>
             </div>
-            <div class="card shadow-sm bg-dark border-0">
+            <div class="card shadow-sm bg-dark border-0 p-0">
                 <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                     <div>
                         <h5 class="mb-0 fw-semibold" style="color: #fff;">Uploaded Documents</h5>
@@ -91,7 +90,7 @@
                     <hr>
                     <div class="card shadow-lg rounded-3 {% if editing %}border-primary{% endif %}">
                         <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
-                            <h4 class="mb-0 fw-semibold">{% if editing %} Edit Semester Result {% else %} Add Semester Result {% endif %}</h4>
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">{% if editing %} Edit Semester Result {% else %} Add Semester Result {% endif %}</h4>
                         </div><br><br>
                         <div class="card-body">
                             <div id="semesterForm" class="{% if editing %}show{% endif %}">

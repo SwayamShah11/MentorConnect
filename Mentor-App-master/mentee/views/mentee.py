@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.contrib import messages
+from django.core.paginator import Paginator
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
                      OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm,
                      LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm,
@@ -103,9 +104,12 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         }]
 
         # ✅ ✅ ✅ INTERACTIONS WHERE THIS MENTEE WAS PRESENT
-        present_interactions = MentorMenteeInteraction.objects.filter(
+        present_interactions_qs = MentorMenteeInteraction.objects.filter(
             mentees=request.user
         ).select_related("mentor").order_by("-date")
+        paginator = Paginator(present_interactions_qs, 5)
+        page_number = request.GET.get("page")
+        present_interactions = paginator.get_page(page_number)
 
         # ✅ Total interactions under this mentor (for % calculation)
         total_interactions = MentorMenteeInteraction.objects.filter(
@@ -113,8 +117,9 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         ).count()
 
         interaction_rows = []
+        start_index = present_interactions.start_index()
 
-        for idx, interaction in enumerate(present_interactions, start=1):
+        for idx, interaction in enumerate(present_interactions, start=start_index):
 
             # ✅ Mentor Name (from Mentor model)
             if hasattr(interaction.mentor, "mentor") and interaction.mentor.mentor.name:
@@ -137,14 +142,14 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             })
 
         # ✅ Overall attendance % for this mentee
-        present_count = present_interactions.count()
+        present_count = present_interactions.paginator.count
         overall_percent = round((present_count / total_interactions) * 100, 2) if total_interactions else 0
 
         # ✅ Graph data (date vs attendance point)
         attendance_graph_labels = []
         attendance_graph_values = []
 
-        for i in present_interactions.order_by("date"):
+        for i in present_interactions_qs.order_by("date"):
             attendance_graph_labels.append(i.date.strftime("%d-%m-%y"))
             attendance_graph_values.append(100)  # Present = 100%
 
@@ -160,7 +165,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
             key = i.date.strftime("%Y-%m")
             monthly_total[key] += 1
 
-        for i in present_interactions:
+        for i in present_interactions_qs:
             key = i.date.strftime("%Y-%m")
             monthly_present[key] += 1
 
@@ -224,6 +229,7 @@ class AccountList(LoginRequiredMixin, UserPassesTestMixin, View):
         context = {
             "user_meeting_data": user_meeting_data,
             "interaction_rows": interaction_rows,
+            "page_obj": present_interactions,
             "overall_percent": overall_percent,
             "attendance_graph_labels": attendance_graph_labels,
             "attendance_graph_values": attendance_graph_values,
@@ -1029,33 +1035,56 @@ def delete_assessment(request, pk):
 #-----------------Long term goals and subject of interest page logic starts------------------
 @login_required
 @mentee_required
-def long_term_goals(request, edit_id=None):
+def long_term_goals(request, goal_edit_id=None, subject_edit_id=None):
     goals = LongTermGoal.objects.filter(user=request.user)
     subjects = SubjectOfInterest.objects.filter(user=request.user)
 
-    # --- Long term goal form ---
+    # ===============================
+    # LONG TERM GOAL (Add/Edit)
+    # ===============================
+    goal_instance = None
+    if goal_edit_id:
+        goal_instance = get_object_or_404(
+            LongTermGoal, pk=goal_edit_id, user=request.user
+        )
+
     if request.method == "POST" and "save_goal" in request.POST:
-        goal_form = LongTermGoalForm(request.POST)
+        goal_form = LongTermGoalForm(request.POST, instance=goal_instance)
         if goal_form.is_valid():
             goal = goal_form.save(commit=False)
             goal.user = request.user
 
-            # Handle custom 'Other' option
             if goal.plan != "Other":
-                goal.custom_plan = None  # erase on change if recently saved other
+                goal.custom_plan = None
 
             goal.save()
             return redirect("long_term_goals")
     else:
-        goal_form = LongTermGoalForm()
+        goal_form = LongTermGoalForm(instance=goal_instance)
 
-    # --- Subject form (Add/Edit) ---
+    # DELETE GOAL
+    if request.method == "POST" and "delete_goal" in request.POST:
+        goal = get_object_or_404(
+            LongTermGoal,
+            id=request.POST.get("goal_id"),
+            user=request.user
+        )
+        goal.delete()
+        return redirect("long_term_goals")
+
+    # ===============================
+    # SUBJECT (Add/Edit)
+    # ===============================
     subject_instance = None
-    if edit_id:
-        subject_instance = get_object_or_404(SubjectOfInterest, pk=edit_id, user=request.user)
+    if subject_edit_id:
+        subject_instance = get_object_or_404(
+            SubjectOfInterest, pk=subject_edit_id, user=request.user
+        )
 
     if request.method == "POST" and "save_subject" in request.POST:
-        subject_form = SubjectOfInterestForm(request.POST, instance=subject_instance)
+        subject_form = SubjectOfInterestForm(
+            request.POST, instance=subject_instance
+        )
         if subject_form.is_valid():
             subject = subject_form.save(commit=False)
             subject.user = request.user
@@ -1066,12 +1095,14 @@ def long_term_goals(request, edit_id=None):
 
     return render(request, "menti/long_term_goals.html", {
         "goal_form": goal_form,
-        "goal": goals,
-        "subject_form": subject_form,
+        "goals": goals,
         "subjects": subjects,
-        "edit_id": edit_id,
+        "subject_form": subject_form,
+        "goal_edit_id": goal_edit_id,
+        "subject_edit_id": subject_edit_id,
         "is_mentor_view": False,
     })
+
 
 
 @login_required
@@ -1322,7 +1353,7 @@ class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Conversation
     template_name = 'menti/listmessages.html'
     context_object_name = 'conversation1'
-    paginate_by = 2
+    paginate_by = 10
 
     def test_func(self):
         return self.request.user.is_mentee
@@ -1452,7 +1483,7 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     context_object_name = 'messo'
 
-    paginate_by = 5
+    paginate_by = 10
 
     def get_queryset(self):
         return self.model.filter(sender=self.request.user)
@@ -1511,7 +1542,7 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Conversation
     template_name = 'menti/list-converations.html'
     context_object_name = 'conversation'
-    paginate_by = 5
+    paginate_by = 10
 
     def test_func(self):
         return self.request.user.is_mentee
@@ -1985,17 +2016,26 @@ def query_suggestion(request, pk):
 
 @login_required
 def mentee_queries(request):
-    # Get the Mentee instance linked to the logged-in user
     try:
-        # Try to get the mentee profile for the logged-in user
         mentee = Mentee.objects.get(user=request.user)
     except Mentee.DoesNotExist:
-        # If the logged-in user is not a mentee, redirect safely
-         return redirect("mentor_queries")
-        # Now filter queries for this mentee instance
-    queries = Query.objects.filter(mentee=mentee).order_by('-created_at')
+        return redirect("mentor_queries")
 
-    return render(request, "menti/mentee_queries.html", {"queries": queries, 'is_mentor_view': False})
+    queries_qs = Query.objects.filter(
+        mentee=mentee
+    ).order_by("-created_at")
+
+    paginator = Paginator(queries_qs, 10)  # 🔹 10 queries per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "queries": page_obj,
+        "page_obj": page_obj,
+        "is_mentor_view": False,
+    }
+
+    return render(request, "menti/mentee_queries.html", context)
 #--------------------Mentee Query logic ends-----------------------
 
 #--------------------Profile Overview logic starts-----------------------

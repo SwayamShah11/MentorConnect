@@ -8,15 +8,16 @@
 
  <h2>Here are your Requests</h2>
 <div class="table-responsive">
-<table class="table mb-0">
-    <thead>
+<table class="table table-hover mb-0">
+    <thead class="table-dark">
       <tr>
-          <th>Sr. No.</th>
+          <th>Request ID</th>
           <th>From</th>
+          <th>Name</th>
           <th>Request Content</th>
           <th>Status</th>
           <th>View Profile</th>
-           <th>Approve Request</th>
+          <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -27,8 +28,9 @@
 {% for messo in inbox %}
     <tr>
          <td>{{ messo.id }}</td>
-        <td><a href="{% url 'detail-inbox1' pk=messo.pk %}">{{ messo.sender }}</a></td>
-          <td>{{ messo.msg_content }}</td>
+         <td><a href="{% url 'detail-inbox1' pk=messo.pk %}">{{ messo.sender }}</a></td>
+         <td>{{ messo.sender.profile.student_name }}</td>
+         <td>{{ messo.msg_content }}</td>
         {% if messo.is_approved == False %}
    <td> <span class="badge bg-danger text-dark">Not Approved</span></td>
         {% endif %}

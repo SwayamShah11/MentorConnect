@@ -1,8 +1,8 @@
 {% extends 'menti/base.html' %}
 
 {% block title %} Inbox {% endblock %}
-{% block content %}
-<h1>Here Are Your Inbox Messages</h1>
+{% block content %}<br>
+<h1 class="text-light">Here Are Your Inbox Messages</h1>
      {% if inbox %}
       <ol>
           {% for messo in inbox %}
@@ -12,7 +12,7 @@
           {% endfor %}
       </ol>
 {% else %}
-<p>There Are no Inbox Messages</p>
+<p class="text-light">There Are no Inbox Messages!!!</p>
 {% endif %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
     <a href="{% url 'module-message' %}"

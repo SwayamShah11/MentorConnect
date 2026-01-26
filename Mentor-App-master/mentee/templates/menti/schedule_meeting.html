@@ -7,11 +7,11 @@
     <div class="col-md-8">
 
       <!-- Mentor Details Card -->
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h4>Schedule Meeting with {{ mentor.name }}</h4>
+      <div class="card mb-4 bg-black p-0">
+        <div class="card-header bg-dark text-light">
+          <h4>Schedule Meeting with {% if mentor.name %} {{ mentor.name }} {% else %} {{ mentor.user.username }} {% endif %}</h4>
         </div>
-        <div class="card-body d-flex">
+        <div class="card-body d-flex bg-light text-black">
           {% if mentor.image %}
             <img src="{{ mentor.image.url }}"
                  class="rounded-circle shadow-sm border border-3 border-light"
@@ -22,20 +22,20 @@
                  style="width:80px; height:80px; object-fit: cover;">
             {% endif %}
           <div>
-            <p><strong>Name:</strong> {{ mentor.name }}</p>
+            <p><strong>Name:</strong> {% if mentor.name %} {{ mentor.name }} {% else %} {{ mentor.user.username }} {% endif %}</p>
             <p><strong>Email:</strong> {{ mentor.user.email }}</p>
-            <p><strong>Specialization:</strong> {{ mentor.expertise }}</p>
+            <p><strong>Specialization:</strong> {% if mentor.expertise %} {{ mentor.expertise }} {% else %} - {% endif %}</p>
             <p><strong>Availability:</strong> 09:00 AM - 10:00 AM</p>
           </div>
         </div>
       </div>
 
       <!-- Meeting Form -->
-      <div class="card">
-        <div class="card-header">
+      <div class="card bg-black p-0">
+        <div class="card-header bg-dark text-light">
           <h5>Schedule a Meeting</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body bg-light text-black">
           <form method="POST">
             {% csrf_token %}
             {{ form.as_p }}
@@ -51,5 +51,5 @@
         </div>
     </div>
   </div>
-</div>
+</div><br>
 {% endblock %}

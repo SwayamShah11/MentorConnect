@@ -2,22 +2,22 @@
 {% load humanize %}
 {% block title %} Meetings {% endblock %}
 {% block content %}
-<h1>Here are Your Meetings</h1><br>
-
+<br>
 <div class="row">
     <div class="col-md-12">
         <div class="content-section">
-            <h2>Meetings</h2>
+            <h2 class="mb-3">Here are your Meetings</h2>
 
             <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
                         <tr>
                             <th>Sr. No.</th>
-                            <th>Mentee</th>
-                            <th>Appointment Date</th>
+                            <th>Moodle ID</th>
+                            <th>Name</th>
+                            <th>Meeting Date</th>
                             <th>Time</th>
-                            <th>Join Meet</th>
+                            <th>Join Meeting</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -26,6 +26,7 @@
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>{{ meeting.mentee.user.get_full_name|default:meeting.mentee.user.username }}</td>
+                                <td>{{ meeting.mentee.user.profile.student_name }}</td>
                                 <td>{{ meeting.appointment_date }}</td>
                                 <td>{{ meeting.time_slot }}</td>
                                 <td>

@@ -1,6 +1,7 @@
 {% extends 'menti/base.html' %}
 {% load static %}
 {% load widget_tweaks %}
+{% block title %} Message Module {% endblock %}
 {% block content %}
 {% include "menti/mentee_sidebar.html" %}
    <main role="main" class="container">
@@ -44,11 +45,11 @@
 
                       <!-- Unapproved Requests -->
                       <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
+                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-hourglass-split fs-1 text-warning"></i>
-                            <h5 class="card-title mt-2">Unapproved Requests</h5>
-                            <p class="card-text">Pending requests ({{ count }}).</p>
+                            <h5 class="card-title mt-2 text-light">Unapproved Requests</h5>
+                            <p class="card-text text-secondary">Pending requests ({{ count }}).</p>
                             <a href="{% url 'inbox1' %}" class="btn btn-outline-warning">Open</a>
                           </div>
                         </div>
@@ -56,11 +57,11 @@
 
                       <!-- Approved Requests -->
                       <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
+                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-check-circle fs-1 text-success"></i>
-                            <h5 class="card-title mt-2">Approved Requests</h5>
-                            <p class="card-text">Approved requests ({{ count1 }}).</p>
+                            <h5 class="card-title mt-2 text-light">Approved Requests</h5>
+                            <p class="card-text text-secondary">Approved requests ({{ count1 }}).</p>
                             <a href="{% url 'approved' %}" class="btn btn-outline-success">Open</a>
                           </div>
                         </div>
@@ -68,11 +69,11 @@
 
                       <!-- Conversations -->
                       <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
+                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-chat-dots fs-1 text-info"></i>
-                            <h5 class="card-title mt-2">Conversations</h5>
-                            <p class="card-text">Ongoing conversations ({{ count3 }}).</p>
+                            <h5 class="card-title mt-2 text-light">Conversations</h5>
+                            <p class="card-text text-secondary">Ongoing conversations ({{ count3 }}).</p>
                             <a href="{% url 'conv' %}" class="btn btn-outline-info">Open</a>
                           </div>
                         </div>
@@ -80,11 +81,11 @@
 
                       <!-- My Queries -->
                       <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3">
+                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-question-circle fs-1 text-danger"></i>
-                            <h5 class="card-title mt-2">My Queries</h5>
-                            <p class="card-text">Check & track your submitted queries.</p>
+                            <h5 class="card-title mt-2 text-light">My Queries</h5>
+                            <p class="card-text text-secondary">Check & track your submitted queries.</p>
                             <a href="{% url 'mentee_queries' %}" class="btn btn-outline-danger">Open</a>
                           </div>
                         </div>
