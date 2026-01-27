@@ -94,6 +94,26 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
         return super().handle_no_permission()
 
     def get(self, request):
+        # --- MESSAGE REMINDERS ---
+        unapproved_messages = Msg.objects.filter(
+            receipient=request.user,
+            is_approved=False
+        ).count()
+
+        # --- QUERY REMINDERS ---
+        mentor = get_object_or_404(Mentor, user=request.user)
+        pending_queries = Query.objects.filter(
+            mentor=mentor,
+            status__in=["pending", "open"]
+        ).count()
+
+        # --- MEETING REMINDERS ---
+        pending_meetings = [
+            m for m in Meeting.objects.filter(mentor=mentor, status='scheduled')
+            if m.meeting_end_datetime > timezone.localtime(timezone.now())
+        ]
+        pending_meetings_count = len(pending_meetings)
+
         form = MoodleIdForm()
         mentor = get_object_or_404(Mentor, user=request.user)
 
@@ -131,6 +151,9 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
             "mentees": mentees,
             "no_document_mentees": no_document_mentees,
             "pending_reminder_count": pending_reminder_count,
+            "unapproved_messages": unapproved_messages,
+            "pending_queries": pending_queries,
+            "pending_meetings": pending_meetings_count,
         })
 
     def post(self, request):
@@ -1269,11 +1292,14 @@ def reply_message(request, pk):
             reply.is_approved = form.cleaned_data['is_approved']
             reply.comment = form.cleaned_data['comment']
             reply.save()
-
-            return redirect('inbox2')
+            # 🔔 Notify mentee
+            Notification.objects.create(
+                user=reply.sender,  # sender is the mentee
+                message="Your request has been accepted by your mentor."
+            )
+            return redirect('approved1')
 
     else:
-
         form = ReplyForm
 
     context = {
@@ -1412,6 +1438,18 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
             reply.replied_at = now()
             reply.save()
 
+            # Identify mentee (the other participant)
+            mentee_user = (
+                self.object.receipient
+                if self.object.sender == request.user
+                else self.object.sender
+            )
+
+            Notification.objects.create(
+                user=mentee_user,
+                message="Your mentor has replied to your conversation."
+            )
+
             return redirect('conv-reply', pk=self.object.pk)
 
         context = self.get_context_data(object=self.object)
@@ -1451,48 +1489,137 @@ class Conversation2DeleteView(DeleteView):
 @method_decorator(login_required, name='dispatch')
 class MentorMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Meeting
-    template_name = 'mentor/vc.html'  # You’ll create this template
+    template_name = 'mentor/vc.html'
     context_object_name = 'meetings'
     paginate_by = 10
 
     def test_func(self):
-        return self.request.user.is_mentor  # Ensure only mentors can access
+        return self.request.user.is_mentor
 
     def get_queryset(self):
-        queryset = Meeting.objects.filter(
+        qs = Meeting.objects.filter(
             mentor__user=self.request.user
+        ).select_related(
+            "mentee__user", "mentee__user__profile"
         ).order_by('-appointment_date', '-time_slot')
 
-        for meeting in queryset:
-            combined_datetime = datetime.combine(meeting.appointment_date, meeting.time_slot)
-            if timezone.is_naive(combined_datetime):
-                combined_datetime = timezone.make_aware(combined_datetime, timezone.get_current_timezone())
+        # 🔍 FILTERS
+        moodle_id = self.request.GET.get("moodle_id")
+        name = self.request.GET.get("name")
+        date = self.request.GET.get("date")
 
-            # Instead of assigning to meeting.meeting_datetime (which is a read-only property),
-            # Assign to a custom attribute for temporary use in the view or template
-            meeting._meeting_datetime = combined_datetime
-            meeting._meeting_end_datetime = combined_datetime + timedelta(hours=1)
+        if moodle_id:
+            qs = qs.filter(
+                mentee__user__profile__moodle_id__icontains=moodle_id
+            )
 
-        return queryset
+        if name:
+            qs = qs.filter(
+                mentee__user__profile__student_name__icontains=name
+            )
+
+        if date:
+            qs = qs.filter(appointment_date=date)
+
+        # ✅ Auto-complete past meetings
+        now = timezone.localtime(timezone.now())
+        for meeting in qs:
+            if meeting.status == 'scheduled' and now > meeting.meeting_end_datetime:
+                meeting.status = 'completed'
+                meeting.save(update_fields=['status'])
+
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['now'] = timezone.localtime(timezone.now())
+
+        context["now"] = timezone.localtime(timezone.now())
+
+        # preserve filter values
+        context["selected_moodle_id"] = self.request.GET.get("moodle_id", "")
+        context["selected_name"] = self.request.GET.get("name", "")
+        context["selected_date"] = self.request.GET.get("date", "")
+
         return context
 
 
 @login_required
+def join_meeting(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    if request.user not in [meeting.mentor.user, meeting.mentee.user]:
+        return redirect('home')
+
+    now = timezone.localtime(timezone.now())
+
+    # ❌ Do not allow joining expired meetings
+    if now > meeting.meeting_end_datetime:
+        if meeting.status != 'completed':
+            meeting.status = 'completed'
+            meeting.save(update_fields=['status'])
+        return redirect('vc1')
+
+    # ✅ DO NOT mark completed here
+    return redirect(f"https://meet.jit.si/{meeting.video_room_name}")
+
+
+@login_required
 def mentor_queries(request):
-    # Get the Mentor instance linked to the logged-in user
     try:
         mentor = Mentor.objects.get(user=request.user)
     except Mentor.DoesNotExist:
-        # maybe the user is actually a mentee
         return redirect('mentee_queries')
-    # Now filter queries for this mentor instance
-    queries = Query.objects.filter(mentor=mentor).order_by('-created_at')
 
-    return render(request, "mentor/mentor_queries.html", {"queries": queries})
+    queries = Query.objects.filter(mentor=mentor).select_related(
+        "mentee__user", "mentee__user__profile"
+    ).order_by('-created_at')
+
+    # 🔍 FILTERS (GET)
+    moodle_id = request.GET.get("moodle_id")
+    name = request.GET.get("name")
+    severity = request.GET.get("severity")
+
+    if moodle_id:
+        queries = queries.filter(mentee__user__profile__moodle_id__icontains=moodle_id)
+
+    if name:
+        queries = queries.filter(
+            mentee__user__profile__student_name__icontains=name
+        )
+
+    if severity:
+        queries = queries.filter(severity=severity)
+
+    # ✅ BULK MARK AS DONE (POST)
+    if request.method == "POST" and "mark_all_done" in request.POST:
+        pending = queries.filter(status="pending")
+
+        for q in pending:
+            q.status = "resolved"
+            q.save()
+
+            # 🔔 notify mentee
+            Notification.objects.create(
+                user=q.mentee.user,
+                message="Your query has been resolved by your mentor."
+            )
+
+        messages.success(request, f"{pending.count()} queries marked as resolved.")
+        return redirect("mentor_queries")
+
+    # 📄 PAGINATION
+    paginator = Paginator(queries, 8)  # 8 per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "mentor/mentor_queries.html", {
+        "queries": page_obj,
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "selected_moodle_id": moodle_id or "",
+        "selected_name": name or "",
+        "selected_severity": severity or "",
+    })
 
 
 @login_required
@@ -1501,10 +1628,14 @@ def mark_as_done(request, query_id):
     query.status = "resolved"
     query.save()
 
-    # Notify mentee (basic message, can extend to email/websocket)
-    messages.success(request, f"Query from {query.mentee} has been resolved.")
-    return redirect(reverse('mentor_queries'))
+    # 🔔 CREATE NOTIFICATION FOR MENTEE
+    Notification.objects.create(
+        user=query.mentee.user,
+        message=f"Your query has been resolved by Mentor {query.mentor.name}."
+    )
 
+    messages.success(request, f"Query from {query.mentee} - {query.mentee.profile.student_name} has been resolved.")
+    return redirect(reverse('mentor_queries'))
 #--------------------Messages page logic ends----------------------
 
 #-----------------forget password logic starts---------------------

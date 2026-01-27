@@ -27,7 +27,6 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
-    "127.0.0.1:8000",
     "localhost",
     "mentorconnect.apsit.edu.in",
     "www.mentorconnect.apsit.edu.in",
@@ -40,7 +39,6 @@ CSRF_TRUSTED_ORIGINS = [
 
 # If Apache terminates SSL and proxies to gunicorn over http:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
 
 if DEBUG:
     USE_X_FORWARDED_HOST = False

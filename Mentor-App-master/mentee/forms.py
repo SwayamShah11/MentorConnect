@@ -312,7 +312,7 @@ class ReplyForm(forms.Form):
 
         label='Approve?',
         help_text='Are you satisfied with the request?',
-        required=False,
+        required=True,
 
     )
 
@@ -372,8 +372,8 @@ class MeetingForm(forms.ModelForm):
         model = Meeting
         fields = ['appointment_date', 'time_slot']
         widgets = {
-            'appointment_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'time_slot': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            "appointment_date": forms.HiddenInput(),
+            "time_slot": forms.HiddenInput(),
             'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 60}),
         }
 

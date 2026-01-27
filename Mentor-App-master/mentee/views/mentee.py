@@ -1500,7 +1500,7 @@ class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageM
     fields = ('msg_content',)
     model = Msg
     template_name = 'menti/sendindividual.html'
-    success_message = 'Your Message has Been Sent!'
+    success_message = 'Your Request has been Sent! Wait for Approval from your Mentor.'
 
     def test_func(self):
         return self.request.user.is_mentee
@@ -1908,7 +1908,11 @@ def schedule_meeting_view(request, pk):
     mentee = get_object_or_404(Mentee, user=request.user)
 
     # Check if meeting already exists between this mentee and mentor
-    existing_meeting = Meeting.objects.filter(mentor=mentor, mentee=mentee).first()
+    existing_meeting = Meeting.objects.filter(
+        mentor=mentor,
+        mentee=mentee,
+        status='scheduled'
+    ).order_by('-appointment_date', '-time_slot').first()
 
     if request.method == 'POST':
         form = MeetingForm(request.POST, instance=existing_meeting)  # reuse existing meeting if any
@@ -1916,13 +1920,19 @@ def schedule_meeting_view(request, pk):
             meeting = form.save(commit=False)
             meeting.mentor = mentor
             meeting.mentee = mentee
-            meeting.duration_minutes = 2
+            meeting.duration_minutes = 60
+            meeting.status = 'scheduled'
 
-            # Only assign video_room_name if it's not already set
+            today = timezone.localdate()
+            # 🔒 Prevent past-date rescheduling
+            if meeting.appointment_date < today:
+                meeting.appointment_date = today
+
             if not meeting.video_room_name:
                 meeting.video_room_name = str(uuid.uuid4())
 
             meeting.save()
+
 
             # Generate meeting room link
             jitsi_link = f"https://meet.jit.si/{meeting.video_room_name}"
@@ -1959,24 +1969,89 @@ def schedule_meeting_view(request, pk):
 
 
 @login_required
+def meetings_calendar_api(request):
+    user = request.user
+    now = timezone.localtime(timezone.now())
+
+    if hasattr(user, "mentor"):
+        meetings = Meeting.objects.filter(mentor__user=user)
+    else:
+        meetings = Meeting.objects.filter(mentee__user=user)
+
+    events = []
+    for m in meetings:
+        events.append({
+            "id": m.id,
+            "title": f"Meeting with ...",
+            "start": m.meeting_datetime.isoformat(),
+            "end": m.meeting_end_datetime.isoformat(),
+            "color": "#198754" if m.status == "completed" else "#0d6efd",
+            "extendedProps": {
+                "mentor": (
+                    m.mentor.name
+                    if hasattr(user, "mentee")
+                    else m.mentee.user.username
+                )
+            }
+        })
+
+    return JsonResponse(events, safe=False)
+
+
+@login_required
 def meeting_room_view(request, room_name):
     meeting = get_object_or_404(Meeting, video_room_name=room_name)
 
-    # Access control (optional)
-    if request.user != meeting.mentor.user and request.user != meeting.mentee.user:
-        return HttpResponseForbidden("Not authorized to join this meeting.")
+    if request.user not in [meeting.mentor.user, meeting.mentee.user]:
+        return HttpResponseForbidden("Not authorized")
 
-    jitsi_link = f"https://meet.jit.si/{meeting.video_room_name}"  # ✅ Jitsi Link
+    now = timezone.localtime(timezone.now())
+
+    # ❌ prevent joining expired meetings
+    if now > meeting.meeting_end_datetime:
+        if meeting.status != 'completed':
+            meeting.status = 'completed'
+            meeting.save(update_fields=['status'])
+        return redirect('account')
+
     return render(request, 'menti/meeting_room.html', {
         'meeting': meeting,
-        'jitsi_link': jitsi_link,
+        'jitsi_link': f"https://meet.jit.si/{meeting.video_room_name}",
     })
 
 
 @login_required
+@login_required
 def meetings_view(request):
-    # your logic here
-    return render(request, 'menti/meetings.html')
+    mentee = get_object_or_404(Mentee, user=request.user)
+
+
+    meetings = Meeting.objects.filter(
+    mentee=mentee
+    ).order_by('-appointment_date', '-time_slot')
+
+
+    now = timezone.localtime(timezone.now())
+
+
+    # Auto-complete expired meetings
+    for meeting in meetings:
+        if meeting.status == 'scheduled' and now > meeting.meeting_end_datetime:
+            meeting.status = 'completed'
+            meeting.save(update_fields=['status'])
+
+
+        # expose datetimes for template
+        meeting._meeting_datetime = meeting.meeting_datetime
+        meeting._meeting_end_datetime = meeting.meeting_end_datetime
+
+
+    context = {
+    'meetings': meetings,
+    'now': now,
+    'is_mentor_view': False,
+    }
+    return render(request, 'menti/meetings.html', context)
 #--------------------Meeting scheduling logic ends-----------------------
 
 #--------------------Mentee Query submission logic starts-----------------------
