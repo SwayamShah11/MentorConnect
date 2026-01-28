@@ -9,21 +9,45 @@ User = get_user_model()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.conv_id = self.scope['url_route']['kwargs']['conv_id']
-        self.room_group_name = f"conversation_{self.conv_id}"
+        try:
+            # --- AUTH CHECK ---
+            user = self.scope.get("user")
+            if not user or not user.is_authenticated:
+                await self.close(code=4003)
+                return
 
-        # join group
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-        await self.accept()
+            # --- URL PARAM ---
+            self.conv_id = self.scope["url_route"]["kwargs"].get("conv_id")
+            if not self.conv_id:
+                await self.close(code=4001)
+                return
 
-        user = self.scope['user']
-        # broadcast presence joined
-        await self.channel_layer.group_send(self.room_group_name, {
-            "type": "presence",
-            "user_id": user.id,
-            "username": getattr(user, "username", ""),
-            "joined": True,
-        })
+            self.room_group_name = f"conversation_{self.conv_id}"
+
+            # --- JOIN GROUP ---
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+
+            # --- ACCEPT SOCKET ---
+            await self.accept()
+
+            # --- PRESENCE JOIN ---
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "presence",
+                    "user_id": user.id,
+                    "username": getattr(user, "username", ""),
+                    "joined": True,
+                }
+            )
+
+        except Exception as e:
+            print("WebSocket connect error:", e)
+            await self.close(code=4002)
+            return
 
     async def disconnect(self, close_code):
         # leave group

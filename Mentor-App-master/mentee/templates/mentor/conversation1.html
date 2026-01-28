@@ -468,12 +468,12 @@ let typingState = false;
 chatInput.addEventListener('input', () => {
   if (!typingState) {
     typingState = true;
-    ws.send(JSON.stringify({ action: 'typing', typing: true }));
+    safeSendWS({ action: 'typing', typing: true });
   }
   clearTimeout(typingTimer);
   typingTimer = setTimeout(() => {
     typingState = false;
-    ws.send(JSON.stringify({ action: 'typing', typing: false }));
+    safeSendWS({ action: 'typing', typing: false });
   }, 900);
 });
 
@@ -576,7 +576,7 @@ const visibleObserver = new IntersectionObserver((entries) => {
       const replyId = el.getAttribute('data-reply-id');
       // notify server that this message is seen
       if (String(el.getAttribute('data-sent-by')) !== String(userId)) {
-        ws.send(JSON.stringify({ action: 'seen', reply_id: replyId }));
+        safeSendWS({ action: 'seen', reply_id: replyId });
       }
       // we don't unobserve — messages can be seen by multiple users
     }

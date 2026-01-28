@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.utils import timezone
+from datetime import timedelta
 from django.contrib import messages
 from django.core.paginator import Paginator
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
@@ -410,15 +411,64 @@ def ChangePassword(request, token):
         return redirect('forget_password')
 #-----------------forget password logic ends---------------------
 
+RECENT_DAYS = 30 # configurable
+today = timezone.now()
+recent_from = today - timedelta(days=RECENT_DAYS)
+
+def current_academic_year():
+    year = timezone.now().year
+    month = timezone.now().month
+    return f"{year}-{year+1}" if month >= 7 else f"{year-1}-{year}"
+
 
 @login_required
 @mentee_required
 def mentee_home(request):
     profile = Profile.objects.get(user=request.user)
     notifications = Notification.objects.filter(user=request.user, is_read=False).order_by("-created_at")[:10]
+    recent_from = timezone.now() - timedelta(days=30)
+    academic_year = current_academic_year()
+
+    document_summary = {
+        "Internships": InternshipPBL.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+
+        "Projects": Project.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+
+        "Sports & Cultural": SportsCulturalEvent.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+
+        "Other Events": OtherEvent.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+
+        "Certifications": CertificationCourse.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+
+        "Publications": PaperPublication.objects.filter(
+            user=request.user,
+            uploaded_at__gte=recent_from,
+        ).count(),
+    }
+
+    profile_incomplete = not profile.is_complete()
+
     return render(request, "menti/mentee_home.html", {
         "profile": profile,
         "notifications": notifications,
+        "document_summary": document_summary,
+        "academic_year": academic_year,
+        "profile_incomplete": profile_incomplete,
         "is_mentor_view": False,
     })
 
@@ -788,6 +838,8 @@ def other_event_list(request, pk=None):
             new_event.user = request.user
             new_event.save()
             return redirect("other-events")
+        else:
+            print(form.errors)
 
     return render(request, "menti/other_events.html", {
         "events": events,

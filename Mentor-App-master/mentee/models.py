@@ -149,6 +149,24 @@ class Profile(models.Model):
                 (today.month, today.day) < (self.dob.month, self.dob.day)
         )
 
+    def is_complete(self):
+        required_fields = [
+            self.student_name,
+            self.year,
+            self.branch,
+            self.image,
+            self.semester,
+            self.dob,
+            self.address,
+            self.contact_number,
+            self.career_domain,
+            self.father_name,
+            self.father_contact,
+            self.mother_name,
+            self.mother_contact
+        ]
+        return all(required_fields)
+
 
 class MentorMentee(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name="mentor_mappings")

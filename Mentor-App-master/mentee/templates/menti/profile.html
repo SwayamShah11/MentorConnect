@@ -23,6 +23,11 @@
         {% endif %}
         <!-- Body (Form) -->
         <div class="card-body">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                {{ form.errors }}
+            </div>
+            {% endif %}
           <form method="POST" enctype="multipart/form-data">
               {% csrf_token %}
               <div class="row g-3">

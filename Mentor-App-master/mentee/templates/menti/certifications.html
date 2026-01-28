@@ -114,6 +114,11 @@
                         </div><br><br>
                         <div class="card-body">
                             <div id="internshipForm" class="{% if editing %}show{% endif %}">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
                                 <form method="post" enctype="multipart/form-data"
                                       action="{% if editing %}{% url 'edit_certification' edit_id %}{% else %}{% url 'certifications' %}{% endif %}">
                                     {% csrf_token %}

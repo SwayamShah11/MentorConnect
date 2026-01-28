@@ -87,6 +87,11 @@
                         </div><br><br>
                         <div class="card-body">
                             <div id="internshipForm">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
                                 <form method="post" enctype="multipart/form-data"
                                       action="{% if goal_edit_id %}{% url 'edit_goal' goal_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
                                     {% csrf_token %}
@@ -180,6 +185,11 @@
                         </div><br><br>
                         <div class="card-body">
                             <div id="subjectForm">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
                                 <form method="post" action="{% if subject_edit_id %}{% url 'edit_subject' subject_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="col-12">

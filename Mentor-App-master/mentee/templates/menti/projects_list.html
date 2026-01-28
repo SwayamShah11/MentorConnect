@@ -104,6 +104,11 @@
                         </div><br><br>
                         <div class="card-body">
                             <div id="projectFormWrapper" class="{% if editing %}open{% endif %}">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
                                 <form method="post" enctype="multipart/form-data">
                                     {% csrf_token %}
                                     <small class="text-muted" style="color:#ff0000 !important;">
