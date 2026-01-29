@@ -8,8 +8,8 @@
   <!-- Header + Export -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
-      <h2 class="mb-1">HOD Dashboard</h2>
-      <p class="text-muted mb-0">Completion readiness overview of all mentees.</p>
+      <h2 class="mb-1 text-light">HOD Dashboard</h2>
+      <p class="text-muted mb-0" style="color: #fff !important;">Completion readiness overview of all mentees.</p>
     </div>
       <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
       {% csrf_token %}
@@ -32,7 +32,7 @@
   <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-lg-3">
       <div class="card shadow-sm border-0 stat-card">
-        <div class="card-body">
+        <div class="card-body p-0">
           <div class="small text-muted">Total Mentors</div>
           <div class="fs-3 fw-semibold">{{ total_mentors }}</div>
         </div>
@@ -40,7 +40,7 @@
     </div>
     <div class="col-12 col-sm-6 col-lg-3">
       <div class="card shadow-sm border-0 stat-card">
-        <div class="card-body">
+        <div class="card-body p-0">
           <div class="small text-muted">Total Mentees</div>
           <div class="fs-3 fw-semibold">{{ total_mentees }}</div>
         </div>
@@ -48,7 +48,7 @@
     </div>
     <div class="col-12 col-sm-6 col-lg-3">
       <div class="card shadow-sm border-0 stat-card">
-        <div class="card-body">
+        <div class="card-body p-0">
           <div class="small text-muted">Completion Ready (7/7)</div>
           <div class="fs-3 fw-semibold text-success">{{ ready_count }}</div>
         </div>
@@ -56,7 +56,7 @@
     </div>
     <div class="col-12 col-sm-6 col-lg-3">
       <div class="card shadow-sm border-0 stat-card">
-        <div class="card-body">
+        <div class="card-body p-0">
           <div class="small text-muted">Overall Readiness</div>
           <div class="fs-3 fw-semibold">{{ placement_ready_percent }}%</div>
           <div class="progress mt-2" style="height: 8px;">
@@ -72,7 +72,7 @@
   <div class="row g-3 mb-4">
     <div class="col-12 col-lg-6">
       <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
+        <div class="card-body p-0">
           <h5 class="card-title mb-3">Completion Breakdown</h5>
           <div class="d-flex flex-wrap gap-3">
             <div>
@@ -103,7 +103,7 @@
     <!-- Mentee Filters + search -->
     <div class="col-12 col-lg-6">
       <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
+        <div class="card-body p-0">
           <h5 class="card-title mb-3">Mentee Filters</h5>
           <div class="d-flex flex-wrap gap-2 mb-3">
             <button class="btn btn-outline-dark btn-sm active" data-filter="all">All</button>
@@ -132,7 +132,7 @@
   </div>
 
   <!-- Mentor-wise analytics -->
-  <div class="card shadow-sm border-0 mb-4">
+  <div class="card shadow-sm border-0 mb-4 p-0">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <span>Mentor-wise Progress Analytics</span>
     </div>
@@ -186,7 +186,7 @@
   </div>
 
   <!-- Per-mentee list -->
-  <div class="card shadow-sm border-0 mb-4">
+  <div class="card shadow-sm border-0 mb-4 p-0">
     <div class="card-header bg-dark text-white">
       Mentees & their Progress
     </div>

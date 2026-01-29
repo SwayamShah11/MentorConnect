@@ -1317,7 +1317,7 @@ class Approved(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         return self.request.user.is_mentor
 
-    model = Msg.objects.filter(is_approved=True).order_by('-date_approved')
+    model = Msg.objects.filter(is_approved=True, chat_started=False).order_by('-date_approved')
 
     template_name = 'mentor/approved.html'
 
@@ -1355,9 +1355,23 @@ class ConversationCreateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMes
         return self.request.user.is_mentor
 
     def form_valid(self, form):
-        form.instance.sender = self.request.user
-        form.instance.receipient = User.objects.get(pk=self.kwargs['pk'])
-        return super().form_valid(form)
+        mentor = self.request.user
+        student = get_object_or_404(User, pk=self.kwargs['pk'])
+
+        form.instance.sender = mentor
+        form.instance.receipient = student
+
+        response = super().form_valid(form)
+
+        # ✅ mark approved request as used
+        Msg.objects.filter(
+            sender=student,
+            receipient=mentor,
+            is_approved=True,
+            chat_started=False
+        ).update(chat_started=True)
+
+        return response
 
     def get_success_url(self):
         return reverse('conv1')

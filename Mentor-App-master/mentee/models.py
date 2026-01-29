@@ -670,6 +670,7 @@ class Msg(models.Model):
     comment = models.TextField(blank=True, null=True)
     comment_at = models.DateTimeField(blank=True, null=True)
     is_approved = models.BooleanField(default=False, verbose_name="Approve?")
+    chat_started = models.BooleanField(default=False)
     date_approved = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):

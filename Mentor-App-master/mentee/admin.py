@@ -76,7 +76,7 @@ class ConversationAdmin(admin.ModelAdmin):
 class MsgAdmin(admin.ModelAdmin):
     search_fields = ("msg_content",)
     list_filter = ("is_approved",)
-    list_display = ("sender", "receipient", "sent_at", "msg_content", "comment", "comment_at", "is_approved", "date_approved")
+    list_display = ("sender", "receipient", "sent_at", "msg_content", "comment", "comment_at", "is_approved", "chat_started", "date_approved")
     list_editable = ("is_approved",)
     list_display_links = ("msg_content",)
     list_per_page = 10

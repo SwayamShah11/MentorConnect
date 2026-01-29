@@ -292,6 +292,14 @@
       border: 1px solid rgba(0, 255, 140, 0.8);
       transition: all 0.4s ease;
     }
+    /* ------------------------------
+       ERROR GLOW
+    ------------------------------- */
+    .shake {
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.9) !important;
+      border: 1px solid rgba(255, 0, 0, 0.8);
+      transition: all 0.4s ease;
+    }
     </style>
 
 </head>
@@ -408,10 +416,10 @@
       });
 
       // 🔴 Shake on error (Django messages)
-      const alerts = document.querySelectorAll(".alert-danger, .alert-error");
+      const alerts = document.querySelectorAll(".alert-warning, .alert-error");
       if (alerts.length > 0) {
         card.classList.add("shake");
-        setTimeout(() => card.classList.remove("shake"), 500);
+        setTimeout(() => card.classList.remove("shake"), 1000);
       }
 
       // 🟢 Success glow

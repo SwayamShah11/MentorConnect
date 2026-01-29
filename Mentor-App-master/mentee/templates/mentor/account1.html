@@ -21,7 +21,7 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span>📩 New Requests</span>
               <a href="{% url 'inbox2' %}" class="badge bg-danger">
-                {{ unapproved_messages }}
+                {{ unapproved_messages }} {% if unapproved_messages == 1 %}Request{% else %}Requests{% endif %} <i class="bi bi-arrow-right"></i>
               </a>
             </div>
             {% endif %}
@@ -30,16 +30,16 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span>❓ Pending Queries</span>
               <a href="{% url 'mentor_queries' %}" class="badge bg-warning text-dark">
-                {{ pending_queries }}
+                {{ pending_queries }} {% if pending_queries == 1 %}Query{% else %}Queries{% endif %} <i class="bi bi-arrow-right"></i>
               </a>
             </div>
             {% endif %}
 
             {% if pending_meetings > 0 %}
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>📅 Meeting Requests</span>
+              <span>📅 Scheduled Meetings</span>
               <a href="{% url 'vc1' %}" class="badge bg-info">
-                {{ pending_meetings }}
+                {{ pending_meetings }} {% if pending_meetings == 1 %}Meeting{% else %}Meetings{% endif %} <i class="bi bi-arrow-right"></i>
               </a>
             </div>
             {% endif %}
