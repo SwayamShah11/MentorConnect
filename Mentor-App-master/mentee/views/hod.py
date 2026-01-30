@@ -4,7 +4,7 @@ from django.conf import settings
 from datetime import datetime
 from django.contrib import messages
 from django.core.mail import send_mail
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 import openpyxl
@@ -19,6 +19,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
+from django.core.paginator import Paginator
+
 
 def _build_hod_dashboard_data():
     """

@@ -183,6 +183,11 @@
         </table>
       </div>
     </div>
+      <div class="d-flex justify-content-center mt-2">
+        <nav>
+            <ul class="pagination pagination-sm" id="mentorPagination"></ul>
+        </nav>
+    </div>
   </div>
 
   <!-- Per-mentee list -->
@@ -249,15 +254,19 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted">No mentees data available.</td>
+              <td colspan="8" class="text-center text-muted">No mentees data available.</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+      <div class="d-flex justify-content-center mt-2">
+        <nav>
+            <ul class="pagination pagination-sm" id="menteePagination"></ul>
+        </nav>
+      </div>
   </div>
-
 </div>
 
 <style>
@@ -274,103 +283,187 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+  /* --------------------------------------------------
+     1. INITIALIZE FILTER STATE FOR ALL ROWS
+  -------------------------------------------------- */
+  document
+    .querySelectorAll("#mentorTableBody tr, #menteesTable tbody tr")
+    .forEach(row => row.dataset.filtered = "1");
+
+  /* --------------------------------------------------
+     2. PAGINATION ENGINE (STABLE)
+  -------------------------------------------------- */
+  function paginateTable({ tableBodySelector, paginationSelector, rowsPerPage }) {
+    const tableBody = document.querySelector(tableBodySelector);
+    const pagination = document.querySelector(paginationSelector);
+    const allRows = Array.from(tableBody.querySelectorAll("tr"));
+    let currentPage = 1;
+
+    function getFilteredRows() {
+      return allRows.filter(r => r.dataset.filtered === "1");
+    }
+
+    function render() {
+      const rows = getFilteredRows();
+      const totalPages = Math.ceil(rows.length / rowsPerPage) || 1;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      allRows.forEach(r => r.style.display = "none");
+
+      rows.forEach((row, index) => {
+        if (
+          index >= (currentPage - 1) * rowsPerPage &&
+          index < currentPage * rowsPerPage
+        ) {
+          row.style.display = "";
+        }
+      });
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      pagination.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      // ⬅ PREVIOUS
+      const prev = document.createElement("li");
+      prev.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+      prev.innerHTML = `<a class="page-link" href="#">‹</a>`;
+      prev.onclick = e => {
+        e.preventDefault();
+        if (currentPage > 1) {
+          currentPage--;
+          render();
+        }
+      };
+      pagination.appendChild(prev);
+
+      // PAGE NUMBERS
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = `page-item ${i === currentPage ? "active" : ""}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.onclick = e => {
+          e.preventDefault();
+          currentPage = i;
+          render();
+        };
+        pagination.appendChild(li);
+      }
+
+      // ➡ NEXT
+      const next = document.createElement("li");
+      next.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+      next.innerHTML = `<a class="page-link" href="#">›</a>`;
+      next.onclick = e => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+          currentPage++;
+          render();
+        }
+      };
+      pagination.appendChild(next);
+    }
+
+    return {
+      refresh() {
+        currentPage = 1;
+        render();
+      }
+    };
+  }
+
+  /* --------------------------------------------------
+     3. INIT PAGINATION
+  -------------------------------------------------- */
+  window.mentorPager = paginateTable({
+    tableBodySelector: "#mentorTableBody",
+    paginationSelector: "#mentorPagination",
+    rowsPerPage: 10
+  });
+
+  window.menteePager = paginateTable({
+    tableBodySelector: "#menteesTable tbody",
+    paginationSelector: "#menteePagination",
+    rowsPerPage: 30
+  });
+
+  mentorPager.refresh();
+  menteePager.refresh();
+
+  /* --------------------------------------------------
+     4. MENTEE FILTERS
+  -------------------------------------------------- */
+  const menteeRows = document.querySelectorAll("#menteesTable tbody tr");
   const filterButtons = document.querySelectorAll("[data-filter]");
-  const rows = document.querySelectorAll("#menteesTable tbody tr");
-  const searchInput = document.getElementById("menteeSearch");
+  const menteeSearch = document.getElementById("menteeSearch");
 
   let activeFilter = "all";
 
-  function applyFilters() {
-    const query = (searchInput?.value || "").toLowerCase().trim();
+  function applyMenteeFilters() {
+    const query = menteeSearch.value.toLowerCase().trim();
 
-    rows.forEach(row => {
-      const readiness = row.getAttribute("data-readiness") || "";
-      const name = row.getAttribute("data-name") || "";
-      const moodle = row.getAttribute("data-moodle") || "";
-      const department = row.getAttribute("data-department") || "";
-      const semester = row.getAttribute("data-semester") || "";
-      const mentor = row.getAttribute("data-mentor") || "";
-
+    menteeRows.forEach(row => {
       let visible = true;
 
-      // 1) filter by readiness
-      if (activeFilter !== "all" && readiness !== activeFilter) {
+      if (activeFilter !== "all" && row.dataset.readiness !== activeFilter) {
         visible = false;
       }
 
-      // 2) filter by search text (name / moodle / department / semester)
       if (visible && query) {
-        const haystack = `${name} ${moodle} ${department} ${semester} ${mentor}`;
-        if (!haystack.includes(query)) {
-          visible = false;
-        }
+        const text = `
+          ${row.dataset.name}
+          ${row.dataset.moodle}
+          ${row.dataset.department}
+          ${row.dataset.semester}
+          ${row.dataset.mentor}
+        `;
+        if (!text.includes(query)) visible = false;
       }
 
-      row.style.display = visible ? "" : "none";
+      row.dataset.filtered = visible ? "1" : "0";
     });
+
+    menteePager.refresh();
   }
 
   filterButtons.forEach(btn => {
-    btn.addEventListener("click", function () {
+    btn.addEventListener("click", () => {
       filterButtons.forEach(b => b.classList.remove("active"));
-      this.classList.add("active");
-      activeFilter = this.getAttribute("data-filter") || "all";
-      applyFilters();
+      btn.classList.add("active");
+      activeFilter = btn.dataset.filter;
+      applyMenteeFilters();
     });
   });
 
-  if (searchInput) {
-    searchInput.addEventListener("input", applyFilters);
-  }
-});
+  menteeSearch.addEventListener("input", applyMenteeFilters);
 
-//Mentor table filter
-document.addEventListener("DOMContentLoaded", function () {
-
+  /* --------------------------------------------------
+     5. MENTOR SEARCH FILTER
+  -------------------------------------------------- */
   const mentorRows = document.querySelectorAll("#mentorTableBody tr");
   const mentorSearch = document.getElementById("mentorSearch");
-  const mentorButtons = document.querySelectorAll("[data-mentor-filter]");
 
-  let activeMentorFilter = "all";
-
-  function applyMentorFilters() {
+  function applyMentorFilter() {
     const query = mentorSearch.value.toLowerCase().trim();
 
     mentorRows.forEach(row => {
-      const readiness = row.getAttribute("data-readiness");
-      const name = row.getAttribute("data-name") || "";
-      const department = row.getAttribute("data-department") || "";
+      const name = row.dataset.name || "";
+      const dept = row.dataset.department || "";
 
-      let visible = true;
-
-      // readiness filter
-      if (activeMentorFilter !== "all" && readiness !== activeMentorFilter) {
-        visible = false;
-      }
-
-      // search filter
-      if (visible && query) {
-        if (!name.includes(query) && !department.includes(query)) {
-          visible = false;
-        }
-      }
-
-      row.style.display = visible ? "" : "none";
+      row.dataset.filtered =
+        !query || name.includes(query) || dept.includes(query)
+          ? "1"
+          : "0";
     });
+
+    mentorPager.refresh();
   }
 
-  mentorButtons.forEach(btn => {
-    btn.addEventListener("click", function () {
-      mentorButtons.forEach(b => b.classList.remove("active"));
-      this.classList.add("active");
-      activeMentorFilter = this.getAttribute("data-mentor-filter");
-      applyMentorFilters();
-    });
-  });
-
-  if (mentorSearch) {
-    mentorSearch.addEventListener("input", applyMentorFilters);
-  }
+  mentorSearch.addEventListener("input", applyMentorFilter);
 
 });
 </script>

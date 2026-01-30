@@ -181,8 +181,8 @@
             <div class="row mt-3">
               <!-- Monthly Attendance -->
               <div class="col-lg-8 mb-3">
-                <div class="card shadow-sm bg-secondary">
-                  <div class="card-body bg-dark">
+                <div class="card shadow-sm p-0 bg-dark">
+                  <div class="card-body">
                     <h5 class="fw-bold mb-3 text-light">📅 Monthly Attendance Breakdown</h5>
                     <table class="table table-bordered table-sm mb-0">
                       <thead class="table-dark text-center">
@@ -247,7 +247,7 @@
           <!-- Attendance Trend (Smaller + Centered) -->
           <div class="col-lg-8 mx-auto">
             <div class="card shadow-sm">
-              <div class="card-body">
+              <div class="card-body p-0">
                 <h5 class="fw-bold mb-2">Attendance Trend</h5>
                 <canvas id="attendanceChart" height="180"></canvas>
               </div>
@@ -268,34 +268,34 @@
         </div>
 
         <!-- Attendance Prediction -->
-        <div class="card shadow-sm mt-3 border-info p-0">
-          <div class="card-body text-center">
-            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>
+<!--        <div class="card shadow-sm mt-3 border-info p-0">-->
+<!--          <div class="card-body text-center">-->
+<!--            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>-->
 
-            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>
+<!--            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>-->
 
-            <div class="
-              fw-semibold
-              {% if risk_level == 'Excellent' %}text-success
-              {% elif risk_level == 'Stable' %}text-primary
-              {% elif risk_level == 'Warning' %}text-warning
-              {% else %}text-danger
-              {% endif %}
-            ">
-              Predicted Status: {{ risk_level }}
-            </div>
+<!--            <div class="-->
+<!--              fw-semibold-->
+<!--              {% if risk_level == 'Excellent' %}text-success-->
+<!--              {% elif risk_level == 'Stable' %}text-primary-->
+<!--              {% elif risk_level == 'Warning' %}text-warning-->
+<!--              {% else %}text-danger-->
+<!--              {% endif %}-->
+<!--            ">-->
+<!--              Predicted Status: {{ risk_level }}-->
+<!--            </div>-->
 
-            {% if risk_level == "Critical" %}
-            <div class="alert alert-danger mt-3 py-2">
-              ⚠ High risk of falling below minimum attendance!
-            </div>
-            {% elif risk_level == "Warning" %}
-            <div class="alert alert-warning mt-3 py-2">
-              ⚠ Attendance may drop. Maintain consistency!
-            </div>
-            {% endif %}
-          </div>
-        </div>
+<!--            {% if risk_level == "Critical" %}-->
+<!--            <div class="alert alert-danger mt-3 py-2">-->
+<!--              ⚠ High risk of falling below minimum attendance!-->
+<!--            </div>-->
+<!--            {% elif risk_level == "Warning" %}-->
+<!--            <div class="alert alert-warning mt-3 py-2">-->
+<!--              ⚠ Attendance may drop. Maintain consistency!-->
+<!--            </div>-->
+<!--            {% endif %}-->
+<!--          </div>-->
+<!--        </div>-->
 
       </div>
     </div>
