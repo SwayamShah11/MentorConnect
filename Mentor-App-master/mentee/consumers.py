@@ -1,14 +1,31 @@
 import json
+import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.serializers.json import DjangoJSONEncoder
-from .models import Reply, Reaction, ReplySeen
 from django.contrib.auth import get_user_model
+
+from .models import Reply, Reaction, ReplySeen
 
 User = get_user_model()
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
+    """
+    Production-grade WebSocket consumer for chat:
+    - Authenticated users only
+    - Conversation-level authorization
+    - Presence, typing, reactions, seen
+    - HTTP creates messages, WS broadcasts only
+    """
+
+    # -----------------------
+    # CONNECT / DISCONNECT
+    # -----------------------
+
     async def connect(self):
+        self.accepted = False  # safety flag
+
         try:
             # --- AUTH CHECK ---
             user = self.scope.get("user")
@@ -22,6 +39,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.close(code=4001)
                 return
 
+            # --- AUTHORIZATION CHECK ---
+            allowed = await self.user_allowed_in_conversation(user.id, self.conv_id)
+            if not allowed:
+                await self.close(code=4003)
+                return
+
             self.room_group_name = f"conversation_{self.conv_id}"
 
             # --- JOIN GROUP ---
@@ -32,6 +55,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # --- ACCEPT SOCKET ---
             await self.accept()
+            self.accepted = True
 
             # --- PRESENCE JOIN ---
             await self.channel_layer.group_send(
@@ -47,69 +71,103 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print("WebSocket connect error:", e)
             await self.close(code=4002)
-            return
 
     async def disconnect(self, close_code):
-        # leave group
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        user = self.scope['user']
-        await self.channel_layer.group_send(self.room_group_name, {
-            "type": "presence",
-            "user_id": user.id,
-            "username": getattr(user, "username", ""),
-            "joined": False,
-        })
+        if not getattr(self, "accepted", False):
+            return
+
+        if hasattr(self, "room_group_name"):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+
+            user = self.scope.get("user")
+            if user and user.is_authenticated:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "presence",
+                        "user_id": user.id,
+                        "username": getattr(user, "username", ""),
+                        "joined": False,
+                    }
+                )
+
+    # -----------------------
+    # RECEIVE
+    # -----------------------
 
     async def receive(self, text_data=None, bytes_data=None):
         if not text_data:
             return
+
         try:
             data = json.loads(text_data)
-        except:
+        except json.JSONDecodeError:
+            await self.close(code=4000)
+            return
+
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
             return
 
         action = data.get("action")
-        user = self.scope.get("user")
 
+        # ---- TYPING (throttled) ----
         if action == "typing":
-            # broadcast typing state
-            await self.channel_layer.group_send(self.room_group_name, {
-                "type": "typing",
-                "user_id": user.id,
-                "username": getattr(user, "username", ""),
-                "typing": data.get("typing", False),
-            })
+            now = time.time()
+            if hasattr(self, "_last_typing") and now - self._last_typing < 0.8:
+                return
+            self._last_typing = now
 
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "typing",
+                    "user_id": user.id,
+                    "username": getattr(user, "username", ""),
+                    "typing": bool(data.get("typing", False)),
+                }
+            )
+
+        # ---- SEEN ----
         elif action == "seen":
             reply_id = data.get("reply_id")
             if reply_id:
-                # mark seen in DB and notify group
                 saved = await self.mark_seen(reply_id, user.id)
                 if saved:
-                    await self.channel_layer.group_send(self.room_group_name, {
-                        "type": "seen_event",
-                        "reply_id": reply_id,
-                        "user_id": user.id,
-                    })
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "seen_event",
+                            "reply_id": reply_id,
+                            "user_id": user.id,
+                        }
+                    )
 
+        # ---- REACTION ----
         elif action == "reaction":
             reply_id = data.get("reply_id")
             emoji = data.get("emoji")
+
             if reply_id and emoji:
                 reaction = await self.add_reaction(reply_id, user.id, emoji)
                 if reaction:
-                    await self.channel_layer.group_send(self.room_group_name, {
-                        "type": "reaction_event",
-                        "reply_id": reply_id,
-                        "user_id": user.id,
-                        "emoji": emoji,
-                    })
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "reaction_event",
+                            "reply_id": reply_id,
+                            "user_id": user.id,
+                            "emoji": emoji,
+                        }
+                    )
 
-        # Note: we DON'T create messages from WS client in this implementation.
-        # Message creation happens via HTTP upload view which broadcasts to group,
-        # avoiding race issues with file uploads and returned DB ids.
+    # -----------------------
+    # GROUP EVENT HANDLERS
+    # -----------------------
 
-    # Group event handlers (these are invoked via group_send)
     async def typing(self, event):
         await self.send_json({
             "action": "typing",
@@ -119,17 +177,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         })
 
     async def new_message(self, event):
-        # event['message'] is serializable payload from server
         await self.send_json({
             "action": "new_message",
-            "message": event["message"]
+            "message": event["message"],
         })
 
     async def seen_event(self, event):
         await self.send_json({
             "action": "seen_event",
             "reply_id": event["reply_id"],
-            "user_id": event["user_id"]
+            "user_id": event["user_id"],
         })
 
     async def reaction_event(self, event):
@@ -137,7 +194,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "action": "reaction",
             "reply_id": event["reply_id"],
             "user_id": event["user_id"],
-            "emoji": event["emoji"]
+            "emoji": event["emoji"],
         })
 
     async def presence(self, event):
@@ -151,45 +208,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def edited_message(self, event):
         await self.send_json({
             "action": "edited_message",
-            "message": event["message"]
+            "message": event["message"],
         })
 
     async def deleted_message(self, event):
         await self.send_json({
             "action": "deleted_message",
-            "message": event["message"]
+            "message": event["message"],
         })
 
-    # DB helpers
+    # -----------------------
+    # DB HELPERS
+    # -----------------------
+
     @database_sync_to_async
-    def reply_to_json(self, reply):
-        file_url = None
-        try:
-            if reply.file and hasattr(reply.file, 'url'):
-                file_url = reply.file.url
-        except:
-            file_url = None
-
-        # reactions and seen count - adapt if relation names differ
-        reactions = []
-        try:
-            for r in reply.reaction_set.all():
-                reactions.append({"user_id": r.user_id, "emoji": r.emoji})
-        except:
-            reactions = []
-
-        seen_count = reply.seen_by.count() if hasattr(reply, 'seen_by') else 0
-
-        return {
-            "id": reply.id,
-            "sender_id": reply.sender.id if reply.sender else None,
-            "sender_username": getattr(reply.sender, "username", ""),
-            "text": reply.reply,
-            "file_url": file_url,
-            "replied_at": (reply.replied_at.isoformat() if reply.replied_at else None),
-            "reactions": reactions,
-            "seen_count": seen_count,
-        }
+    def user_allowed_in_conversation(self, user_id, conv_id):
+        """
+        Authorization check.
+        Adjust logic if you have a Conversation/Members table.
+        """
+        return Reply.objects.filter(
+            conversation_id=conv_id,
+            sender_id=user_id
+        ).exists()
 
     @database_sync_to_async
     def mark_seen(self, reply_id, user_id):
@@ -206,11 +247,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             reply = Reply.objects.get(pk=reply_id)
             user = User.objects.get(pk=user_id)
-            reaction, created = Reaction.objects.update_or_create(reply=reply, user=user, defaults={"emoji": emoji})
+            reaction, _ = Reaction.objects.update_or_create(
+                reply=reply,
+                user=user,
+                defaults={"emoji": emoji}
+            )
             return reaction
         except Exception:
             return None
 
-    # convenience: send json wrapper
+    # -----------------------
+    # SEND JSON HELPER
+    # -----------------------
+
     async def send_json(self, payload):
-        await self.send(text_data=json.dumps(payload, cls=DjangoJSONEncoder))
+        await self.send(
+            text_data=json.dumps(payload, cls=DjangoJSONEncoder)
+        )
