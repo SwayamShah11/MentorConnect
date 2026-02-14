@@ -130,7 +130,6 @@ a:hover {
    MAIN CONTENT
 ------------------------------- */
 .content {
-  margin-left: 0;
   margin-top: 56px;
   padding: 1.5rem;
   transition: margin-left 0.3s ease-in-out;
@@ -272,7 +271,7 @@ a:hover {
 ------------------------------- */
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%);
+    transform: translateX(0);
   }
 
   .sidebar.show {
@@ -280,7 +279,7 @@ a:hover {
   }
 
   .content {
-    margin-left: 0;
+    margin-left: 250px;
   }
 
   .sidebar img {

@@ -57,7 +57,7 @@
                             {% for meeting in meetings %}
                             <tr>
                                 <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                                <td>{{ meeting.mentee.user.get_full_name|default:meeting.mentee.user.username }}</td>
+                                <td>{{ meeting.mentee.user.username|default:- }}</td>
                                 <td>{{ meeting.mentee.user.profile.student_name }}</td>
                                 <td>{{ meeting.appointment_date }}</td>
                                 <td>{{ meeting.time_slot }}</td>

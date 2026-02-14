@@ -12,7 +12,7 @@
                 <table class="table table-hover table-bordered">
                     <thead class="table-dark">
                         <tr>
-                            <th>Query ID</th>
+                            <th>Sr. No.</th>
                             <th>Query</th>
                             <th>Submitted At</th>
                             <th>Severity</th>
@@ -23,7 +23,7 @@
                         {% if queries %}
                             {% for query in queries %}
                                 <tr>
-                                    <td>{{ query.id }}</td>
+                                    <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                                     <td>{{ query.text }}</td>
                                     <td>{{ query.created_at|naturaltime }}</td>
                                     <td>

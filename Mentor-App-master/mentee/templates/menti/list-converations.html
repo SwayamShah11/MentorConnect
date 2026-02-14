@@ -23,7 +23,7 @@
                 <ol>
                 {% for conv in conversation %}
                     <tr>
-                        <td>{{ conv.id }}</td>
+                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                         <td>{{ conv.sender }}</td>
                         <td>{{ conv.conversation }}</td>
                         <td>{{ conv.sent_at|naturaltime }}</td>
