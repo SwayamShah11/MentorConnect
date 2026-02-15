@@ -1,5 +1,6 @@
 {% load static %}
-<div class="card shadow-sm border-0">
+<br>
+<div class="card shadow-sm border-0 p-0">
   <div class="card-header bg-dark text-white">
     <h4 class="mb-0">Student Profile</h4>
   </div>
@@ -11,8 +12,7 @@
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Moodle ID:</strong>
-        <p class="form-control-plaintext">{{ profile.moodle_id }}</p>
+        <p class="form-control-plaintext"><strong>Moodle ID:</strong> {{ profile.moodle_id }}</p>
       </div>
       <div class="col-md-6">
         <strong>Profile Image:</strong><br>
@@ -26,33 +26,27 @@
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Student Name:</strong>
-        <p class="form-control-plaintext">{{ profile.student_name }}</p>
+        <p class="form-control-plaintext"><strong>Student Name:</strong> {{ profile.student_name }}</p>
       </div>
       <div class="col-md-3">
-        <strong>Semester:</strong>
-        <p class="form-control-plaintext">{{ profile.semester }}</p>
+        <p class="form-control-plaintext"><strong>Semester:</strong> {{ profile.semester }}</p>
       </div>
       <div class="col-md-3">
-        <strong>Year:</strong>
-        <p class="form-control-plaintext">{{ profile.year }}</p>
+        <p class="form-control-plaintext"><strong>Year:</strong> {{ profile.year }}</p>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Branch:</strong>
-        <p class="form-control-plaintext">{{ profile.branch }}</p>
+        <p class="form-control-plaintext"><strong>Branch:</strong> {{ profile.branch }}</p>
       </div>
       <div class="col-md-6">
-        <strong>Date of Birth:</strong>
-        <p class="form-control-plaintext">{{ profile.dob|date:"d-m-Y" }}</p>
+        <p class="form-control-plaintext"><strong>Date of Birth:</strong> {{ profile.dob|date:"d-m-Y" }}</p>
       </div>
     </div>
 
     <div class="mb-3">
-      <strong>Address:</strong>
-      <p class="form-control-plaintext">{{ profile.address }}</p>
+      <p class="form-control-plaintext"><strong>Address:</strong> {{ profile.address }}</p>
     </div>
 
     <!-- Contact Info -->
@@ -61,23 +55,19 @@
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Contact Number:</strong>
-        <p class="form-control-plaintext">{{ profile.contact_number }}</p>
+        <p class="form-control-plaintext"><strong>Contact Number:</strong> {{ profile.contact_number }}</p>
       </div>
       <div class="col-md-6">
-        <strong>Email:</strong>
-        <p class="form-control-plaintext">{{ profile.email }}</p>
+        <p class="form-control-plaintext"><strong>Email:</strong> {{ profile.user.email }}</p>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Hobby:</strong>
-        <p class="form-control-plaintext">{{ profile.hobby }}</p>
+        <p class="form-control-plaintext"><strong>Hobby:</strong> {{ profile.hobby }}</p>
       </div>
       <div class="col-md-6">
-        <strong>About Me:</strong>
-        <p class="form-control-plaintext">{{ profile.about_me }}</p>
+        <p class="form-control-plaintext"><strong>About Me:</strong> {{ profile.about_me }}</p>
       </div>
     </div>
 
@@ -87,42 +77,34 @@
 
     <div class="row mb-3">
       <div class="col-md-4">
-        <strong>Mother's Name:</strong>
-        <p class="form-control-plaintext">{{ profile.mother_name }}</p>
+        <p class="form-control-plaintext"><strong>Mother's Name:</strong> {{ profile.mother_name }}</p>
       </div>
       <div class="col-md-4">
-        <strong>Occupation:</strong>
-        <p class="form-control-plaintext">{{ profile.mother_occupation }}</p>
+        <p class="form-control-plaintext"><strong>Occupation:</strong> {{ profile.mother_occupation }}</p>
       </div>
       <div class="col-md-4">
-        <strong>Contact:</strong>
-        <p class="form-control-plaintext">{{ profile.mother_contact }}</p>
+        <p class="form-control-plaintext"><strong>Contact:</strong> {{ profile.mother_contact }}</p>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-4">
-        <strong>Father's Name:</strong>
-        <p class="form-control-plaintext">{{ profile.father_name }}</p>
+        <p class="form-control-plaintext"><strong>Father's Name:</strong> {{ profile.father_name }}</p>
       </div>
       <div class="col-md-4">
-        <strong>Occupation:</strong>
-        <p class="form-control-plaintext">{{ profile.father_occupation }}</p>
+        <p class="form-control-plaintext"><strong>Occupation:</strong> {{ profile.father_occupation }}</p>
       </div>
       <div class="col-md-4">
-        <strong>Contact:</strong>
-        <p class="form-control-plaintext">{{ profile.father_contact }}</p>
+        <p class="form-control-plaintext"><strong>Contact:</strong> {{ profile.father_contact }}</p>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <strong>Sibling 1:</strong>
-        <p class="form-control-plaintext">{{ profile.sibling1_name }}</p>
+        <p class="form-control-plaintext"><strong>Sibling 1:</strong> {{ profile.sibling1_name }}</p>
       </div>
       <div class="col-md-6">
-        <strong>Sibling 2:</strong>
-        <p class="form-control-plaintext">{{ profile.sibling2_name }}</p>
+        <p class="form-control-plaintext"><strong>Sibling 2:</strong> {{ profile.sibling2_name }}</p>
       </div>
     </div>
 
@@ -131,8 +113,7 @@
     <hr style="border:none; border:1px dashed #000; opacity:1;">
 
     <div class="mb-3">
-      <strong>Career Domain:</strong>
-      <p class="form-control-plaintext">{{ profile.career_domain }}</p>
+      <p class="form-control-plaintext"><strong>Career Domain:</strong> {{ profile.career_domain }}</p>
     </div>
   </div>
 </div>
