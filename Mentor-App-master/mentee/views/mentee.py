@@ -13,18 +13,8 @@ from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, P
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
-                      MentorMenteeInteraction, MentorMentee, StudentProfileOverview, Notification)
+                      MentorMenteeInteraction, StudentProfileOverview, Notification)
 from ..utils import compute_profile_completeness, mentee_required
-from ..auth_otp import (
-    REG_MENTEE_OTP_SESSION_KEY,
-    OTP_DIGITS,
-    create_login_otp_challenge,
-    get_login_otp_state,
-    mask_email,
-    verify_login_otp as verify_login_otp_code,
-)
-from ..certificate_verification import apply_course_certificate_verification
-
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -42,7 +32,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db.models import Count, Q
 from ..render import Render
-from django.http import HttpResponse, Http404, JsonResponse, HttpResponseForbidden, FileResponse
+from django.http import HttpResponse, Http404, JsonResponse, HttpResponseForbidden
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.views.decorators.http import require_POST
@@ -265,32 +255,13 @@ def register(request):
         form1 = MenteeRegisterForm(request.POST)
 
         if form1.is_valid():
-            user = form1.save(commit=False)
+            user = form1.save()
             user.is_mentee = True
-            user.is_active = False
             user.save()
-            Mentee.objects.get_or_create(user=user)
 
             registered = True
-            try:
-                masked_email, sent_now, wait_seconds = create_login_otp_challenge(
-                    request=request,
-                    user=user,
-                    session_key=REG_MENTEE_OTP_SESSION_KEY,
-                    scope="mentee-register",
-                    verify_url=request.build_absolute_uri(reverse("verify_register_otp")),
-                    portal_label="MentorConnect Registration",
-                )
-                if sent_now:
-                    messages.success(request, f"OTP sent to {masked_email}. Verify to activate your account.")
-                else:
-                    messages.info(request, f"OTP already sent. Please wait {wait_seconds}s to resend.")
-            except Exception:
-                logger.exception("Failed to send registration OTP for mentee user_id=%s", user.pk)
-                messages.error(request, "Could not send OTP. Please try again.")
-                return redirect("register")
-
-            return redirect('verify_register_otp')
+            messages.success(request, f'Your account has been created! You will now be able to log in')
+            return redirect('login')
     else:
         form1 = MenteeRegisterForm()
 
@@ -329,72 +300,6 @@ def user_login(request):
 def custom_logout(request):
     logout(request)
     return redirect('login')
-
-
-def verify_register_otp(request):
-    otp_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY)
-    if not otp_state:
-        messages.error(request, "Registration OTP session expired. Please register again.")
-        return redirect("register")
-
-    if request.method == "POST":
-        action = request.POST.get("action", "verify")
-        pending_user = User.objects.filter(pk=otp_state.get("user_id")).first()
-
-        if action == "resend":
-            if not pending_user or not pending_user.email:
-                messages.error(request, "Unable to resend OTP. Please register again.")
-                return redirect("register")
-            try:
-                masked_email, sent_now, wait_seconds = create_login_otp_challenge(
-                    request=request,
-                    user=pending_user,
-                    session_key=REG_MENTEE_OTP_SESSION_KEY,
-                    scope="mentee-register",
-                    verify_url=request.build_absolute_uri(reverse("verify_register_otp")),
-                    portal_label="MentorConnect Registration",
-                )
-                if sent_now:
-                    messages.success(request, f"A new OTP has been sent to {masked_email}.")
-                else:
-                    messages.info(request, f"Please wait {wait_seconds}s before resending OTP.")
-            except Exception:
-                logger.exception("Failed to resend OTP email for user_id=%s", otp_state.get("user_id"))
-                messages.error(request, "Could not resend OTP right now. Please try again.")
-            return redirect("verify_register_otp")
-
-        otp_input = request.POST.get("otp", "").strip()
-        is_valid, reason, verified_user = verify_login_otp_code(
-            request=request,
-            user_model=User,
-            session_key=REG_MENTEE_OTP_SESSION_KEY,
-            scope="mentee-register",
-            otp_input=otp_input,
-        )
-
-        if is_valid:
-            verified_user.is_active = True
-            verified_user.save(update_fields=["is_active"])
-            messages.success(request, "Account created successfully. Please log in.")
-            return render(request, "menti/register_success.html", {"login_url": reverse("login"), "is_mentor_view": False})
-
-        if reason == "expired":
-            messages.error(request, "OTP expired. Please register again.")
-            return redirect("register")
-        if reason == "locked":
-            messages.error(request, "Too many wrong OTP attempts. Please register again.")
-            return redirect("register")
-        if reason == "invalid_format":
-            messages.error(request, f"Enter a valid {OTP_DIGITS}-digit OTP.")
-        else:
-            latest_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY) or {}
-            attempts_left = latest_state.get("attempts_left", 0)
-            messages.error(request, f"Invalid OTP. Attempts left: {attempts_left}")
-
-    otp_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY) or {}
-    pending_user = User.objects.filter(pk=otp_state.get("user_id")).only("email").first()
-    email_hint = mask_email(pending_user.email) if pending_user else ""
-    return render(request, "menti/verify_otp.html", {"email_hint": email_hint, "otp_digits": OTP_DIGITS})
 
 
 #-----------------forget password logic starts---------------------
@@ -669,55 +574,6 @@ def internship_pbl_list(request, pk=None):
         "is_mentor_view": False,
     })
 
-
-
-@login_required
-def open_document(request, doc_type, pk):
-    model_map = {
-        "internship": (InternshipPBL, "certificate"),
-        "sports": (SportsCulturalEvent, "certificate"),
-        "other": (OtherEvent, "certificate"),
-        "course": (CertificationCourse, "certificate"),
-        "publication": (PaperPublication, "certificate"),
-        "semester": (SemesterResult, "marksheet"),
-    }
-
-    if doc_type not in model_map:
-        raise Http404("Invalid document type")
-
-    model_cls, field_name = model_map[doc_type]
-    record = get_object_or_404(model_cls, pk=pk)
-
-    owner = getattr(record, "user", None)
-    if owner is None:
-        raise Http404("Document owner not found")
-
-    allowed = False
-    if request.user.is_staff or request.user.is_superuser:
-        allowed = True
-    elif owner == request.user:
-        allowed = True
-    elif getattr(request.user, "is_mentor", False):
-        allowed = MentorMentee.objects.filter(mentor__user=request.user, mentee__user=owner).exists()
-
-    if not allowed:
-        return HttpResponseForbidden("You are not allowed to access this document")
-
-    file_field = getattr(record, field_name, None)
-    if not file_field:
-        raise Http404("File not attached")
-
-    try:
-        file_path = file_field.path
-    except Exception:
-        raise Http404("Could not resolve file path")
-
-    if not file_path or not os.path.exists(file_path):
-        raise Http404("Could not find file on server")
-
-    as_download = request.GET.get("download") == "1"
-    filename = os.path.basename(file_field.name)
-    return FileResponse(open(file_path, "rb"), as_attachment=as_download, filename=filename)
 
 #download internship certificate
 @login_required
@@ -1058,18 +914,9 @@ def certification_list(request, pk=None):
             form = CertificationCourseForm(request.POST, request.FILES)
 
         if form.is_valid():
-            uploaded_new_certificate = bool(request.FILES.get("certificate"))
             new_cert = form.save(commit=False)
             new_cert.user = request.user
             new_cert.save()
-
-            if uploaded_new_certificate or new_cert.verification_status == "pending":
-                apply_course_certificate_verification(new_cert, save=True)
-                if new_cert.verification_status == "verified":
-                    messages.success(request, "Certificate verification completed: Verified")
-                else:
-                    messages.warning(request, "Certificate verification completed: Unverified. Please check QR/data.")
-
             return redirect("certifications")
 
     return render(request, "menti/certifications.html", {
@@ -2476,12 +2323,3 @@ def public_portfolio_view(request, slug):
     }
     return render(request, "menti/student_profile_public.html", context)
 #--------------------Profile Overview logic ends-----------------------
-
-
-
-
-
-
-
-
-

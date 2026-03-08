@@ -28,12 +28,14 @@ class MenteeRegisterForm(UserCreationForm):
            'username': forms.TextInput(attrs={"placeholder": "Enter Moodle ID only"})
        }
 
-    def save(self, commit=True):
+    def save(self):
         user = super().save(commit=False)
         user.is_mentee = True
-        if commit:
-            user.save()
-            Mentee.objects.get_or_create(user=user)
+        user.save()
+        mentee = Mentee.objects.create(user=user)
+        #mentee.interests.add(*self.cleaned_data.get('interests'))
+        #mentee.interests = self.cleaned_data.get('interests')
+
         return user
 
 
@@ -294,12 +296,13 @@ class MentorRegisterForm(UserCreationForm):
         }
 
 
-    def save(self, commit=True):
+    def save(self):
         user = super().save(commit=False)
         user.is_mentor = True
-        if commit:
-            user.save()
-            Mentor.objects.get_or_create(user=user)
+        user.save()
+        mentor = Mentor.objects.create(user=user)
+        #mentor.interests.add(*self.cleaned_data.get('interests'))
+
         return user
 
 

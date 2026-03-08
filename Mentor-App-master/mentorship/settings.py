@@ -23,8 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'px5_!f&ah58u!^)72nl$gkpa157)cml0d87_4gr88xq5bit3xv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Local default is True; set DJANGO_DEBUG=False on servers.
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes", "on")
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -162,7 +161,6 @@ AUTH_USER_MODEL = "mentee.User"
 
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = []
 STATIC_URL = '/static/'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
