@@ -1,4 +1,4 @@
-import ipaddress
+﻿import ipaddress
 import os
 import re
 import socket
@@ -38,6 +38,31 @@ def _token_match_ratio(source_text: str, expected_text: str) -> float:
     source_set = set(_tokens(source_text))
     matched = sum(1 for t in expected if t in source_set)
     return matched / max(len(expected), 1)
+
+
+def _is_certificate_like_page(page_text: str):
+    text = _normalize(page_text)
+    if not text:
+        return False, []
+
+    anchor_terms = ("certificate", "credential", "certification")
+    support_terms = (
+        "verify",
+        "verification",
+        "completed",
+        "completion",
+        "issued",
+        "recipient",
+        "student",
+        "learner",
+        "authentic",
+        "course",
+    )
+    anchors = [term for term in anchor_terms if term in text]
+    supports = [term for term in support_terms if term in text]
+    looks_like = bool(anchors) and len(supports) >= 1
+    markers = anchors + supports
+    return looks_like, markers
 
 
 def _extract_pdf_text(file_path: str) -> str:
@@ -142,39 +167,86 @@ def _validate_qr_payload(payload: str, expected_name: str, expected_title: str, 
     if payload_text.startswith("http://") or payload_text.startswith("https://"):
         safe, reason = _is_safe_public_url(payload)
         if not safe:
-            return False, True, False, reason
+            return False, True, False, reason, {}
 
         try:
             response = requests.get(payload, timeout=8, allow_redirects=True)
         except Exception as exc:
-            return False, True, False, f"QR URL request failed: {exc}"
+            return False, True, False, f"QR URL request failed: {exc}", {}
 
         if response.status_code >= 400:
-            return False, True, False, f"QR URL returned HTTP {response.status_code}"
+            return False, True, False, f"QR URL returned HTTP {response.status_code}", {}
 
         page_text = _normalize(response.text[:300000])
         name_ratio = _token_match_ratio(page_text, expected_name)
         title_ratio = _token_match_ratio(page_text, expected_title)
         authority_ratio = _token_match_ratio(page_text, expected_authority)
 
-        looks_valid = name_ratio >= 0.45 or (title_ratio >= 0.45 and authority_ratio >= 0.45)
-        note = "QR URL reachable"
+        has_name = bool(_tokens(expected_name))
+        has_title = bool(_tokens(expected_title))
+        has_authority = bool(_tokens(expected_authority))
+
+        strict_name_ok = name_ratio >= 0.45 if has_name else False
+        strict_title_ok = title_ratio >= 0.45 if has_title else True
+        strict_authority_ok = authority_ratio >= 0.45 if has_authority else True
+        strict_match = strict_name_ok or (strict_title_ok and strict_authority_ok)
+
+        relaxed_name_ok = name_ratio >= 0.30 if has_name else True
+        relaxed_title_ok = title_ratio >= 0.20 if has_title else True
+        relaxed_authority_ok = authority_ratio >= 0.25 if has_authority else True
+        relaxed_match = (
+            (relaxed_name_ok and (relaxed_title_ok or relaxed_authority_ok))
+            if has_name
+            else (relaxed_title_ok and relaxed_authority_ok)
+        )
+
+        page_valid, markers = _is_certificate_like_page(page_text)
+        final_url = response.url or payload
+        path = (urlparse(final_url).path or "").lower()
+        path_certificate_hint = any(term in path for term in ("certificate", "cert", "credential", "verify"))
+        certificate_page_valid = page_valid or path_certificate_hint
+
+        looks_valid = strict_match or (certificate_page_valid and relaxed_match)
+        note = (
+            f"QR URL reachable; page_valid={certificate_page_valid}; "
+            f"name={name_ratio:.2f}, title={title_ratio:.2f}, authority={authority_ratio:.2f}"
+        )
         if looks_valid:
-            note += "; matched credential metadata"
+            note += "; metadata matched (strict/relaxed)"
         else:
-            note += "; no strong metadata match"
-        return looks_valid, True, True, note
+            note += "; metadata mismatch"
+
+        evidence = {
+            "certificate_page_valid": certificate_page_valid,
+            "strict_match": strict_match,
+            "relaxed_match": relaxed_match,
+            "name_ratio": name_ratio,
+            "title_ratio": title_ratio,
+            "authority_ratio": authority_ratio,
+            "page_markers": markers[:6],
+        }
+        return looks_valid, True, True, note, evidence
 
     name_ratio = _token_match_ratio(payload_text, expected_name)
     title_ratio = _token_match_ratio(payload_text, expected_title)
     authority_ratio = _token_match_ratio(payload_text, expected_authority)
     looks_valid = name_ratio >= 0.6 or (title_ratio >= 0.5 and authority_ratio >= 0.5)
-    return looks_valid, False, False, "QR payload parsed"
-
+    evidence = {
+        "certificate_page_valid": False,
+        "strict_match": looks_valid,
+        "relaxed_match": looks_valid,
+        "name_ratio": name_ratio,
+        "title_ratio": title_ratio,
+        "authority_ratio": authority_ratio,
+        "page_markers": [],
+    }
+    return looks_valid, False, False, "QR payload parsed", evidence
 
 
 def _extract_urls_from_text(text: str):
     return re.findall(r"https?://[^\s)\]>]+", text or "", flags=re.IGNORECASE)
+
+
 def verify_course_certificate(course):
     result = {
         "verification_status": "unverified",
@@ -233,13 +305,15 @@ def verify_course_certificate(course):
 
     notes = []
     qr_valid = False
+    qr_page_valid = False
+    qr_relaxed_match = False
 
     if qr_error:
         notes.append(qr_error)
 
     if qr_payloads:
         for payload in qr_payloads[:3]:
-            is_valid, url_checked, url_accessible, reason = _validate_qr_payload(
+            is_valid, url_checked, url_accessible, reason, evidence = _validate_qr_payload(
                 payload,
                 expected_name,
                 title,
@@ -252,6 +326,11 @@ def verify_course_certificate(course):
             notes.append(reason)
             if is_valid:
                 qr_valid = True
+                qr_page_valid = bool(evidence.get("certificate_page_valid"))
+                qr_relaxed_match = bool(evidence.get("relaxed_match"))
+                page_markers = evidence.get("page_markers", [])
+                if page_markers:
+                    notes.append(f"Page markers: {', '.join(page_markers)}")
                 break
     else:
         notes.append("No QR code detected in first pages of certificate")
@@ -261,9 +340,15 @@ def verify_course_certificate(course):
     title_ok = title_ratio >= 0.45 if title else True
     authority_ok = authority_ratio >= 0.45 if authority else True
 
-    if qr_valid and title_ok and authority_ok and (name_ok or not name_required):
+    strict_doc_match = title_ok and authority_ok and (name_ok or not name_required)
+    qr_page_relaxed_match = qr_valid and result["qr_url_accessible"] and qr_page_valid and qr_relaxed_match
+
+    if qr_valid and (strict_doc_match or qr_page_relaxed_match):
         result["verification_status"] = "verified"
-        notes.append("Certificate verified by QR and content match")
+        if strict_doc_match:
+            notes.append("Certificate verified by QR and content match")
+        else:
+            notes.append("Certificate verified by reachable certificate page and relaxed metadata match")
     else:
         result["verification_status"] = "unverified"
         if name_required and not name_ok:
@@ -274,6 +359,8 @@ def verify_course_certificate(course):
             notes.append("Course title does not strongly match certificate text")
         if not authority_ok:
             notes.append("Certifying authority does not strongly match certificate text")
+        if result["qr_url_accessible"] and not qr_page_valid:
+            notes.append("QR URL reachable but certificate-page signals are weak")
 
     result["verification_notes"] = " | ".join(notes)[:2000]
     return result
@@ -297,6 +384,3 @@ def apply_course_certificate_verification(course, save=True):
             ]
         )
     return data
-
-
-
