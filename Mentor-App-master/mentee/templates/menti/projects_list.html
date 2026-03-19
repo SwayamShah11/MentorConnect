@@ -11,6 +11,11 @@
     <!-- Main Content -->
     <div class="content shifted flex-grow-1 p-4">
         <div class="container">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                {{ form.errors }}
+            </div>
+            {% endif %}
             <div class="d-flex align-items-center mb-3">
                 <h2 class="text-white p-3 bg-black rounded">
                     {% if is_mentor_view == False %}

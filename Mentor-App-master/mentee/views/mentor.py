@@ -1743,6 +1743,27 @@ def mentor_queries(request):
 
 
 @login_required
+def delete_query(request, query_id):
+    query = get_object_or_404(Query, id=query_id)
+
+    # Only mentor assigned can delete
+    if query.mentor.user != request.user:
+        messages.error(request, "Unauthorized action.")
+        return redirect("mentor_queries")
+
+    mentee_user = query.mentee.user
+    query.delete()
+    # 🔔 Notify mentee
+    Notification.objects.create(
+        user=mentee_user,
+        message="Your query has been deleted by your mentor. Please submit a relevant query."
+    )
+    messages.success(request, "Query deleted successfully.")
+
+    return redirect("mentor_queries")
+
+
+@login_required
 def mark_as_done(request, query_id):
     query = get_object_or_404(Query, id=query_id)
     query.status = "resolved"
@@ -1900,9 +1921,9 @@ def sem_to_class(sem: str) -> str:
     if n in (7, 8): return "BE"
     return ""
 
+
 @login_required
 def mentor_mentee_interactions(request):
-
     mentor = get_object_or_404(Mentor, user=request.user)
 
     # ✅ Get mentees under this mentor
@@ -4201,7 +4222,3 @@ def weekly_agenda_page(request):
     }
     return render(request, "mentor/weekly_agenda.html", context)
 #----------------------Agenda page logic ends---------------------
-
-
-
-

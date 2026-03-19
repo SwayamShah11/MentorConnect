@@ -8,9 +8,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 import openpyxl
+from openpyxl import Workbook
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from ..models import Mentor, Mentee, MentorMentee, Profile, ReminderLog, Notification
+from ..models import Mentor, Mentee, MentorMentee, Profile, ReminderLog, Notification, InternshipPBL, CertificationCourse, AY, SEM_CHOICES, YEAR_CHOICES, DIVISION
 from ..utils import get_document_progress
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
@@ -20,6 +21,8 @@ from django.http import HttpResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 from django.core.paginator import Paginator
+from django.db.models import Count, F
+
 
 
 def _build_hod_dashboard_data():
@@ -281,9 +284,380 @@ class HODDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         data = _build_hod_dashboard_data()
         context.update(data)
+
+        request = self.request
+
+        # ---------------- FILTER INPUTS ----------------
+        ay = request.GET.get("ay")
+        branch = request.GET.get("branch")
+        year = request.GET.get("year")
+        div = request.GET.get("div")
+        sem = request.GET.get("semester")
+        domain = request.GET.get("domain")
+        upload_type = request.GET.get("upload_type")  # internship | certification | all
+
+        # ---------------- PROFILE FILTER ----------------
+        profiles = Profile.objects.select_related("user")
+
+        if branch:
+            profiles = profiles.filter(branch=branch)
+
+        if year:
+            profiles = profiles.filter(year=year)
+
+        if div:
+            profiles = profiles.filter(div=div)
+
+        if sem:
+            profiles = profiles.filter(semester=sem)
+
+        # ✅ FORCE evaluation (important)
+        user_ids = list(profiles.values_list("user_id", flat=True))
+
+        # ---------------- INTERNSHIPS ----------------
+        internships = InternshipPBL.objects.filter(user_id__in=user_ids)
+
+        if ay:
+            internships = internships.filter(academic_year=ay)
+
+        if domain:
+            internships = internships.filter(domain__icontains=domain)
+
+        # ---------------- CERTIFICATIONS ----------------
+        certs = CertificationCourse.objects.filter(user_id__in=user_ids)
+
+        if ay:
+            certs = certs.filter(academic_year=ay)
+
+        if domain:
+            certs = certs.filter(domain__icontains=domain)
+
+        # ---------------- TOTAL COUNTS ----------------
+        context["internship_count"] = internships.count()
+        context["certification_count"] = certs.count()
+
+        # ---------------- INTERNSHIP DOMAIN ----------------
+        context["internship_domain_stats"] = list(
+            internships.values("domain")
+            .annotate(total=Count("id"))
+            .order_by("-total")
+        )
+
+        # ---------------- INTERNSHIP TYPE ----------------
+        context["internship_type_stats"] = list(
+            internships.values("type")
+            .annotate(total=Count("id"))
+            .order_by("-total")
+        )
+
+        # ---------------- CERT DOMAIN ----------------
+        context["cert_domain_stats"] = list(
+            certs.values("domain")
+            .annotate(total=Count("id"))
+            .order_by("-total")
+        )
+        # ---------------- APPLY UPLOAD TYPE FILTER ----------------
+
+        if upload_type == "internship":
+            upload_user_ids = list(internships.values_list("user_id", flat=True))
+
+        elif upload_type == "certification":
+            upload_user_ids = list(certs.values_list("user_id", flat=True))
+
+        else:  # all
+            upload_user_ids = (
+                    list(internships.values_list("user_id", flat=True)) +
+                    list(certs.values_list("user_id", flat=True))
+            )
+
+        upload_profiles = Profile.objects.filter(user_id__in=upload_user_ids)
+        context["upload_compare"] = {
+            "internships": internships.count(),
+            "certifications": certs.count(),
+        }
+        # ---------------- UPLOADS BY BRANCH ----------------
+        context["branch_stats"] = list(
+            upload_profiles.values("branch")
+            .annotate(total=Count("user_id"))
+            .order_by("branch")
+        )
+
+        # ---------------- UPLOADS BY SEMESTER ----------------
+        context["semester_stats"] = list(
+            upload_profiles.values("semester")
+            .annotate(total=Count("user_id"))
+            .order_by("semester")
+        )
+
+        # ---------------- UPLOADS BY DIVISION ----------------
+        context["division_stats"] = list(
+            upload_profiles.values("div")
+            .annotate(total=Count("user_id"))
+            .order_by("div")
+        )
+
+        # ---------------- UPLOADS BY CLASS ----------------
+        context["year_stats"] = list(
+            upload_profiles.values("year")
+            .annotate(total=Count("user_id"))
+            .order_by("year")
+        )
+
+        # ---------------- DROPDOWNS ----------------
+        context["AY"] = AY
+        context["SEM_CHOICES"] = SEM_CHOICES
+        context["YEAR_CHOICES"] = YEAR_CHOICES
+        context["DIVISION"] = DIVISION
+
+        internship_branch = internships.values("user__profile__branch").annotate(total=Count("id"))
+        cert_branch = certs.values("user__profile__branch").annotate(total=Count("id"))
+
+        branch_map = {}
+
+        for i in internship_branch:
+            branch_map[i["user__profile__branch"]] = {
+                "internship": i["total"],
+                "certification": 0
+            }
+
+        for c in cert_branch:
+            branch = c["user__profile__branch"]
+            branch_map.setdefault(branch, {"internship": 0, "certification": 0})
+            branch_map[branch]["certification"] = c["total"]
+
+        context["stacked_branch"] = branch_map
+
+        ay_stats = (
+            internships.values("academic_year")
+            .annotate(total=Count("id"))
+            .order_by("academic_year")
+        )
+
+        context["ay_upload_trends"] = list(ay_stats)
+        ay_cert = certs.values("academic_year").annotate(total=Count("id"))
+
+        ay_map = {}
+
+        for a in ay_stats:
+            ay_map[a["academic_year"]] = {"internship": a["total"], "certification": 0}
+
+        for a in ay_cert:
+            ay_map.setdefault(a["academic_year"], {"internship": 0, "certification": 0})
+            ay_map[a["academic_year"]]["certification"] = a["total"]
+
+        # Sort academic years ascending (2023-24 → 2024-25 → 2025-26)
+        sorted_ay_map = dict(
+            sorted(
+                ay_map.items(),
+                key=lambda x: int(x[0].split("-")[0])
+            )
+        )
+
+        context["ay_trends"] = sorted_ay_map
+
+        # =====================================================
+        # BEST DIVISION + TOTAL UPLOADS
+        # =====================================================
+
+        best_div = (
+            upload_profiles.values("div", "branch")
+            .annotate(student_count=Count("user_id", distinct=True))
+            .order_by("-student_count")
+            .first()
+        )
+
+        if best_div:
+            div = best_div["div"]
+            branch = best_div["branch"]
+
+            # count uploads for that division + branch
+            div_users = upload_profiles.filter(div=div, branch=branch).values_list("user_id", flat=True)
+
+            div_internships = internships.filter(user_id__in=div_users).count()
+            div_certs = certs.filter(user_id__in=div_users).count()
+
+            best_div["uploads"] = div_internships + div_certs
+        else:
+            best_div = {"div": "", "branch": "", "student_count": 0, "uploads": 0}
+
+        context["best_division"] = best_div
+
+        # =====================================================
+        # TOP 5 STUDENTS BY UPLOADS (AY aware)
+        # =====================================================
+
+        from collections import defaultdict
+
+        student_map = defaultdict(int)
+
+        # Count internships
+        for row in internships.values("user_id").annotate(c=Count("id")):
+            student_map[row["user_id"]] += row["c"]
+
+        # Count certifications
+        for row in certs.values("user_id").annotate(c=Count("id")):
+            student_map[row["user_id"]] += row["c"]
+
+        # Sort by uploads desc
+        top_user_ids = sorted(student_map, key=lambda k: student_map[k], reverse=True)[:5]
+
+        profiles_top = Profile.objects.filter(user_id__in=top_user_ids)
+
+        top_students = []
+
+        for p in profiles_top:
+            top_students.append({
+                "moodle_id": p.moodle_id,
+                "student_name": p.student_name,
+                "branch": p.branch,
+                "year": p.year,
+                "div": p.div,
+                "total": student_map.get(p.user_id, 0)
+            })
+
+        # sort again after profile join
+        top_students = sorted(top_students, key=lambda x: x["total"], reverse=True)
+
+        context["top_students"] = top_students
+        context["max_uploads"] = top_students[0]["total"] if top_students else 1
+
         return context
+
+
+@login_required
+def hod_export_filtered(request):
+    ay = request.GET.get("ay")
+    branch = request.GET.get("branch")
+    year = request.GET.get("year")
+    div = request.GET.get("div")
+    sem = request.GET.get("semester")
+    domain = request.GET.get("domain")
+    upload_type = request.GET.get("upload_type")
+
+    profiles = Profile.objects.select_related("user")
+
+    if branch:
+        profiles = profiles.filter(branch=branch)
+    if year:
+        profiles = profiles.filter(year=year)
+    if div:
+        profiles = profiles.filter(div=div)
+    if sem:
+        profiles = profiles.filter(semester=sem)
+
+    user_ids = list(profiles.values_list("user_id", flat=True))
+
+    internships = InternshipPBL.objects.filter(user_id__in=user_ids)
+    certs = CertificationCourse.objects.filter(user_id__in=user_ids)
+
+    if ay:
+        internships = internships.filter(academic_year=ay)
+        certs = certs.filter(academic_year=ay)
+
+    if domain:
+        internships = internships.filter(domain__icontains=domain)
+        certs = certs.filter(domain__icontains=domain)
+
+    wb = Workbook()
+
+    # =====================================================
+    # INTERNSHIP SHEET
+    # =====================================================
+    ws1 = wb.active
+    ws1.title = "Internships"
+
+    headers = ["Moodle ID","Student Name","Class","Type of Internship","Branch","Division","Semester","Title of Internship","Internship Domain","Academic Year"]
+    ws1.append(headers)
+
+    for i in internships:
+        p = Profile.objects.filter(user=i.user).first()
+        ws1.append([
+            p.moodle_id if p else "",
+            p.student_name if p else "",
+            p.year if p else "",
+            i.type,
+            p.branch if p else "",
+            p.div if p else "",
+            p.semester if p else "",
+            i.title,
+            i.domain,
+            i.academic_year
+        ])
+
+    # =====================================================
+    # CERTIFICATION SHEET
+    # =====================================================
+    ws2 = wb.create_sheet("Certifications")
+
+    headers2 = ["Moodle ID","Student Name","Class","Branch","Division","Semester","Title of Certification","Domain","Academic Year"]
+    ws2.append(headers2)
+
+    for c in certs:
+        p = Profile.objects.filter(user=c.user).first()
+        ws2.append([
+            p.moodle_id if p else "",
+            p.student_name if p else "",
+            p.year if p else "",
+            p.branch if p else "",
+            p.div if p else "",
+            p.semester if p else "",
+            c.title,
+            c.domain,
+            c.academic_year
+        ])
+
+    # =====================================================
+    # SUMMARY SHEET
+    # =====================================================
+    ws3 = wb.create_sheet("Summary")
+
+    upload_profiles = Profile.objects.filter(user_id__in=
+        list(internships.values_list("user_id", flat=True)) +
+        list(certs.values_list("user_id", flat=True))
+    )
+
+    ws3.append(["Branch","Division","Class","Total Students"])
+
+    summary = upload_profiles.values("branch","div","year").annotate(total=Count("user_id"))
+
+    for s in summary:
+        ws3.append([s["branch"], s["div"], s["year"], s["total"]])
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    # ---------------- DYNAMIC FILENAME ----------------
+    parts = ["analytics"]
+
+    if upload_type:
+        parts.append(upload_type.capitalize())
+
+    if branch:
+        parts.append(branch)
+
+    if year:
+        parts.append(year)
+
+    if div:
+        parts.append(f"Div-{div}")
+
+    if sem:
+        parts.append(f"Sem-{sem}")
+
+    if ay:
+        parts.append(ay)
+
+    if domain:
+        parts.append(domain.replace(" ", "_"))
+
+    # Join with underscore
+    filename = "_".join(parts) + ".xlsx"
+    response["Content-Disposition"] = f"attachment; filename={filename}"
+    wb.save(response)
+    return response
 
 
 @login_required

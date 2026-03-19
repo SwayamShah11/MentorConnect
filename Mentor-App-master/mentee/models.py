@@ -36,18 +36,18 @@ DEPARTMENT_CHOICES = [
 ]
 
 WEEK_CHOICES = [
-        ('Week-1', 'Week-1'),
-        ('Week-2', 'Week-2'),
-        ('Week-3', 'Week-3'),
-        ('Week-4', 'Week-4'),
-        ('Week-5', 'Week-5'),
-        ('Week-6', 'Week-6'),
-        ('Week-7', 'Week-7'),
-        ('Week-8', 'Week-8'),
-        ('Week-9', 'Week-9'),
-        ('Week-10', 'Week-10'),
-        ('Week-11', 'Week-11'),
-        ('Week-12', 'Week-12'),
+        ('Interaction-1', 'Interaction-1'),
+        ('Interaction-2', 'Interaction-2'),
+        ('Interaction-3', 'Interaction-3'),
+        ('Interaction-4', 'Interaction-4'),
+        ('Interaction-5', 'Interaction-5'),
+        ('Interaction-6', 'Interaction-6'),
+        ('Interaction-7', 'Interaction-7'),
+        ('Interaction-8', 'Interaction-8'),
+        ('Interaction-9', 'Interaction-9'),
+        ('Interaction-10', 'Interaction-10'),
+        ('Interaction-11', 'Interaction-11'),
+        ('Interaction-12', 'Interaction-12'),
     ]
 
 AY = [
@@ -73,6 +73,18 @@ YEAR_CHOICES = [
         ('SE', 'SE'),  # Second Year
         ('TE', 'TE'),  # Third Year
         ('BE', 'BE'),  # Final Year
+    ]
+
+DIVISION = [
+    ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E'), ('F', 'F'),
+    ('G', 'G'), ('H', 'H'), ('I', 'I'), ('J', 'J'), ('K', 'K'), ('L', 'L'),
+]
+
+VERIFICATION_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("verified", "Verified"),
+        ("unverified", "Unverified"),
+        ("verify your document manually", "verify your document manually"),
     ]
 
 class Mentor(models.Model):
@@ -104,6 +116,7 @@ class Profile(models.Model):
     student_name = models.CharField(max_length=200, blank=True, null=True)
     semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, blank=True, null=True)
+    div = models.CharField(max_length=5, choices=DIVISION, blank=True, null=True)
     branch = models.CharField(max_length=100, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     career_domain = models.CharField(max_length=200, blank=True)
 
@@ -197,6 +210,7 @@ class InternshipPBL(models.Model):
     semester = models.CharField(max_length=10, choices=SEM_CHOICES, blank=True, null=True)
     year = models.CharField(max_length=10, choices=YEAR_CHOICES, null=True, blank=True)
     type = models.CharField(max_length=200, choices=TYPE_CHOICES, blank=True, null=True)
+    domain = models.CharField(max_length=150, blank=True, null=True)
     company_name = models.CharField(max_length=100, blank=True, null=True)
     details = models.TextField(max_length=500, blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
@@ -321,13 +335,6 @@ class OtherEvent(models.Model):
 
 
 class CertificationCourse(models.Model):
-    VERIFICATION_STATUS_CHOICES = [
-        ("pending", "Pending"),
-        ("verified", "Verified"),
-        ("unverified", "Unverified"),
-        ("manual_verified", "Manual Verified"),
-    ]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     title = models.CharField(max_length=255, blank=True, null=True)
     certifying_authority = models.CharField(max_length=100, blank=True, null=True)
@@ -342,14 +349,13 @@ class CertificationCourse(models.Model):
     level = models.CharField(max_length=20, blank=True, null=True)
     amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/courses/", blank=True, null=True)
-    verification_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="pending")
+    verification_status = models.CharField(max_length=50, choices=VERIFICATION_STATUS_CHOICES, default="pending")
     verification_notes = models.TextField(blank=True, null=True)
     verification_checked_at = models.DateTimeField(blank=True, null=True)
     qr_detected = models.BooleanField(default=False)
     qr_payload = models.TextField(blank=True, null=True)
     qr_url_checked = models.BooleanField(default=False)
     qr_url_accessible = models.BooleanField(default=False)
-
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -791,6 +797,7 @@ class Query(models.Model):
 class MentorMenteeInteraction(models.Model):
     mentor = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(null=True, blank=True)
+    week = models.CharField(max_length=20, choices=WEEK_CHOICES, null=True, blank=True)
     semester = models.CharField(max_length=10, choices=SEM_CHOICES, null=True, blank=True)
     class_year = models.CharField(max_length=10, blank=True, null=True)
     agenda = models.TextField(null=True, blank=True)

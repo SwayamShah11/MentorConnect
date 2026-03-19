@@ -75,7 +75,7 @@ class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = [
-            'moodle_id', 'image', 'student_name', 'semester', 'year', 'branch', 'address', 'contact_number', 'dob',
+            'moodle_id', 'image', 'student_name', 'semester', 'year', 'div', 'branch', 'address', 'contact_number', 'dob',
             'hobby', 'about_me', 'mother_name', 'mother_occupation', 'mother_contact', 'father_name', 'father_occupation',
             'father_contact', 'sibling1_name', 'sibling2_name', 'career_domain'
         ]
@@ -112,13 +112,14 @@ class InternshipPBLForm(PDFValidationMixin, forms.ModelForm):
         model = InternshipPBL
         fields = ["title", "academic_year", "semester", "year", "type",
                   "company_name", "details", "start_date", "end_date",
-                  "no_of_days", "certificate"]
+                  "domain", "no_of_days", "certificate"]
         widgets = {
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "details (max 500 words)"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
             "certificate": forms.FileInput(attrs={"required": "required"}),
+            "domain": forms.TextInput(attrs={"placeholder": "Domain eg. Cybersecurity, AIML, etc."}),
         }
 
 
@@ -179,7 +180,7 @@ class CertificationCourseForm(PDFValidationMixin, forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "no_of_days": forms.NumberInput(attrs={"readonly": "readonly"}),
-            "domain": forms.TextInput(attrs={"placeholder": "Domain"}),
+            "domain": forms.TextInput(attrs={"placeholder": "Domain eg. Cybersecurity, AIML, etc."}),
             "level": forms.TextInput(attrs={"placeholder": "eg. global, entry, foundation, expert, etc."}),
             "amount_reimbursed": forms.TextInput(attrs={"placeholder": "eg. Rs. 5000"}),
             "certificate": forms.FileInput(attrs={"required": "required"})
@@ -306,24 +307,18 @@ class MentorRegisterForm(UserCreationForm):
 class ReplyForm(forms.Form):
 
     is_approved = forms.BooleanField(
-
         label='Approve?',
         help_text='Are you satisfied with the request?',
         required=True,
-
     )
 
     comment = forms.CharField(
-
         widget=forms.Textarea,
         min_length=4,
         error_messages={
-
             'required': 'Please enter your reply or comments',
             'min_length': 'Please write at least 5 characters (you have written %(show_value)s)'
-
         }
-
     )
 
 
@@ -390,11 +385,14 @@ class QueryForm(forms.ModelForm):
 
 
 COMMON_AGENDAS = [
-    ("academic", "Academic Performance"),
-    ("75% Attendance compulsory", "75% Attendance compulsory"),
-    ("career", "Career Guidance"),
-    ("placement", "Placement Preparation"),
-    ("personal", "Personal Issues"),
+    ("Academic performance review.", "Academic performance review."),
+    ("75% Attendance compulsory.", "75% Attendance compulsory."),
+    ("Virtual Internship progress.", "Virtual Internship progress."),
+    ("What is the project progress and update the Project space portal.", "What is the project progress and update the Project space portal."),
+    ("Update Student's diary by uploading all completed courses and certifications.", "Update Student's diary by uploading all completed courses and certifications."),
+    ("Career guidance & higher studies.", "Career guidance & higher studies."),
+    ("Personal or behavioural concerns.", "Personal or behavioural concerns."),
+    ("If any missed practicals, then inform the concerned faculty and complete those practicals before next session or else you won't be allowed for next lab session.", "If any missed practicals, then inform the concerned faculty and complete those practicals before next session or else you won't be allowed for next lab session."),
 ]
 
 class MentorInteractionForm(forms.ModelForm):

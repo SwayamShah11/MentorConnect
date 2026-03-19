@@ -670,7 +670,6 @@ def internship_pbl_list(request, pk=None):
     })
 
 
-
 @login_required
 def open_document(request, doc_type, pk):
     model_map = {
@@ -1068,7 +1067,7 @@ def certification_list(request, pk=None):
                 if new_cert.verification_status == "verified":
                     messages.success(request, "Certificate verification completed: Verified")
                 else:
-                    messages.warning(request, "Certificate verification completed: Unverified. Please check QR/data.")
+                    messages.error(request, "Certificate verification completed: Unverified. Please check QR/data.")
 
             return redirect("certifications")
 
@@ -2476,12 +2475,3 @@ def public_portfolio_view(request, slug):
     }
     return render(request, "menti/student_profile_public.html", context)
 #--------------------Profile Overview logic ends-----------------------
-
-
-
-
-
-
-
-
-

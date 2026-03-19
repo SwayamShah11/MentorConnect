@@ -5,29 +5,328 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-  <!-- Header + Export -->
+  <!-- Header -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
       <h2 class="mb-1 text-light">HOD Dashboard</h2>
       <p class="text-muted mb-0" style="color: #fff !important;">Completion readiness overview of all mentees.</p>
     </div>
-      <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-warning"
-              onclick="return confirm('Send reminders to all mentees with pending documents?');">
-        <i class="bi bi-bell"></i> Remind All (Pending)
-      </button>
-    </form>
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel"></i> Export Excel
-      </a>
-      <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
-        <i class="bi bi-file-earmark-pdf"></i> Export PDF
-      </a>
-    </div>
   </div>
+  <form method="get" class="row g-2 mb-4">
 
+      <div class="col-md-2">
+        <label class="text-light fw-semibold">Type</label>
+        <select name="upload_type" class="form-select">
+        <option value="">All Uploads</option>
+
+        <option value="internship"
+         {% if request.GET.upload_type == "internship" %}selected{% endif %}>
+         Internships
+        </option>
+
+        <option value="certification"
+         {% if request.GET.upload_type == "certification" %}selected{% endif %}>
+         Certifications
+        </option>
+        </select>
+      </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Academic Year</label>
+        <select name="ay" class="form-select">
+        <option value="">Academic Year</option>
+        {% for a in AY %}
+        <option value="{{ a.0 }}" {% if request.GET.ay == a.0 %}selected{% endif %}>
+        {{ a.1 }}
+        </option>
+        {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Semester</label>
+        <select name="semester" class="form-select">
+        <option value="">Semester</option>
+        {% for s in SEM_CHOICES %}
+        <option value="{{ s.0 }}" {% if request.GET.semester == s.0 %}selected{% endif %}>{{ s.1 }}</option>
+        {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Year (Class)</label>
+        <select name="year" class="form-select">
+        <option value="">Class</option>
+        {% for y in YEAR_CHOICES %}
+        <option value="{{ y.0 }}" {% if request.GET.year == y.0 %}selected{% endif %}>{{ y.1 }}</option>
+        {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Division</label>
+        <select name="div" class="form-select">
+        <option value="">Division</option>
+        {% for d in DIVISION %}
+        <option value="{{ d.0 }}" {% if request.GET.div == d.0 %}selected{% endif %}>{{ d.1 }}</option>
+        {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Department (Branch)</label>
+        <select name="branch" class="form-select">
+            <option value="">Branch</option>
+            {% for b in branch_stats %}
+            <option value="{{ b.branch }}"
+             {% if request.GET.branch == b.branch %}selected{% endif %}>
+             {{ b.branch }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="text-light fw-semibold">Domain</label>
+        <input name="domain" class="form-control" value="{{ request.GET.domain }}" placeholder="Domain">
+    </div>
+    <div class="col-md-10">
+        <label class="text-light fw-semibold">Actions</label>
+        <div class="d-flex">
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filter</button>
+            </div>
+            <div class="col-md-3">
+              <a href="{% url 'hod_dashboard' %}" class="btn btn-outline-light w-100"><i class="bi bi-x-circle"></i> Reset</a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'hod_export_filtered' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success w-100">
+                    <i class="bi bi-filetype-xlsx"></i> Export Excel
+                </a>
+            </div>
+        </div>
+    </div>
+  </form>
+
+    <div class="card p-3 mt-3">
+        <div class="row">
+            <div class="col-md-4">
+                <canvas id="uploadPie"></canvas>
+            </div>
+            <div class="col-md-8">
+                <canvas id="stackedBranch"></canvas>
+            </div>
+        </div><br>
+        <div class="col-md-8">
+            <canvas id="ayTrend"></canvas>
+        </div>
+    </div>
+    <div class="card p-3 mt-3">
+        <h5 class="text-dark">Best Division</h5>
+        <h3 class="text-black">
+        {{ best_division.branch }} — Div {{ best_division.div }}
+        </h3>
+
+        <p class="mb-0">
+        <b>{{ best_division.student_count }}</b> Students |
+        <b>{{ best_division.uploads }}</b> Uploads
+        </p>
+    </div>
+    <div class="card shadow-sm border-0 mb-4 p-0">
+        <div class="card-header bg-dark text-white justify-content-between align-items-center">
+            <h4 class="text-light">Top Performing Students</h4>
+        </div>
+
+        <table class="table table-bordered">
+        <tr class="table-dark text-center"><th>#</th><th>Moodle ID</th><th>Name</th><th>Branch</th><th>Class</th><th>Div</th><th>Uploads</th><th style="width:180px;">Performance</th></tr>
+
+        {% for s in top_students %}
+        <tr class="text-center">
+            <td>
+              {% if forloop.counter == 1 %}
+                🥇
+              {% elif forloop.counter == 2 %}
+                🥈
+              {% elif forloop.counter == 3 %}
+                🥉
+              {% else %}
+                {{ forloop.counter }}
+              {% endif %}
+            </td>
+            <td>{{ s.moodle_id }}</td>
+            <td>{{ s.student_name }}</td>
+            <td>{{ s.branch }}</td>
+            <td>{{ s.year }}</td>
+            <td>{{ s.div }}</td>
+            <td><span class="badge bg-primary">{{ s.total }}</span></td>
+            <td>
+              <div class="mini-bar tooltip-wrap">
+
+                <div
+                  class="mini-bar-fill
+                  {% if forloop.counter == 1 %} bar-gold
+                  {% elif forloop.counter == 2 %} bar-silver
+                  {% elif forloop.counter == 3 %} bar-bronze
+                  {% endif %}"
+                  style="width: {% widthratio s.total max_uploads 100 %}%">
+                </div>
+
+                <!-- Tooltip -->
+                <span class="tooltip-text">
+                  {{ s.total }} uploads<br>
+                  {% widthratio s.total max_uploads 100 %}%
+                </span>
+
+              </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </table>
+    </div>
+
+    <div class="row mb-3">
+
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h6>Internships Uploaded</h6>
+            <h2>{{ internship_count }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h6>Certifications Uploaded</h6>
+            <h2>{{ certification_count }}</h2>
+        </div>
+    </div>
+    </div>
+    <hr class="text-light">
+    <div class="d-flex gap-2">
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Internship Domain Analytics</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                        <tr>
+                            <th>Domain</th><th>Total Documents</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for d in internship_domain_stats %}
+                        <tr><td>{{ d.domain }}</td><td>{{ d.total }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Internship Type Analytics</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>Type</th><th>Total Documents</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for t in internship_type_stats %}
+                    <tr><td>{{ t.type }}</td><td>{{ t.total }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+              </div>
+            </div>
+        </div>
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Certification Domains</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr><th>Domains</th><th>Total Document</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for d in cert_domain_stats %}
+                    <tr><td>{{ d.domain }}</td><td>{{ d.total }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-4">
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Students by Department (Branch)</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                {% for b in branch_stats %}
+                <tr><td>{{ b.branch }}</td><td>{{ b.total }}</td></tr>
+                {% endfor %}
+                </table>
+              </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Students by Semester</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                {% for s in semester_stats %}
+                <tr><td>{{ s.semester }}</td><td>{{ s.total }}</td></tr>
+                {% endfor %}
+                </table>
+              </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Students by Division</span>
+            </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+            {% for d in division_stats %}
+            <tr><td>{{ d.div }}</td><td>{{ d.total }}</td></tr>
+            {% endfor %}
+            </table>
+          </div>
+        </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 p-0">
+            <div class="card-header bg-dark text-white justify-content-between align-items-center">
+                <span class="text-light">Students by Year (Class)</span>
+            </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+            {% for y in year_stats %}
+            <tr><td>{{ y.year }}</td><td>{{ y.total }}</td></tr>
+            {% endfor %}
+            </table>
+          </div>
+        </div>
+        </div>
+    </div>
+    <hr class="text-light">
   <!-- Summary cards -->
   <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-lg-3">
@@ -65,6 +364,21 @@
           </div>
         </div>
       </div>
+    </div>
+      <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Readiness Report
+      </a>
+      <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
+        <i class="bi bi-file-earmark-pdf"></i> Export Readiness Report
+      </a>
+      <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning"
+              onclick="return confirm('Send reminders to all mentees with pending documents?');">
+        <i class="bi bi-bell"></i> Remind All (Pending)
+      </button>
+    </form>
     </div>
   </div>
 
@@ -192,8 +506,15 @@
 
   <!-- Per-mentee list -->
   <div class="card shadow-sm border-0 mb-4 p-0">
-    <div class="card-header bg-dark text-white">
-      Mentees & their Progress
+    <div class="card-header d-flex flex-wrap justify-content-between bg-dark text-white">
+        <h6 class="mt-2">Mentees & their Progress</h6>
+        <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-warning"
+                  onclick="return confirm('Send reminders to all mentees with pending documents?');">
+            <i class="bi bi-bell"></i> Remind All (Pending)
+          </button>
+        </form>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -279,6 +600,60 @@
   @media (max-width: 576px) {
     h2 { font-size: 1.4rem; }
   }
+
+.mini-bar {
+  position: relative;
+  height: 10px;
+  width: 100%;
+  background: #e9ecef;
+  border-radius: 6px;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #0d6efd, #6610f2); /* default */
+}
+
+/* 🥇 GOLD */
+.bar-gold {
+  background: linear-gradient(90deg, #FFD700, #FFA500);
+}
+
+/* 🥈 SILVER */
+.bar-silver {
+  background: linear-gradient(90deg, #d9d9d9, #9e9e9e);
+}
+
+/* 🥉 BRONZE */
+.bar-bronze {
+  background: linear-gradient(90deg, #cd7f32, #8b4513);
+}
+
+/* ---------- TOOLTIP ---------- */
+
+.tooltip-wrap:hover .tooltip-text {
+  opacity: 1;
+  transform: translateY(-6px);
+}
+
+.tooltip-text {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s ease;
+  z-index: 10;
+}
 </style>
 
 <script>
@@ -466,5 +841,54 @@ document.addEventListener("DOMContentLoaded", function () {
   mentorSearch.addEventListener("input", applyMentorFilter);
 
 });
+
+
+// Charts
+new Chart(document.getElementById("uploadPie"), {
+ type:"pie",
+ data:{
+  labels:["Internships","Certifications"],
+  datasets:[{
+   data:[
+    {{ upload_compare.internships }},
+    {{ upload_compare.certifications }}
+   ]
+  }]
+ }
+});
+
+// Stacked bar
+const branchLabels = [{% for k,v in stacked_branch.items %}"{{ k }}",{% endfor %}];
+const internVals = [{% for k,v in stacked_branch.items %}{{ v.internship }},{% endfor %}];
+const certVals = [{% for k,v in stacked_branch.items %}{{ v.certification }},{% endfor %}];
+
+new Chart(document.getElementById("stackedBranch"),{
+ type:"bar",
+ data:{
+  labels:branchLabels,
+  datasets:[
+   {label:"Internships",data:internVals,stack:"a"},
+   {label:"Certifications",data:certVals,stack:"a"}
+  ]
+ },
+ options:{scales:{x:{stacked:true},y:{stacked:true}}}
+});
+
+// AY trend
+const ayLabels=[{% for k,v in ay_trends.items %}"{{ k }}",{% endfor %}];
+const ayIntern=[{% for k,v in ay_trends.items %}{{ v.internship }},{% endfor %}];
+const ayCert=[{% for k,v in ay_trends.items %}{{ v.certification }},{% endfor %}];
+
+new Chart(document.getElementById("ayTrend"),{
+ type:"line",
+ data:{
+  labels:ayLabels,
+  datasets:[
+   {label:"Internships",data:ayIntern},
+   {label:"Certifications",data:ayCert}
+  ]
+ }
+});
+
 </script>
 {% endblock %}

@@ -16,9 +16,9 @@
   <!-- Filters -->
   <form method="get" class="row g-2 mb-3">
       <div class="col-md-3 mb-3">
-        <label class="fw-bold text-light">Week</label>
+        <label class="fw-bold text-light">Interaction</label>
         <select name="week" class="form-select">
-          <option value="">All Weeks</option>
+          <option value="">All Interactions</option>
           {% for val, label in WEEK_CHOICES %}
             <option value="{{ val }}" {% if filters.week == val %}selected{% endif %}>
               {{ label }}
@@ -53,8 +53,8 @@
 
       <div class="col-md-3 gap-2">
         <label class="fw-bold text-light">Filter</label><br>
-        <button class="btn btn-primary" type="submit">Search</button>
-        <a class="btn btn-dark" href="{% url 'weekly-agenda' %}">Reset</a>
+        <button class="btn btn-outline-info" type="submit">Search</button>
+        <a class="btn btn-outline-light" href="{% url 'weekly-agenda' %}">Reset</a>
       </div>
   </form>
 
@@ -131,7 +131,7 @@
           <tr>
             <th class="text-center">Date</th>
             <th class="text-center">Academic Year</th>
-            <th class="text-center">Week</th>
+            <th class="text-center">Interaction</th>
             <th class="text-center">Class</th>
             <th class="text-center">Sem</th>
             <th class="text-center">Agenda</th>
