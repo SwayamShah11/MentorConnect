@@ -25,8 +25,8 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
-                      MentorMenteeInteraction, Notification, ReminderLog, WeeklyAgenda)
-from ..utils import get_document_progress, mentor_required, mentor_or_staff_required
+                      MentorMenteeInteraction, Notification, ReminderLog, WeeklyAgenda, SWOTAnalysis)
+from ..utils import get_document_progress, mentor_required, mentor_or_staff_required, calculate_swot_analytics, get_student_risk
 from django.views.decorators.csrf import csrf_exempt
 from mentee.ai_utils import generate_ai_summary
 from datetime import datetime, timedelta
@@ -54,7 +54,6 @@ import zipfile
 from io import BytesIO
 from datetime import datetime
 from collections import Counter, defaultdict
-
 from django.http import HttpResponse, FileResponse
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -71,7 +70,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 # ReportLab libs
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import (SimpleDocTemplate, Table as RLTable, TableStyle as RLTableStyle, Paragraph, Spacer, Image as RLImage, PageBreak)
+from reportlab.platypus import SimpleDocTemplate, Table as RLTable, TableStyle as RLTableStyle, Paragraph, Spacer, Image as RLImage, PageBreak
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from itertools import chain
@@ -151,7 +150,7 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             mentees.append(mentee_data)
 
-            if completed_count < 7:
+            if completed_count < 4:
                 no_document_mentees.append(mentee_data)
         pending_reminder_count = len(no_document_mentees)
         return render(request, "mentor/account1.html", {
@@ -506,6 +505,7 @@ def view_mentee(request, mentee_id):
     subjects = SubjectOfInterest.objects.filter(user=mentee)
     certifications = CertificationCourse.objects.filter(user=mentee)
     assessment = SelfAssessment.objects.filter(user=mentee)
+    existing_swot = SWOTAnalysis.objects.filter(user=mentee)
 
     context = {
         "mentee": mentee,
@@ -523,6 +523,7 @@ def view_mentee(request, mentee_id):
         "subjects": subjects,
         "certifications": certifications,
         "assessment": assessment,
+        "existing_swot": existing_swot,
         "is_mentor_view": True,   # 👈 flag to hide edit buttons
     }
     return render(request, "mentor/view_mentee_dashboard.html", context)
@@ -834,12 +835,12 @@ CATEGORY_MODELS = {
 @login_required
 def download_student_data(request):
     """
-    Mentor-only view to download mentees' data.
-    POST params:
-      - category (all|internship|projects|sports|other|courses|publications)
-      - year (e.g. 2023-24 or ALL)
-      - branch (ALL or branch code)
-      - export (excel|pdf|zip)
+        Mentor-only view to download mentees' data.
+        POST params:
+          - category (all|internship|projects|sports|other|courses|publications)
+          - year (e.g. 2023-24 or ALL)
+          - branch (ALL or branch code)
+          - export (excel|pdf|zip)
     """
     # --- basic context & permission check ---
     mentor = get_object_or_404(Mentor, user=request.user)
@@ -848,8 +849,168 @@ def download_student_data(request):
 
     profiles_qs = Profile.objects.filter(user__in=user_list)
 
+    mentee_users = MentorMentee.objects.filter(mentor=mentor) \
+        .values_list("mentee__user", flat=True)
+
+    swot_queryset = SWOTAnalysis.objects.filter(user__in=mentee_users).select_related("user")
+    year = request.POST.get("year")
+    branch = request.POST.get("branch")
+
+    analytics = calculate_swot_analytics(swot_queryset)
+    # -------- Confidence Distribution --------
+    confidence_counts = {
+        "Low": 0,
+        "Moderate": 0,
+        "High": 0
+    }
+
+    score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+    for swot in swot_queryset:
+
+        scores = [
+            score_map.get(swot.ppt_confidence, 0),
+            score_map.get(swot.core_subjects_confidence, 0),
+            score_map.get(swot.communication_confidence, 0),
+            score_map.get(swot.softskills_confidence, 0),
+            score_map.get(swot.resume_building_confidence, 0),
+            score_map.get(swot.project_explanation_confidence, 0),
+            score_map.get(swot.tech_platform_confidence, 0),
+        ]
+
+        if not any(scores):
+            continue
+
+        avg_score = sum(scores) / len(scores)
+
+        # classify student (IMPORTANT)
+        if avg_score <= 1.5:
+            confidence_counts["Low"] += 1
+        elif avg_score <= 2.2:
+            confidence_counts["Moderate"] += 1
+        else:
+            confidence_counts["High"] += 1
+
+    confidence_students = {
+        "Low": [],
+        "Moderate": [],
+        "High": []
+    }
+
+    score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+    for swot in swot_queryset:
+
+        scores = [
+            score_map.get(swot.ppt_confidence, 0),
+            score_map.get(swot.core_subjects_confidence, 0),
+            score_map.get(swot.communication_confidence, 0),
+            score_map.get(swot.softskills_confidence, 0),
+            score_map.get(swot.resume_building_confidence, 0),
+            score_map.get(swot.project_explanation_confidence, 0),
+            score_map.get(swot.tech_platform_confidence, 0),
+        ]
+
+        if not any(scores):
+            continue
+
+        avg_score = sum(scores) / len(scores)
+
+        name = swot.name or swot.user.username
+
+        if avg_score <= 1.5:
+            confidence_students["Low"].append(name)
+        elif avg_score <= 2.2:
+            confidence_students["Moderate"].append(name)
+        else:
+            confidence_students["High"].append(name)
+
+    # -------- Career Distribution --------
+    career_data = {}
+
+    for swot in swot_queryset:
+        career = swot.career_option or "Unknown"
+
+        if career not in career_data:
+            career_data[career] = {
+                "count": 0,
+                "students": []
+            }
+
+        career_data[career]["count"] += 1
+
+        # get student name
+        name = swot.name or swot.user.username
+        career_data[career]["students"].append(name)
+    skill_fields = {
+        "ppt_confidence": "Pre-Placement Training (PPT) - [Aptitude,Technical,Soft Skills]",
+        "core_subjects_confidence": "Core Subjects - [DSA, DBMS, SQL, Programming, Networking, OS, Cybersecurity, Cloud Computing, etc.]",
+        "communication_confidence": "Communication - [English Speaking , Group Discussions, etc.]",
+        "softskills_confidence": "Soft Skills - [required for facing online/Offline Technical Interviews]",
+        "resume_building_confidence": "Resume Building - [Internships, Courses, Industrial training experience, etc.]",
+        "project_explanation_confidence": "Project Explanation - [Ability to explain objectives, individual contribution, technologies used, and outcomes achieved]",
+        "tech_platform_confidence": "Technical Platforms - [Git/GitHub for version control, LinkedIn for professional networking and profile building, HackerRank, LeetCode, etc.]",
+    }
+
+    weak_counter = Counter()
+
+    for swot in swot_queryset:
+        for field, label in skill_fields.items():
+            val = getattr(swot, field)
+            if val and val.lower() == "low":
+                weak_counter[label] += 1
+
+    top_weak_skill = None
+    top_weak_count = 0
+
+    if weak_counter:
+        top_weak_skill, top_weak_count = weak_counter.most_common(1)[0]
+
+    # ---------------- ADVANCED SWOT ANALYTICS ----------------
+
+    # Skill Distribution
+    skill_distribution = {}
+    for field, label in skill_fields.items():
+        skill_distribution[label] = {"Low": 0, "Moderate": 0, "High": 0}
+
+    for swot in swot_queryset:
+        for field, label in skill_fields.items():
+            val = getattr(swot, field)
+            if val:
+                val = val.lower()
+                if val == "low":
+                    skill_distribution[label]["Low"] += 1
+                elif val == "moderate":
+                    skill_distribution[label]["Moderate"] += 1
+                elif val == "high":
+                    skill_distribution[label]["High"] += 1
+
+    # Risk vs Career Mapping
+    risk_vs_career = {}
+
+    for swot in swot_queryset:
+        career = swot.career_option or "Unknown"
+        risk = get_student_risk(swot)
+
+        if career not in risk_vs_career:
+            risk_vs_career[career] = {"High": 0, "Moderate": 0, "Low": 0}
+
+        if risk in risk_vs_career[career]:
+            risk_vs_career[career][risk] += 1
+
     context = {
         "mentees": profiles_qs,
+        "analytics": analytics,
+        "top_weak_skill": top_weak_skill,
+        "top_weak_count": top_weak_count,
+        "skill_distribution": skill_distribution,
+        "risk_vs_career": risk_vs_career,
+        "confidence_labels": list(confidence_counts.keys()),
+        "confidence_values": list(confidence_counts.values()),
+        "confidence_students": confidence_students,
+        "career_data": career_data,
+        "career_labels": list(career_data.keys()),
+        "career_values": [v["count"] for v in career_data.values()],
         "categories": [
             ("all", "ALL Categories (Combined)"),
             ("internship", "Internship / PBL"),
@@ -1227,6 +1388,149 @@ def download_student_data(request):
             files[f"{key}.json"] = json.dumps(rows, default=str, indent=2).encode("utf-8")
 
         return files
+
+    # ---------------- SWOT EXCEL EXPORT ----------------
+    if request.POST.get("export_swot") == "excel":
+
+        wb = openpyxl.Workbook()
+
+        # ---------------- SHEET 1: RAW DATA ----------------
+        ws = wb.active
+        ws.title = "Raw SWOT Data"
+
+        headers = [
+            "Student Name", "Email", "Branch",
+            "PPT", "Core Subjects", "Communication", "Soft Skills",
+            "Resume", "Project", "Tech Platform",
+            "Strengths", "Weaknesses", "Opportunities", "Threats",
+            "Career", "Risk Level"
+        ]
+        ws.append(headers)
+
+        score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+        skill_fields = [
+            "ppt_confidence",
+            "core_subjects_confidence",
+            "communication_confidence",
+            "softskills_confidence",
+            "resume_building_confidence",
+            "project_explanation_confidence",
+            "tech_platform_confidence",
+        ]
+
+        skill_labels = [
+            "PPT", "Core Subjects", "Communication", "Soft Skills",
+            "Resume", "Project", "Tech Platform"
+        ]
+
+        # store for analytics
+        skill_counter = {label: {"Low": 0, "Moderate": 0, "High": 0} for label in skill_labels}
+        risk_counter = {"High": 0, "Moderate": 0, "Low": 0}
+
+        for swot in swot_queryset:
+            prof = profile_for_user(swot.user)
+
+            scores = [score_map.get(getattr(swot, f), 0) for f in skill_fields]
+
+            # risk
+            risk = get_student_risk(swot)
+            if risk in risk_counter:
+                risk_counter[risk] += 1
+
+            # skill counters
+            for i, field in enumerate(skill_fields):
+                val = getattr(swot, field)
+                if val:
+                    val = val.capitalize()
+                    if val in skill_counter[skill_labels[i]]:
+                        skill_counter[skill_labels[i]][val] += 1
+
+            ws.append([
+                prof.student_name if prof else "",
+                swot.user.email,
+                prof.branch if prof else "",
+                swot.ppt_confidence,
+                swot.core_subjects_confidence,
+                swot.communication_confidence,
+                swot.softskills_confidence,
+                swot.resume_building_confidence,
+                swot.project_explanation_confidence,
+                swot.tech_platform_confidence,
+                swot.strengths,
+                swot.weaknesses,
+                swot.opportunities,
+                swot.threats,
+                swot.career_option,
+                risk
+            ])
+
+        # ---------------- SHEET 2: SUMMARY ----------------
+        ws2 = wb.create_sheet("Summary")
+
+        ws2.append(["Metric", "Value"])
+        ws2.append(["Total Students", swot_queryset.count()])
+        ws2.append(["High Risk", risk_counter["High"]])
+        ws2.append(["Moderate Risk", risk_counter["Moderate"]])
+        ws2.append(["Low Risk", risk_counter["Low"]])
+
+        # ---------------- SHEET 3: SKILL ANALYSIS ----------------
+        ws3 = wb.create_sheet("Skill Analysis")
+
+        ws3.append(["Skill", "Low", "Moderate", "High"])
+
+        for skill, data in skill_counter.items():
+            ws3.append([skill, data["Low"], data["Moderate"], data["High"]])
+
+        # ---------------- SHEET 4: STUDENT RISK ----------------
+        ws4 = wb.create_sheet("Student Risk")
+
+        ws4.append(["Student Name", "Email", "Risk Level"])
+
+        for swot in swot_queryset:
+            prof = profile_for_user(swot.user)
+            ws4.append([
+                prof.student_name if prof else "",
+                swot.user.email,
+                get_student_risk(swot)
+            ])
+
+        # ---------------- SHEET 5: WEAK AREAS ----------------
+        ws5 = wb.create_sheet("Weak Areas")
+
+        weak_counter = Counter()
+
+        for swot in swot_queryset:
+            for field, label in zip(skill_fields, skill_labels):
+                val = getattr(swot, field)
+                if val and val.lower() == "low":
+                    weak_counter[label] += 1
+
+        ws5.append(["Skill", "Students with LOW confidence"])
+
+        for skill, count in weak_counter.items():
+            ws5.append([skill, count])
+
+        # ---------------- AUTO WIDTH ----------------
+        for sheet in wb.worksheets:
+            for col in sheet.columns:
+                max_length = 0
+                for cell in col:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                sheet.column_dimensions[col[0].column_letter].width = max_length + 2
+
+        # ---------------- RETURN FILE ----------------
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return FileResponse(
+            output,
+            as_attachment=True,
+            filename="Advanced_SWOT_Analysis.xlsx",
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # -------------------------
     # Deliver based on export_type
@@ -4222,3 +4526,9 @@ def weekly_agenda_page(request):
     }
     return render(request, "mentor/weekly_agenda.html", context)
 #----------------------Agenda page logic ends---------------------
+
+
+@login_required
+@mentor_required
+def credits_view(request):
+    return render(request, 'mentor/credits1.html')

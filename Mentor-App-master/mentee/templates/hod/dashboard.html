@@ -246,7 +246,7 @@
         </div>
         <div class="card shadow-sm border-0 mb-4 p-0">
             <div class="card-header bg-dark text-white justify-content-between align-items-center">
-                <span class="text-light">Certification Domains</span>
+                <span class="text-light">Certification Domains Analytics</span>
             </div>
             <div class="card-body p-0">
               <div class="table-responsive">
@@ -348,7 +348,7 @@
     <div class="col-12 col-sm-6 col-lg-3">
       <div class="card shadow-sm border-0 stat-card">
         <div class="card-body p-0">
-          <div class="small text-muted">Completion Ready (7/7)</div>
+          <div class="small text-muted">Completion Ready (4/4)</div>
           <div class="fs-3 fw-semibold text-success">{{ ready_count }}</div>
         </div>
       </div>
@@ -366,19 +366,23 @@
       </div>
     </div>
       <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel"></i> Export Readiness Report
-      </a>
-      <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
-        <i class="bi bi-file-earmark-pdf"></i> Export Readiness Report
-      </a>
-      <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-warning"
-              onclick="return confirm('Send reminders to all mentees with pending documents?');">
-        <i class="bi bi-bell"></i> Remind All (Pending)
-      </button>
-    </form>
+          <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Export Readiness Report
+          </a>
+          <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export Readiness Report
+          </a>
+          <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-warning"
+                      onclick="return confirm('Send reminders to all mentees with pending documents?');">
+                <i class="bi bi-bell"></i> Remind All (Pending)
+              </button>
+          </form>
+          <!-- SWOT Export -->
+          <a href="{% url 'hod_export_swot_excel' %}" class="btn btn-info">
+            <i class="bi bi-file-earmark-excel"></i> Export SWOT Excel
+          </a>
     </div>
   </div>
 
@@ -405,10 +409,10 @@
               </span>
             </div>
           </div><br>
-            <ul><li>Ready = 7/7 </li> <li>Partial = between 1 and 6</li> <li>Not started = 0/7</li></ul><hr>
+            <ul><li>Ready = 4/4 </li> <li>Partial = between 1 and 4</li> <li>Not started = 0/4</li></ul><hr>
             <p class="text-muted mt-3 mb-0 small">
-                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 7
-                (Internships, Sports/Cultural, Projects, Other Achievements, Certifications, Paper Publications, Semester Results)
+                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 4
+                (Internships, Projects, Certifications, Semester Results)
             </p>
         </div>
       </div>

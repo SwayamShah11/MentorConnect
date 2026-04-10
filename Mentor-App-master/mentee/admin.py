@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
-                     OtherEvent, CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, SemesterResult,
-                     MentorMenteeInteraction, ActivityLog, WeeklyAgenda)
+                     OtherEvent, CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, SelfAssessment,
+                     StudentInterest, SemesterResult, MentorMenteeInteraction, ActivityLog, WeeklyAgenda, SWOTAnalysis)
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -9,6 +9,20 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .certificate_verification import apply_course_certificate_verification
+from django.db import connection
+
+# Generic reusable admin action
+def reset_sequence_for_model(model):
+    table_name = model._meta.db_table
+    with connection.cursor() as cursor:
+        cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}'")
+
+# Shared admin action
+def delete_all_and_reset_id(modeladmin, request, queryset):
+    model = modeladmin.model
+    model.objects.all().delete()
+    reset_sequence_for_model(model)
+    modeladmin.message_user(request, f"All {model.__name__} entries deleted and ID reset to 1.")
 
 
 @admin.register(InternshipPBL)
@@ -16,8 +30,8 @@ class InternshipPBLAdmin(admin.ModelAdmin):
     list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days", "uploaded_at")
     search_fields = ("title", "company_name", "user__username")  # 🔍 search filter
     list_filter = ("user", "academic_year", "semester", "type")  # ✅ dropdown filters
-    ordering = ("-start_date",)  # ⬅️ latest internships first
     readonly_fields = ("no_of_days",)  # prevent editing
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(Project)
@@ -26,6 +40,7 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ("title", "guide_name", "user__username", "project_type")
     list_filter = ("user", "academic_year", "semester", "project_type")
     ordering = ("-uploaded_at",)
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(SportsCulturalEvent)
@@ -34,6 +49,7 @@ class SportsCulturalEventAdmin(admin.ModelAdmin):
     search_fields = ("name_of_event", "venue", "user__username")
     list_filter = ("user", "academic_year", "semester", "type", "level", "prize_won")
     ordering = ("-uploaded_at",)
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(OtherEvent)
@@ -42,6 +58,7 @@ class OtherEventAdmin(admin.ModelAdmin):
     search_fields = ("name_of_event", "details", "user__username")
     list_filter = ("user", "academic_year", "semester", "level", "prize_won")
     ordering = ("-uploaded_at",)
+    actions = [delete_all_and_reset_id]
 
 
 
@@ -55,7 +72,7 @@ class CertificationCourseAdmin(admin.ModelAdmin):
     list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
     readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
     ordering = ("-uploaded_at",)
-    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification")
+    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", delete_all_and_reset_id)
 
     @admin.action(description="Mark selected as manually verified")
     def mark_verified(self, request, queryset):
@@ -78,16 +95,19 @@ class CertificationCourseAdmin(admin.ModelAdmin):
 @admin.register(LongTermGoal)
 class LongTermGoalAdmin(admin.ModelAdmin):
     list_display = ("user", "plan", "reason", "created_at")
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(EducationalDetail)
 class EducationalDetailAdmin(admin.ModelAdmin):
     list_display = ("user", "examination", "percentage", "university_board", "year_of_passing")
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(StudentInterest)
 class StudentInterestAdmin(admin.ModelAdmin):
     list_display = ("student", "get_interests", "created_at")
+    actions = [delete_all_and_reset_id]
 
     def get_interests(self, obj):
         return ", ".join(obj.interests)
@@ -97,6 +117,7 @@ class StudentInterestAdmin(admin.ModelAdmin):
 @admin.register(SemesterResult)
 class SemesterResultAdmin(admin.ModelAdmin):
     list_display = ("user", "academic_year", "semester", "pointer", "no_of_kt", "created_at")
+    actions = [delete_all_and_reset_id]
 
 
 class ConversationAdmin(admin.ModelAdmin):
@@ -104,6 +125,7 @@ class ConversationAdmin(admin.ModelAdmin):
     list_display = ("sender", "receipient", "sent_at", "conversation", "reply", "replied_at",)
     list_display_links = ("conversation",)
     list_per_page = 10
+    actions = [delete_all_and_reset_id]
 
 
 class MsgAdmin(admin.ModelAdmin):
@@ -113,6 +135,7 @@ class MsgAdmin(admin.ModelAdmin):
     list_editable = ("is_approved",)
     list_display_links = ("msg_content",)
     list_per_page = 10
+    actions = [delete_all_and_reset_id]
 
 
 class MentorAdmin(admin.ModelAdmin):
@@ -141,6 +164,7 @@ admin.site.register(Msg, MsgAdmin)
 
 admin.site.register(Conversation)
 
+
 User = get_user_model()
 class CustomUserCreationForm(UserCreationForm):
 
@@ -157,7 +181,6 @@ admin.site.register(User, CustomUserAdmin)
 admin.site.unregister(Group)
 
 
-#zaruuu
 from .models import MentorAdmin
 @admin.register(MentorAdmin)
 class MentoAdmin(admin.ModelAdmin):
@@ -187,7 +210,7 @@ class MeetingAdmin(admin.ModelAdmin):
     ]
 
     list_filter = ['appointment_date', 'status', 'mentor__user__username', 'mentee__user__username']
-
+    actions = [delete_all_and_reset_id]
     ordering = ['-appointment_date', '-time_slot']
 
     def mentor_name(self, obj):
@@ -219,6 +242,7 @@ class MentorMenteeInteractionAdmin(admin.ModelAdmin):
         'mentees__first_name',
         'mentees__last_name',
     ]
+    actions = [delete_all_and_reset_id]
 
     # Optional: make admin faster by prefetching M2M
     def get_queryset(self, request):
@@ -231,6 +255,7 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ("user", "action", "module", "timestamp", "ip_address")
     list_filter = ("action", "module", "timestamp")
     search_fields = ("user__username", "action", "details")
+    actions = [delete_all_and_reset_id]
 
 
 @admin.register(WeeklyAgenda)
@@ -238,6 +263,16 @@ class WeeklyAgendaAdmin(admin.ModelAdmin):
     list_display = ('id', 'date', 'academic_year', 'week', 'year', 'sem', 'created_by', 'created_at', 'updated_at')
     list_filter = ('academic_year', 'week', 'year', 'sem', 'created_by')
     search_fields = ('academic_year', 'week', 'year', 'sem')
+    actions = [delete_all_and_reset_id]
 
 
+@admin.register(SWOTAnalysis)
+class SWOTAnalysisAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')
+    actions = [delete_all_and_reset_id]
 
+
+@admin.register(SelfAssessment)
+class SelfAssessmentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'year', 'goals', 'reason', 'created_at')
+    actions = [delete_all_and_reset_id]

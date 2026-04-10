@@ -137,7 +137,7 @@
                                       action="{% if editing %}{% url 'edit_certification' edit_id %}{% else %}{% url 'certifications' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                    <small class="text-muted" style="color:#ff0000 !important;">
+                                    <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
                                         Note: '*' asterisk denotes that the fields are required.</small>
                                         <div class="col-md-6">
                                             <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
@@ -190,7 +190,7 @@
                                         </div>
 
                                         <div class="col-md-3">
-                                            <label class="form-label">Level <span style="color:#ff0000 !important;">*</span></label>
+                                            <label class="form-label">Level</label>
                                             {{ form.level|add_class:"form-control" }}
                                         </div>
 
@@ -333,4 +333,3 @@ a[aria-expanded="true"] .toggle-icon {
     }
 </style>
 {% endblock %}
-

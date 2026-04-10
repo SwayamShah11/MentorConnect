@@ -119,7 +119,7 @@
                                       action="{% if editing %}{% url 'edit_sports_cultural' edit_id %}{% else %}{% url 'sports-and-cultural' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                    <small class="text-muted" style="color:#ff0000 !important;">
+                                    <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
                                         Note: '*' asterisk denotes that the fields are required.</small>
                                         <div class="col-md-6">
                                             <label class="form-label">Name of Event <span style="color:#ff0000 !important;">*</span></label>

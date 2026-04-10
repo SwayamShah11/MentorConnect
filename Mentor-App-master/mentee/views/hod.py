@@ -11,8 +11,9 @@ import openpyxl
 from openpyxl import Workbook
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from ..models import Mentor, Mentee, MentorMentee, Profile, ReminderLog, Notification, InternshipPBL, CertificationCourse, AY, SEM_CHOICES, YEAR_CHOICES, DIVISION
-from ..utils import get_document_progress
+from ..models import (Mentor, Mentee, MentorMentee, Profile, ReminderLog, Notification, InternshipPBL,
+                      CertificationCourse, AY, SEM_CHOICES, YEAR_CHOICES, DIVISION, SWOTAnalysis)
+from ..utils import get_document_progress, get_student_risk
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -22,7 +23,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from django.core.paginator import Paginator
 from django.db.models import Count, F
-
+from collections import Counter
+from io import BytesIO
+from django.http import FileResponse
 
 
 def _build_hod_dashboard_data():
@@ -886,3 +889,154 @@ def hod_export_pdf(request):
     response = HttpResponse(buffer, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
     return response
+
+
+@login_required
+def hod_export_swot_excel(request):
+
+    # 🔥 Fetch ALL SWOT data (no mentor restriction)
+    swot_queryset = SWOTAnalysis.objects.select_related("user")
+    # 🔥 Build mentor lookup map (user_id → mentor name)
+    mentor_map = {}
+
+    mappings = MentorMentee.objects.select_related("mentor", "mentee__user")
+
+    for m in mappings:
+        mentor_map[m.mentee.user_id] = m.mentor.name
+
+    wb = openpyxl.Workbook()
+
+    # ---------------- SHEET 1: RAW DATA ----------------
+    ws = wb.active
+    ws.title = "Raw SWOT Data"
+
+    headers = [
+        "Mentor Name", "Student Name", "Email", "Branch",
+        "Pre-Placement Training (PPT)", "Core Subjects", "Communication", "Soft Skills",
+        "Resume", "Project", "Tech Platform",
+        "Strengths", "Weaknesses", "Opportunities", "Threats",
+        "Career", "Risk Level"
+    ]
+    ws.append(headers)
+
+    score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+    skill_fields = [
+        "ppt_confidence",
+        "core_subjects_confidence",
+        "communication_confidence",
+        "softskills_confidence",
+        "resume_building_confidence",
+        "project_explanation_confidence",
+        "tech_platform_confidence",
+    ]
+
+    skill_labels = [
+        "Pre-Placement Training (PPT)", "Core Subjects", "Communication", "Soft Skills",
+        "Resume", "Project", "Tech Platform"
+    ]
+
+    skill_counter = {label: {"Low": 0, "Moderate": 0, "High": 0} for label in skill_labels}
+    risk_counter = {"High": 0, "Moderate": 0, "Low": 0}
+    mentor_counter = Counter()
+
+    for swot in swot_queryset:
+        prof = Profile.objects.filter(user=swot.user).first()
+
+        # Mentor name (IMPORTANT)
+        mentor_name = mentor_map.get(swot.user.id, "Unknown")
+
+        risk = get_student_risk(swot)
+
+        if risk in risk_counter:
+            risk_counter[risk] += 1
+
+        mentor_counter[mentor_name] += 1
+
+        # skill counters
+        for i, field in enumerate(skill_fields):
+            val = getattr(swot, field)
+            if val:
+                val = val.capitalize()
+                if val in skill_counter[skill_labels[i]]:
+                    skill_counter[skill_labels[i]][val] += 1
+
+        ws.append([
+            mentor_name,
+            prof.student_name if prof else "",
+            swot.user.email,
+            prof.branch if prof else "",
+            swot.ppt_confidence,
+            swot.core_subjects_confidence,
+            swot.communication_confidence,
+            swot.softskills_confidence,
+            swot.resume_building_confidence,
+            swot.project_explanation_confidence,
+            swot.tech_platform_confidence,
+            swot.strengths,
+            swot.weaknesses,
+            swot.opportunities,
+            swot.threats,
+            swot.career_option,
+            risk
+        ])
+
+    # ---------------- SHEET 2: SUMMARY ----------------
+    ws2 = wb.create_sheet("Summary")
+
+    ws2.append(["Metric", "Value"])
+    ws2.append(["Total Students", swot_queryset.count()])
+    ws2.append(["High Risk", risk_counter["High"]])
+    ws2.append(["Moderate Risk", risk_counter["Moderate"]])
+    ws2.append(["Low Risk", risk_counter["Low"]])
+
+    # ---------------- SHEET 3: SKILL ANALYSIS ----------------
+    ws3 = wb.create_sheet("Skill Analysis")
+    ws3.append(["Skill", "Low", "Moderate", "High"])
+
+    for skill, data in skill_counter.items():
+        ws3.append([skill, data["Low"], data["Moderate"], data["High"]])
+
+    # ---------------- SHEET 4: MENTOR LOAD ----------------
+    ws4 = wb.create_sheet("Mentor Summary")
+    ws4.append(["Mentor", "Number of Students"])
+
+    for mentor, count in mentor_counter.items():
+        ws4.append([mentor, count])
+
+    # ---------------- SHEET 5: WEAK AREAS ----------------
+    ws5 = wb.create_sheet("Weak Areas")
+
+    weak_counter = Counter()
+
+    for swot in swot_queryset:
+        for field, label in zip(skill_fields, skill_labels):
+            val = getattr(swot, field)
+            if val and val.lower() == "low":
+                weak_counter[label] += 1
+
+    ws5.append(["Skill", "Students with LOW confidence"])
+
+    for skill, count in weak_counter.items():
+        ws5.append([skill, count])
+
+    # ---------------- AUTO WIDTH ----------------
+    for sheet in wb.worksheets:
+        for col in sheet.columns:
+            max_length = 0
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            sheet.column_dimensions[col[0].column_letter].width = max_length + 2
+
+    # ---------------- RETURN FILE ----------------
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return FileResponse(
+        output,
+        as_attachment=True,
+        filename="HOD_SWOT_Analysis.xlsx",
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )

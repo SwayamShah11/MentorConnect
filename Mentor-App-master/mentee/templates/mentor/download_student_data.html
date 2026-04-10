@@ -55,7 +55,180 @@
         </div>
     </form>
 </div>
+<hr style="border:none; border: 1px dashed #fff; opacity:1;" class="mt-2">
+<div class="d-flex justify-content-between">
+    <h4 class="text-light">SWOT Data Analysis <br> <span class="text-muted" style="color: #fff !important; font-size:15px;">Get insights into your mentees' SWOT data here.</span></h4>
 
+    <form method="POST" class="text-center mt-3">
+        {% csrf_token %}
+        <button type="submit" name="export_swot" value="excel" class="btn btn-success">
+            <i class="bi bi-filetype-xlsx"></i> Download SWOT Excel
+        </button>
+    </form>
+</div>
+<!-- SWOT Data Analytics -->
+{% if analytics %}
+<div class="card mt-4 shadow p-0">
+    <div class="card-header bg-dark text-white">
+        SWOT Data Analytics
+    </div>
+
+    <div class="card-body">
+
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h5>Total Students</h5>
+                <h3>{{ analytics.total_students }}</h3>
+            </div>
+
+            <div class="col-md-4">
+                <h5>Avg Readiness Score</h5>
+                <h3>{{ analytics.avg_score }}%</h3>
+            </div>
+
+            <div class="col-md-4">
+                <h5>Risk Overview</h5>
+                <p class="text-danger">High: {{ analytics.risk_counts.High }}</p>
+                <p class="text-warning">Moderate: {{ analytics.risk_counts.Moderate }}</p>
+                <p class="text-success">Low: {{ analytics.risk_counts.Low }}</p>
+            </div>
+        </div>
+
+        <hr>
+
+        <h5>Career Preferences</h5><br>
+        <div class="d-flex justify-content-between">
+            {% for career, data in career_data.items %}
+            <div>
+                <details>
+                    <summary><b>{{ career|title }} ({{ data.count }})</b></summary>
+                    <ul>
+                        {% for s in data.students %}
+                            <li>{{ s }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </div>
+            {% endfor %}
+        <!-- Pie Chart -->
+            <div class="col-md-4">
+                <div class="card shadow p-0">
+<!--                    <div class="card-header bg-success text-white">-->
+<!--                        Career Preferences-->
+<!--                    </div>-->
+                    <div class="card-body">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+
+        <h5>Skill-wise Confidence Breakdown</h5>
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Skill</th>
+                    <th>Low</th>
+                    <th>Moderate</th>
+                    <th>High</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for skill, data in skill_distribution.items %}
+                <tr>
+                    <td>{{ skill }}</td>
+                    <td class="text-danger">{{ data.Low }}</td>
+                    <td class="text-warning">{{ data.Moderate }}</td>
+                    <td class="text-success">{{ data.High }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="mt-4">Risk vs Career Mapping</h5>
+        <table class="table table-striped text-center">
+            <thead>
+                <tr>
+                    <th>Career</th>
+                    <th>High</th>
+                    <th>Moderate</th>
+                    <th>Low</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for career, risks in risk_vs_career.items %}
+                <tr>
+                    <td>{{ career }}</td>
+                    <td class="text-danger">{{ risks.High }}</td>
+                    <td class="text-warning">{{ risks.Moderate }}</td>
+                    <td class="text-success">{{ risks.Low }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+<!--        <h5 class="mt-4">Average Skill Scores</h5>-->
+<!--        <ul>-->
+<!--            {% for skill, avg in skill_avg.items %}-->
+<!--                <li>{{ skill }} : {{ avg }} / 3</li>-->
+<!--            {% endfor %}-->
+<!--        </ul>-->
+
+    </div>
+</div>
+<div class="d-flex">
+    <div class="col-md-6">
+        {% if top_weak_skill %}
+        <div class="card mt-4 shadow border-danger p-0">
+            <div class="card-header bg-danger text-white">
+                ⚠️ Top Weak Skill Across Mentees
+            </div>
+            <div class="card-body text-center">
+                <h4>{{ top_weak_skill }}</h4>
+                <p>{{ top_weak_count }} students reported LOW confidence</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <!-- Bar Chart -->
+    <div class="col-md-6">
+        <div class="card shadow p-0">
+            <div class="card-header bg-primary text-white">
+                Confidence Distribution
+            </div>
+            <div class="card-body">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="studentModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="modalTitle">Students</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="studentList"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+<!-- ✅ MOVE JSON HERE -->
+{{ confidence_labels|json_script:"conf-labels" }}
+{{ confidence_values|json_script:"conf-values" }}
+{{ confidence_students|json_script:"conf-students" }}
+{{ career_labels|json_script:"career-labels" }}
+{{ career_values|json_script:"career-values" }}
+{% else %}
+<div class="alert alert-warning mt-4">
+    No SWOT data available for your mentees.
+</div>
+{% endif %}
+<br>
 {% if request.session.export_done %}
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div class="toast align-items-center text-bg-success border-0 show">
@@ -68,12 +241,97 @@
         </div>
     </div>
 </div>
-
+{% endif %}
 <script>
     // Remove the flag so toast shows only once
     fetch("{% url 'clear_export_flag' %}");
+
+// SWOT Charts
+    window.onload = function () {
+
+    const confLabelsEl = document.getElementById("conf-labels");
+    const confValuesEl = document.getElementById("conf-values");
+
+    const careerLabelsEl = document.getElementById("career-labels");
+    const careerValuesEl = document.getElementById("career-values");
+
+    if (!confLabelsEl || !confValuesEl) {
+        console.error("JSON data not found in DOM");
+        return;
+    }
+
+    const confidenceLabels = JSON.parse(confLabelsEl.textContent);
+    const confidenceValues = JSON.parse(confValuesEl.textContent);
+
+    const careerLabels = JSON.parse(careerLabelsEl.textContent);
+    const careerValues = JSON.parse(careerValuesEl.textContent);
+
+    console.log("CONF:", confidenceLabels, confidenceValues);
+    console.log("CAREER:", careerLabels, careerValues);
+
+    // BAR CHART
+    const confStudents = JSON.parse(document.getElementById("conf-students").textContent);
+
+    const barChart = new Chart(document.getElementById("barChart"), {
+        type: "bar",
+        data: {
+            labels: confidenceLabels,
+            datasets: [{
+                label: "Number of Students",
+                data: confidenceValues,
+                backgroundColor: ["#ff4d4d", "#ffcc00", "#33cc33"]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: "Number of Students" }
+                },
+                x: {
+                    title: { display: true, text: "Confidence Level" }
+                }
+            },
+            onClick: function(evt, elements) {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const level = confidenceLabels[index];
+
+                    const students = confStudents[level] || [];
+
+                    document.getElementById("modalTitle").innerText = level + " Confidence Students";
+
+                    const list = document.getElementById("studentList");
+                    list.innerHTML = "";
+
+                    students.forEach(s => {
+                        const li = document.createElement("li");
+                        li.innerText = s;
+                        list.appendChild(li);
+                    });
+
+                    new bootstrap.Modal(document.getElementById("studentModal")).show();
+                }
+            }
+        }
+    });
+
+    // PIE CHART
+    new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+            labels: careerLabels,
+            datasets: [{
+                data: careerValues,
+                backgroundColor: ["#007bff", "#28a745", "#ffc107", "#6f42c1"]
+            }]
+        }
+    });
+};
 </script>
-{% endif %}
 <style>
     form select {
         height: 48px;
@@ -81,5 +339,8 @@
     button {
         font-size: 1.1rem;
     }
+    canvas {
+    height: 300px !important;
+}
 </style>
 {% endblock %}

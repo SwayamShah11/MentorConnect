@@ -101,7 +101,7 @@
                                       action="{% if goal_edit_id %}{% url 'edit_goal' goal_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                        <small class="text-muted" style="color:#ff0000 !important;">
+                                        <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
                                             Note: '*' asterisk denotes that the fields are required.
                                         </small>
                                         <div class="col-12">

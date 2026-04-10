@@ -57,6 +57,7 @@
                             <th class="text-center">Class</th>
                             <th class="text-center">Semester</th>
                             <th class="text-center">Type</th>
+                            <th class="text-center">Domain</th>
                             <th class="text-center">Company</th>
                             <th class="text-center">Details</th>
                             <th class="text-center">Start Date</th>
@@ -74,6 +75,7 @@
                                 <td class="text-center">{{ item.year }}</td>
                                 <td class="text-center">{{ item.semester }}</td>
                                 <td class="text-center">{{ item.type }}</td>
+                                <td class="text-center">{{ item.domain }}</td>
                                 <td class="text-center">{{ item.company_name }}</td>
                                 <td class="text-center">{{ item.details }}</td>
                                 <td class="text-center">{{ item.start_date }}</td>
@@ -125,7 +127,7 @@
                                       action="{% if editing %}{% url 'edit_internship' edit_id %}{% else %}{% url 'internship-pbl-list' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                    <small class="text-muted" style="color:#ff0000 !important;">
+                                    <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
                                         Note: '*' asterisk denotes that the fields are required.</small>
                                         <div class="col-12">
                                             <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
@@ -155,6 +157,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label">Company Name <span style="color:#ff0000 !important;">*</span></label>
                                             {{ form.company_name|add_class:"form-control" }}
+                                            <label class="form-label my-2">Domain <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.domain|add_class:"form-control" }}
                                         </div>
 
                                         <div class="col-md-6">

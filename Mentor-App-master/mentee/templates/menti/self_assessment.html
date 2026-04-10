@@ -92,7 +92,7 @@
                                       action="{% if editing %}{% url 'edit_assessment' edit_id %}{% else %}{% url 'self_assessment' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                        <small class="text-muted" style="color:#ff0000 !important;">
+                                        <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
                                             Note: '*' asterisk denotes that the fields are required.
                                         </small>
 
@@ -141,7 +141,315 @@
                 </div>
             </div>
             <!-- Prev / Next Buttons -->
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 gap-3">
+                <a href="{% url 'publications' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle"></i> Prev
+                </a>
+                <a href="{% url 'long_term_goals' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+            </div>
+            {% endif %}
+            {% if is_mentor_view == False %}
+            <hr style="border:none; border: 1px dashed #fff; opacity:1;" class="mt-5">
+            {% if placement_score %}
+            <div class="card shadow-lg mt-4 border-primary p-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Placement Readiness Indicator</h5>
+                </div>
+
+                <div class="card-body text-center">
+
+                    <!-- SCORE -->
+                    <h2 class="fw-bold">{{ placement_score }}%</h2>
+
+                    <!-- PROGRESS BAR -->
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar
+                            {% if placement_score < 40 %}bg-danger
+                            {% elif placement_score < 70 %}bg-warning
+                            {% else %}bg-success
+                            {% endif %}"
+                            role="progressbar"
+                            style="width: {{ placement_score }}%;">
+                        </div>
+                    </div>
+
+                    <!-- RISK BADGE -->
+                    <h5>
+                        Risk Level:
+                        <span class="badge
+                            {% if risk_level == 'High Risk' %}bg-danger
+                            {% elif risk_level == 'Moderate Risk' %}bg-warning text-dark
+                            {% else %}bg-success
+                            {% endif %}">
+                            {{ risk_level }}
+                        </span>
+                    </h5>
+
+                </div>
+            </div>
+
+            {% endif %}
+            {% if placement_score %}
+            <div class="alert
+                {% if placement_score < 40 %}alert-danger
+                {% elif placement_score < 70 %}alert-warning
+                {% else %}alert-success
+                {% endif %} mt-3">
+
+                {% if placement_score < 40 %}
+                    ⚠️ You are at high risk. Immediate focus needed on core subjects, projects, and communication.
+                {% elif placement_score < 70 %}
+                    ⚠️ You are moderately prepared. Improve consistency and practical exposure.
+                {% else %}
+                    ✅ You are placement ready. Keep refining and applying.
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if existing_swot %}
+            <div class="card shadow-lg mt-4 border-success p-0">
+                <div class="card-header bg-success text-white d-flex justify-content-between">
+                    <h5 class="mb-0">Your SWOT Summary</h5>
+                    <span class="badge bg-light text-dark">
+                        Last Updated: {{ existing_swot.created_at|date:"d M Y, H:i" }}
+                    </span>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- BASIC INFO -->
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Name:</strong> {{ existing_swot.name }}</div>
+                        <div class="col-md-4"><strong>Moodle ID:</strong> {{ existing_swot.moodle_id }}</div>
+                        <div class="col-md-4"><strong>Mentor:</strong> {{ existing_swot.mentor_name }}</div>
+                    </div>
+
+                    <hr>
+
+                    <!-- SWOT GRID -->
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-success">Strengths</h6>
+                                <p>{{ existing_swot.strengths|truncatewords:15 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-danger">Weaknesses</h6>
+                                <p>{{ existing_swot.weaknesses|truncatewords:15 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-primary">Opportunities</h6>
+                                <p>{{ existing_swot.opportunities|truncatewords:15 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-warning">Threats</h6>
+                                <p>{{ existing_swot.threats|truncatewords:15 }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- QUICK RATINGS -->
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <strong>Pre-Placement Training (PPT)</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.ppt_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Core Subjects</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.core_subjects_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Communication</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.communication_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Projects</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.project_explanation_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <strong>Soft Skills</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.softskills_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <strong>Resume Building</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.resume_building_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <strong>Use of Tech Platform</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.tech_platform_confidence|title }}</span>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <strong>Clear Gate/GRE</strong><br>
+                            <span class="badge bg-info">{{ existing_swot.higher_studies_confidence|title }}</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
+            <div class="alert alert-dark mt-3">
+                You can update your SWOT anytime below.
+            </div>
+            <div class="card shadow-lg mt-4 p-0">
+                <div class="card-header bg-dark text-white">
+                    <h4>SWOT ANALYSIS FOR SKILL ENHANCEMENT</h4>
+                </div>
+
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <p class="fw-semibold" style="color:#ff0000 !important;">Note: '*' asterisk denotes the field is required.</p>
+                        <!-- BASIC INFO -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Name</label>
+                                {{ swot_form.name|add_class:"form-control"|attr:"readonly:readonly" }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Moodle ID</label>
+                                {{ swot_form.moodle_id|add_class:"form-control"|attr:"readonly:readonly" }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Year</label>
+                                {{ swot_form.year|add_class:"form-control"|attr:"readonly:readonly" }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Division</label>
+                                {{ swot_form.division|add_class:"form-control"|attr:"readonly:readonly" }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Batch</label>
+                                {{ swot_form.batch|add_class:"form-select" }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mentor Name</label>
+                                {{ swot_form.mentor_name|add_class:"form-control"|attr:"readonly:readonly" }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- CAREER -->
+                        <h5 class="fw-bold">Career Option<span style="color:#ff0000 !important;" class="mt-4">*</span></h5>
+                        {{ swot_form.career_option }}
+
+                        <div id="otherCareerField" style="display:none;">
+                            {{ swot_form.other_career|add_class:"form-control" }}
+                        </div>
+
+                        <hr>
+
+                        <!-- SWOT -->
+                        <h5>SWOT</h5>
+                        <label class="fw-semibold mt-2">Your Strengths</label>
+                        {{ swot_form.strengths|add_class:"form-control" }}
+                        <label class="fw-semibold mt-2">Your Weakness</label>
+                        {{ swot_form.weaknesses|add_class:"form-control" }}
+                        <label class="fw-semibold mt-2">Your Opportunities</label>
+                        {{ swot_form.opportunities|add_class:"form-control" }}
+                        <label class="fw-semibold mt-2">Your Threats</label>
+                        {{ swot_form.threats|add_class:"form-control" }}
+
+                        <hr>
+
+                        <!-- A -->
+                        <h5 class="fw-bold">Self-Assessment (Tick and provide brief justification whenever required):</h5>
+                        <h6 class="mt-4">A. Rate your Confidence level gained through Preplacement Trainings conducted
+                            from perspective of Placement Screening rounds( Aptitude, Technical, Soft Skills)<span style="color:#ff0000 !important;" class="mt-4">*</span></h6>
+                        {{ swot_form.ppt_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.ppt_remark|add_class:"form-control" }}
+
+                        <!-- B -->
+                        <h6 class="mt-4">B. Rate your confidence in your understanding of the following core subjects
+                            (as covered through Curriculum and Preplacement Training)<span style="color:#ff0000 !important;" class="mt-4">*</span><br><br>
+                            Data Structures, DBMS, SQL, Programming, Networking, OS, Cybersecurity, Cloud Computing, etc.</h6>
+                        {{ swot_form.core_subjects_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.core_subjects_remark|add_class:"form-control" }}
+
+                        <!-- C -->
+                        <h6 class="mt-4">C. Rate your Confidence level for English Speaking , Group Discussions, Essay Writing &
+                            Sentence Formation essential not only for placement but also for professional journey<span style="color:#ff0000 !important;" class="mt-4">*</span></h6>
+                        {{ swot_form.communication_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.communication_remark|add_class:"form-control" }}
+
+                        <!-- D -->
+                        <h6 class="mt-4">D. Rate  your Confidence level of Soft Skills required for facing
+                            online/Offline Technical Interviews<span style="color:#ff0000 !important;" class="mt-4">*</span></h6>
+                        {{ swot_form.softskills_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.softskills_remark|add_class:"form-control" }}
+
+                        <!-- E -->
+                        <h6 class="mt-4">E. <b>To what extent have you enhanced your resume through the following activities?</b><span style="color:#ff0000 !important;" class="mt-4">*</span><br><br>
+                        - Industry-recognized Certifications.<br>
+                        - Completion of Technical Courses.<br>
+                        - Internships.<br>
+                        - Collaborative Learning through Professional Clubs & Associations.<br>
+                        - Participation in National/International-level Hackathons,Project Exhibitions and Competitions.<br>
+                        </h6>
+                        {{ swot_form.resume_building_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.resume_remark|add_class:"form-control" }}
+
+                        <!-- F -->
+                        <h6 class="mt-4">F. On a scale given below how confident are you in explaining the technical and
+                            functional aspects of the projects you have undertaken (Academic or other Projects)<span style="color:#ff0000 !important;" class="mt-4">*</span><br><br>
+                            This includes your ability to explain project objectives, your individual contribution,
+                            technologies used, and outcomes achieved.</h6>
+                        {{ swot_form.project_explanation_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.project_remark|add_class:"form-control" }}
+
+                        <!-- G -->
+                        <h6 class="mt-4">G. Confidence level in using Technical Platforms & Tools much required for professional journey<span style="color:#ff0000 !important;" class="mt-4">*</span><br><br>
+                            - Using Git/GitHub for version control.<br>
+                            - Using LinkedIn for professional networking and profile building.<br>
+                            - Solving coding problems on platforms like HackerRank, LeetCode, etc.
+                        </h6>
+                        {{ swot_form.tech_platform_confidence }}
+
+                        <!-- H -->
+                        <h6 class="mt-4">H. Rate your Confidence level in clearing qualifying examinations
+                            like GATE/GRE/IELTS for Higher Studies (if opted for Higher Studies)<span style="color:#ff0000 !important;" class="mt-4">*</span></h6>
+                        {{ swot_form.higher_studies_confidence }}
+                        <p>Remark/Justification:</p>
+                        {{ swot_form.higher_studies_remark|add_class:"form-control" }}
+
+                        <hr>
+
+                        <h6 class="mt-4">Please mention any academic, personal, or other challenges you have faced that
+                            may have impacted your career progression.<span style="color:#ff0000 !important;" class="mt-4">*</span><br><br>
+                            Examples may include difficulty in grasping core subjects, lack of focus for internship
+                            completions, time management issues, personal responsibilities, financial constraints,
+                            limited exposure to industry or any other.
+                        </h6>
+                        {{ swot_form.challenges|add_class:"form-control" }}
+
+                        <h6 class="mt-4">Kindly specify areas where you would like the department to provide more support<span style="color:#ff0000 !important;" class="mt-4">*</span></h6>
+                        {{ swot_form.support_needed|add_class:"form-control" }}
+
+                        <button type="submit" name="swot_submit" class="btn btn-success mt-4">
+                            {% if swot_form.instance.pk %} Update SWOT {% else %} Submit SWOT {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <!-- Prev / Next Buttons -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 gap-3">
                 <a href="{% url 'publications' %}"
                    class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
                     <i class="bi bi-arrow-left-circle"></i> Prev
@@ -172,6 +480,18 @@
         icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
         btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
     }
+});
+
+// SWOT
+document.addEventListener("DOMContentLoaded", function () {
+    const radios = document.querySelectorAll("input[name='career_option']");
+    const otherField = document.getElementById("otherCareerField");
+
+    radios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            otherField.style.display = this.value === "other" ? "block" : "none";
+        });
+    });
 });
 </script>
 <style>

@@ -4,17 +4,14 @@ from django.core.validators import RegexValidator
 from .models import (Mentee, Mentor, InternshipPBL, Project, Profile, Msg, SportsCulturalEvent, OtherEvent,
                      CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                      EducationalDetail, SemesterResult, Meeting, StudentInterest, Query, Reply, MentorMenteeInteraction,
-                     StudentProfileOverview, WeeklyAgenda)
+                     StudentProfileOverview, WeeklyAgenda, SWOTAnalysis)
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
 from .validators import PDFValidationMixin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-
 from django.contrib.auth import get_user_model
 User = get_user_model()
-
-
 
 
 class MenteeRegisterForm(UserCreationForm):
@@ -214,6 +211,38 @@ class SelfAssessmentForm(forms.ModelForm):
             "semester": forms.Select(attrs={"class": "form-select"}),
             "year": forms.Select(attrs={"class": "form-select"}),
             "reason": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Reason"}),
+        }
+
+
+class SWOTForm(forms.ModelForm):
+    class Meta:
+        model = SWOTAnalysis
+        exclude = ['user']
+        widgets = {
+            'batch': forms.Select(attrs={"class": "form-select"}),
+            'career_option': forms.RadioSelect(),
+            'other_career': forms.TextInput(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'ppt_confidence': forms.RadioSelect(),
+            'ppt_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'core_subjects_confidence': forms.RadioSelect(),
+            'core_subjects_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'communication_confidence': forms.RadioSelect(),
+            'communication_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'softskills_confidence': forms.RadioSelect(),
+            'softskills_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'resume_building_confidence': forms.RadioSelect(),
+            'resume_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'project_explanation_confidence': forms.RadioSelect(),
+            'project_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'tech_platform_confidence': forms.RadioSelect(),
+            'higher_studies_confidence': forms.RadioSelect(),
+            'higher_studies_remark': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'challenges': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'support_needed': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'strengths': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'weaknesses': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'opportunities': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
+            'threats': forms.Textarea(attrs={"class": "form-control", "placeholder": "Your answer"}),
         }
 
 

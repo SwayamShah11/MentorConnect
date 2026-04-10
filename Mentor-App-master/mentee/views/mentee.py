@@ -9,11 +9,11 @@ from django.core.paginator import Paginator
 from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, ProjectForm, SportsCulturalForm,
                      OtherEventForm, CertificationCourseForm, PaperPublicationForm, SelfAssessmentForm,
                      LongTermGoalForm, SubjectOfInterestForm, EducationalDetailForm, SemesterResultForm, MeetingForm,
-                     QueryForm, SendForm,ReplyForm, ChatReplyForm, StudentProfileOverviewForm)
+                     QueryForm, SendForm,ReplyForm, ChatReplyForm, StudentProfileOverviewForm, SWOTForm)
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
-                      MentorMenteeInteraction, MentorMentee, StudentProfileOverview, Notification)
+                      MentorMenteeInteraction, MentorMentee, StudentProfileOverview, Notification, SWOTAnalysis)
 from ..utils import compute_profile_completeness, mentee_required
 from ..auth_otp import (
     REG_MENTEE_OTP_SESSION_KEY,
@@ -1195,10 +1195,114 @@ def delete_publication(request, pk):
 @login_required
 @mentee_required
 def self_assessment(request, pk=None):
+
     assessments = SelfAssessment.objects.filter(user=request.user).order_by("-created_at")
+
     editing = False
     edit_id = None
 
+    # -------- PROFILE --------
+    profile = Profile.objects.filter(user=request.user).first()
+
+    # -------- MENTOR --------
+    # -------- MENTOR FETCH --------
+    mentor_name = "Not Assigned"
+
+    mentee_obj = Mentee.objects.filter(user=request.user).first()
+
+    if mentee_obj:
+        mapping = MentorMentee.objects.filter(mentee=mentee_obj).select_related("mentor").first()
+
+        if mapping and mapping.mentor:
+            mentor_user = mapping.mentor.user
+            mentor_profile = Profile.objects.filter(user=mentor_user).first()
+
+            if mentor_profile and mentor_profile.student_name:
+                mentor_name = mentor_profile.student_name
+            else:
+                mentor_name = mentor_user.mentor.name
+
+    # -------- GET EXISTING SWOT --------
+    existing_swot = SWOTAnalysis.objects.filter(user=request.user).first()
+    placement_score = None
+    risk_level = None
+
+    if existing_swot:
+        score_map = {
+            "low": 1,
+            "moderate": 2,
+            "high": 3,
+            "na": 0
+        }
+
+        scores = [
+            score_map.get(existing_swot.ppt_confidence, 0),
+            score_map.get(existing_swot.core_subjects_confidence, 0),
+            score_map.get(existing_swot.communication_confidence, 0),
+            score_map.get(existing_swot.softskills_confidence, 0),
+            score_map.get(existing_swot.resume_building_confidence, 0),
+            score_map.get(existing_swot.project_explanation_confidence, 0),
+            score_map.get(existing_swot.tech_platform_confidence, 0),
+        ]
+
+        total = sum(scores)
+        max_score = len(scores) * 3
+
+        placement_score = int((total / max_score) * 100)
+
+        # -------- RISK DETECTION --------
+        if placement_score < 40:
+            risk_level = "High Risk"
+        elif placement_score < 70:
+            risk_level = "Moderate Risk"
+        else:
+            risk_level = "Low Risk"
+
+    # -------- SWOT FORM --------
+    if request.method == "POST" and "swot_submit" in request.POST:
+
+        # 👉 UPDATE if exists, else CREATE
+        if existing_swot:
+            swot_form = SWOTForm(request.POST, instance=existing_swot)
+        else:
+            swot_form = SWOTForm(request.POST)
+
+        if swot_form.is_valid():
+            swot = swot_form.save(commit=False)
+            swot.user = request.user
+
+            # 🔒 enforce autofill
+            if profile:
+                swot.name = profile.student_name
+                swot.moodle_id = profile.moodle_id
+                swot.year = profile.year
+                swot.division = profile.div
+
+            swot.mentor_name = mentor_name
+
+            swot.save()
+            messages.success(request, "SWOT Analysis submitted")
+            return redirect("self_assessment")
+
+    else:
+        # 👉 LOAD EXISTING DATA
+        if existing_swot:
+            swot_form = SWOTForm(instance=existing_swot)
+        else:
+            initial_data = {}
+
+            if profile:
+                initial_data = {
+                    "name": profile.student_name,
+                    "moodle_id": profile.moodle_id,
+                    "year": profile.year,
+                    "division": profile.div,
+                    "mentor_name": mentor_name,
+                }
+
+            swot_form = SWOTForm(initial=initial_data)
+
+    # -------- SELF-ASSESSMENT FORM --------
     if pk:
         assessment = get_object_or_404(SelfAssessment, pk=pk, user=request.user)
         form = SelfAssessmentForm(instance=assessment)
@@ -1207,21 +1311,48 @@ def self_assessment(request, pk=None):
     else:
         form = SelfAssessmentForm()
 
+    # -------- POST HANDLING --------
     if request.method == "POST":
-        if pk:
-            form = SelfAssessmentForm(request.POST, instance=assessment)
-        else:
-            form = SelfAssessmentForm(request.POST)
 
-        if form.is_valid():
-            new_assessment = form.save(commit=False)
-            new_assessment.user = request.user
-            new_assessment.save()
-            return redirect("self_assessment")
+        # SWOT SUBMIT
+        if "swot_submit" in request.POST:
+            swot_form = SWOTForm(request.POST)
+            if swot_form.is_valid():
+                swot = swot_form.save(commit=False)
+                swot.user = request.user
+
+                # 🔒 enforce backend autofill
+                if profile:
+                    swot.name = profile.student_name
+                    swot.moodle_id = profile.moodle_id
+                    swot.year = profile.year
+                    swot.division = profile.div
+
+                swot.mentor_name = mentor_name
+
+                swot.save()
+                return redirect("self_assessment")
+
+        # SELF-ASSESSMENT SUBMIT
+        else:
+            if pk:
+                form = SelfAssessmentForm(request.POST, instance=assessment)
+            else:
+                form = SelfAssessmentForm(request.POST)
+
+            if form.is_valid():
+                new_assessment = form.save(commit=False)
+                new_assessment.user = request.user
+                new_assessment.save()
+                return redirect("self_assessment")
 
     return render(request, "menti/self_assessment.html", {
         "assessments": assessments,
         "form": form,
+        "swot_form": swot_form,
+        "existing_swot": existing_swot,
+        "placement_score": placement_score,
+        "risk_level": risk_level,
         "editing": editing,
         "edit_id": edit_id,
         "is_mentor_view": False,

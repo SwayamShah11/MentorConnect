@@ -84,29 +84,29 @@ def get_document_progress(user):
         user=user, certificate__isnull=False
     ).exclude(certificate="").exists()
 
-    has_publication = PaperPublication.objects.filter(
-        user=user, certificate__isnull=False
-    ).exclude(certificate="").exists()
-
-    has_sports = SportsCulturalEvent.objects.filter(
-        user=user, certificate__isnull=False
-    ).exclude(certificate="").exists()
-
-    has_other = OtherEvent.objects.filter(
-        user=user, certificate__isnull=False
-    ).exclude(certificate="").exists()
+    # has_publication = PaperPublication.objects.filter(
+    #     user=user, certificate__isnull=False
+    # ).exclude(certificate="").exists()
+    #
+    # has_sports = SportsCulturalEvent.objects.filter(
+    #     user=user, certificate__isnull=False
+    # ).exclude(certificate="").exists()
+    #
+    # has_other = OtherEvent.objects.filter(
+    #     user=user, certificate__isnull=False
+    # ).exclude(certificate="").exists()
 
     completed_count = sum([
         has_internship,
         has_marksheet,
         has_project,
         has_certification,
-        has_publication,
-        has_sports,
-        has_other,
+        # has_publication,
+        # has_sports,
+        # has_other,
     ])
 
-    total_required = 7
+    total_required = 4
     has_pending = completed_count < total_required
 
     return completed_count, total_required, has_pending
@@ -162,3 +162,72 @@ def mentor_or_staff_required(view_func):
             return redirect("account1")
         return view_func(request, *args, **kwargs)
     return _wrapped
+
+
+def get_student_risk(swot):
+    score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+    scores = [
+        score_map.get(swot.ppt_confidence, 0),
+        score_map.get(swot.core_subjects_confidence, 0),
+        score_map.get(swot.communication_confidence, 0),
+        score_map.get(swot.softskills_confidence, 0),
+        score_map.get(swot.resume_building_confidence, 0),
+        score_map.get(swot.project_explanation_confidence, 0),
+        score_map.get(swot.tech_platform_confidence, 0),
+    ]
+
+    if not any(scores):
+        return "Unknown"
+
+    student_score = sum(scores) / (len(scores) * 3) * 100
+
+    if student_score < 40:
+        return "High"
+    elif student_score < 70:
+        return "Moderate"
+    return "Low"
+
+
+def calculate_swot_analytics(swot_queryset):
+    score_map = {'low': 1, 'moderate': 2, 'high': 3, 'na': 0}
+
+    analytics = {
+        "total_students": swot_queryset.count(),
+        "avg_score": 0,
+        "risk_counts": {"High": 0, "Moderate": 0, "Low": 0},
+        "career_counts": {},
+    }
+
+    total_score = 0
+    count = 0
+
+    for swot in swot_queryset:
+        scores = [
+            score_map.get(swot.ppt_confidence, 0),
+            score_map.get(swot.core_subjects_confidence, 0),
+            score_map.get(swot.communication_confidence, 0),
+            score_map.get(swot.softskills_confidence, 0),
+            score_map.get(swot.resume_building_confidence, 0),
+            score_map.get(swot.project_explanation_confidence, 0),
+            score_map.get(swot.tech_platform_confidence, 0),
+        ]
+
+        if any(scores):
+            student_score = sum(scores) / (len(scores) * 3) * 100
+            total_score += student_score
+            count += 1
+
+            # Risk classification
+            risk = get_student_risk(swot)
+            if risk in analytics["risk_counts"]:
+                analytics["risk_counts"][risk] += 1
+
+        # Career preference
+        career = swot.career_option or "unknown"
+        analytics["career_counts"][career] = analytics["career_counts"].get(career, 0) + 1
+
+    if count > 0:
+        analytics["avg_score"] = round(total_score / count, 2)
+
+    return analytics

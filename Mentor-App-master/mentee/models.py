@@ -85,7 +85,28 @@ VERIFICATION_STATUS_CHOICES = [
         ("verified", "Verified"),
         ("unverified", "Unverified"),
         ("verify your document manually", "verify your document manually"),
-    ]
+]
+
+BATCH_CHOICES = [
+    ("Batch-1", "Batch-1"),
+    ("Batch-2", "Batch-2"),
+    ("Batch-3", "Batch-3"),
+]
+
+# ---- Ratings ----
+LEVEL_CHOICES = [
+    ('low', 'Low'),
+    ('moderate', 'Moderate'),
+    ('high', 'High'),
+]
+
+# ---- Career ----
+CAREER_CHOICES = [
+    ('higher_studies', 'Higher Studies'),
+    ('entrepreneurship', 'Entrepreneurship'),
+    ('placement', 'On-campus Placement'),
+    ('other', 'Other'),
+]
 
 class Mentor(models.Model):
     """Mentor models"""
@@ -420,6 +441,66 @@ class SelfAssessment(models.Model):
         sem = self.semester or "No Semester"
         user_name = self.user.username if self.user else "Unknown User"
         return f"{user_name} - {sem}"
+
+
+class SWOTAnalysis(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+
+    # ---- Basic Info ----
+    name = models.CharField(max_length=500, null=True, blank=True)
+    moodle_id = models.CharField(max_length=20, null=True, blank=True)
+    year = models.CharField(max_length=20, null=True, blank=True)
+    division = models.CharField(max_length=10, null=True, blank=True)
+    batch = models.CharField(max_length=50, choices=BATCH_CHOICES, null=True, blank=True)
+    mentor_name = models.CharField(max_length=500, null=True, blank=True)
+
+    career_option = models.CharField(max_length=50, choices=CAREER_CHOICES, null=True, blank=True)
+    other_career = models.CharField(max_length=200, blank=True, null=True)
+
+    # ---- SWOT ----
+    strengths = models.TextField(null=True, blank=True)
+    weaknesses = models.TextField(null=True, blank=True)
+    opportunities = models.TextField(null=True, blank=True)
+    threats = models.TextField(null=True, blank=True)
+
+    ppt_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    ppt_remark = models.TextField(null=True, blank=True)
+
+    core_subjects_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    core_subjects_remark = models.TextField(null=True, blank=True)
+
+    communication_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    communication_remark = models.TextField(null=True, blank=True)
+
+    softskills_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    softskills_remark = models.TextField(null=True, blank=True)
+
+    resume_building_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    resume_remark = models.TextField(null=True, blank=True)
+
+    project_explanation_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+    project_remark = models.TextField(null=True, blank=True)
+
+    tech_platform_confidence = models.CharField(max_length=10, choices=LEVEL_CHOICES, null=True, blank=True)
+
+    higher_studies_confidence = models.CharField(
+        max_length=20, null=True, blank=True,
+        choices=[
+            ('na', 'Not Applicable'),
+            ('low', 'Low'),
+            ('moderate', 'Moderate'),
+            ('high', 'High'),
+        ]
+    )
+    higher_studies_remark = models.TextField(null=True, blank=True)
+
+    challenges = models.TextField(null=True, blank=True)
+    support_needed = models.TextField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"SWOT - {self.user.username}"
 
 
 class LongTermGoal(models.Model):
