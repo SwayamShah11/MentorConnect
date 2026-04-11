@@ -268,34 +268,34 @@
         </div>
 
         <!-- Attendance Prediction -->
-<!--        <div class="card shadow-sm mt-3 border-info p-0">-->
-<!--          <div class="card-body text-center">-->
-<!--            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>-->
+        <div class="card shadow-sm mt-3 border-info p-0">
+          <div class="card-body text-center">
+            <h5 class="fw-bold text-info">🔮 Future Attendance Prediction</h5>
 
-<!--            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>-->
+            <div class="display-6 fw-bold my-2">{{ prediction_percent }}%</div>
 
-<!--            <div class="-->
-<!--              fw-semibold-->
-<!--              {% if risk_level == 'Excellent' %}text-success-->
-<!--              {% elif risk_level == 'Stable' %}text-primary-->
-<!--              {% elif risk_level == 'Warning' %}text-warning-->
-<!--              {% else %}text-danger-->
-<!--              {% endif %}-->
-<!--            ">-->
-<!--              Predicted Status: {{ risk_level }}-->
-<!--            </div>-->
+            <div class="
+              fw-semibold
+              {% if risk_level == 'Excellent' %}text-success
+              {% elif risk_level == 'Stable' %}text-primary
+              {% elif risk_level == 'Warning' %}text-warning
+              {% else %}text-danger
+              {% endif %}
+            ">
+              Predicted Status: {{ risk_level }}
+            </div>
 
-<!--            {% if risk_level == "Critical" %}-->
-<!--            <div class="alert alert-danger mt-3 py-2">-->
-<!--              ⚠ High risk of falling below minimum attendance!-->
-<!--            </div>-->
-<!--            {% elif risk_level == "Warning" %}-->
-<!--            <div class="alert alert-warning mt-3 py-2">-->
-<!--              ⚠ Attendance may drop. Maintain consistency!-->
-<!--            </div>-->
-<!--            {% endif %}-->
-<!--          </div>-->
-<!--        </div>-->
+            {% if risk_level == "Critical" %}
+            <div class="alert alert-danger mt-3 py-2">
+              ⚠ High risk of falling below minimum attendance!
+            </div>
+            {% elif risk_level == "Warning" %}
+            <div class="alert alert-warning mt-3 py-2">
+              ⚠ Attendance may drop. Maintain consistency!
+            </div>
+            {% endif %}
+          </div>
+        </div>
 
       </div>
     </div>

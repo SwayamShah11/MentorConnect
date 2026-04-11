@@ -208,7 +208,7 @@ def remind_mentee(request, mentee_id):
     # ✅ 1. Save Notification
     Notification.objects.create(
         user=user,
-        message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile on MentorConnect.\n"
+        message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile.\n"
     )
 
     # ✅ 2. Send Email
@@ -216,7 +216,7 @@ def remind_mentee(request, mentee_id):
         send_mail(
             subject="Reminder to Upload Your Documents and Complete the Profile on MentorConnect.",
             message=(
-                f"Dear {user.profile.student_name}({user.username}),\n\n"
+                f"Dear {user.profile.student_name} ({user.username}),\n\n"
                 f"Your mentor {mentor.name} has reminded you to upload your pending documents and complete your profile.\n"
                 f"You need to complete the pending uploads before the next mentoring session.\n"
                 f"Please log in to https://mentorconnect.apsit.edu.in/login/ and upload them as soon as possible.\n\n"

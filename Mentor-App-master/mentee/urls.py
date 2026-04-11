@@ -71,7 +71,6 @@ urlpatterns = [
     path("documents/<str:doc_type>/<int:pk>/", mentee.open_document, name="open_document"),
     path("credits/", mentee.credits_view, name="credits"),
     path('message-module/', mentee.MessageView.as_view(), name="module-message"),
-    path('inbox/<int:pk>', mentee.InboxDetailView.as_view(), name="detail-inbox"),
     path('login/', mentee.user_login, name='login'),
     path('logout/', mentee.custom_logout, name="logout"),
     path('approved/', mentee.Approved.as_view(), name='approved'),

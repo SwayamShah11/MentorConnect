@@ -1654,26 +1654,6 @@ def credits_view(request):
 #--------------------Messages page logic starts------------------------
 #--------------------Inbox requests and chatting logic-----------------------
 @method_decorator(login_required, name="dispatch")
-class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """Inbox Detailed view"""
-
-    model = Msg
-    context_object_name = 'messo'
-    template_name = 'menti/inboxview.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_queryset(self):
-        return self.model.objects.filter(receipient=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_mentor_view'] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
 class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """controls messege view"""
 
@@ -1684,10 +1664,8 @@ class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['count'] = Msg.objects.filter(receipient=self.request.user).filter(is_approved=False).count()
         context['count1'] = Msg.objects.filter(sender=self.request.user).filter(is_approved=True).count()
         context['count3'] = Conversation.objects.filter(receipient=self.request.user).count()
-        context['count4'] = Conversation.objects.filter(sender=self.request.user).count()
         context['is_mentor_view'] = False
         return context
 
@@ -1787,25 +1765,6 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     model = Conversation
     template_name = 'menti/conversation1.html'
     context_object_name = 'conv'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_queryset(self):
-        return self.model.objects.filter(receipient=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["is_mentor_view"] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
-class ConversationList1View(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    """List Conversation"""
-    model = Conversation
-    template_name = 'menti/conversation2.html'
-    context_object_name = 'conversation'
 
     def test_func(self):
         return self.request.user.is_mentee
