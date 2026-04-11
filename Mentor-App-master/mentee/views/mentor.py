@@ -208,19 +208,19 @@ def remind_mentee(request, mentee_id):
     # ✅ 1. Save Notification
     Notification.objects.create(
         user=user,
-        message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile.\n"
+        message=f"⚠️ Your mentor {mentor.name} has reminded you to upload your pending documents and complete the Profile on MentorConnect.\n"
     )
 
     # ✅ 2. Send Email
     if user.email:
         send_mail(
-            subject="Reminder to Upload Your Documents and Complete the Profile",
+            subject="Reminder to Upload Your Documents and Complete the Profile on MentorConnect.",
             message=(
                 f"Dear {user.profile.student_name}({user.username}),\n\n"
                 f"Your mentor {mentor.name} has reminded you to upload your pending documents and complete your profile.\n"
                 f"You need to complete the pending uploads before the next mentoring session.\n"
-                f"Please log in to MentorConnect and upload them as soon as possible.\n\n"
-                f"Regards,\nMentorConnect Team\n\n\n"
+                f"Please log in to https://mentorconnect.apsit.edu.in/login/ and upload them as soon as possible.\n\n"
+                f"Regards,\nAPSIT\n\n\n"
                 f"*This is a system generated Email. Please do not reply to this Email.*\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -269,14 +269,14 @@ def remind_all_mentees(request):
         # ✅ 2. Send Email
         if user.email:
             send_mail(
-                subject="Reminder to Upload Your Documents and Complete the Profile",
+                subject="Reminder to Upload Your Documents and Complete the Profile on MentorConnect.",
                 message=(
                     f"Dear {user.profile.student_name} ({user.username}),\n\n"
                     f"Your mentor {mentor.name} has reminded you to upload your pending "
                     f"documents and complete your profile.\n"
                     f"You need to complete the pending uploads before the next mentoring session.\n\n"
-                    f"Please log in to MentorConnect and upload them as soon as possible.\n\n"
-                    f"Regards,\nMentorConnect Team\n\n"
+                    f"Please log in to https://mentorconnect.apsit.edu.in/login/ and upload them as soon as possible.\n\n"
+                    f"Regards,\nAPSIT\n\n"
                     f"*This is a system generated Email. Please do not reply to this Email.*\n"
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
@@ -505,7 +505,6 @@ def view_mentee(request, mentee_id):
     subjects = SubjectOfInterest.objects.filter(user=mentee)
     certifications = CertificationCourse.objects.filter(user=mentee)
     assessment = SelfAssessment.objects.filter(user=mentee)
-    existing_swot = SWOTAnalysis.objects.filter(user=mentee)
 
     context = {
         "mentee": mentee,
@@ -523,7 +522,6 @@ def view_mentee(request, mentee_id):
         "subjects": subjects,
         "certifications": certifications,
         "assessment": assessment,
-        "existing_swot": existing_swot,
         "is_mentor_view": True,   # 👈 flag to hide edit buttons
     }
     return render(request, "mentor/view_mentee_dashboard.html", context)
@@ -1599,62 +1597,6 @@ class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
 
-@method_decorator(login_required, name='dispatch')
-class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Creates new message"""
-
-    fields = ('receipient', 'msg_content')
-    model = Msg
-    template_name = 'mentor/messagecreate1.html'
-
-    def test_func(self):
-        return self.request.user.is_mentor
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('list1')
-
-@method_decorator(login_required, name='dispatch')
-class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """List sent Messages"""
-
-    model = Msg
-    template_name = 'mentor/listmessages1.html'
-    context_object_name = 'sentmesso'
-
-    def test_func(self):
-        return self.request.user.is_mentor
-
-    def get_queryset(self):
-        return self.model.objects.filter(sender=self.request.user)
-
-@method_decorator(login_required, name='dispatch')
-class SentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """details the message sent"""
-
-    model = Msg
-    context_object_name = 'messo'
-    template_name = 'mentor/sent1.html'
-
-    def test_func(self):
-        return self.request.user.is_mentor
-
-    def get_queryset(self):
-        return self.model.objects.filter(sender=self.request.user)
-
-@method_decorator(login_required, name='dispatch')
-class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """Deletes sent messages"""
-
-    model = Msg
-    success_url = reverse_lazy("list1")
-    template_name = 'mentor/sentmessage_delete1.html'
-
-    def test_func(self):
-        return self.request.user.is_mentor
 
 @method_decorator(login_required, name='dispatch')
 class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1881,7 +1823,6 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         return self.render_to_response(context)
 
 
-
 @method_decorator(login_required, name='dispatch')
 class ConversationDeleteView(SuccessMessageMixin, DeleteView):
     """delete view Chat"""
@@ -1889,8 +1830,6 @@ class ConversationDeleteView(SuccessMessageMixin, DeleteView):
     model = Reply
     template_name = 'mentor/chat-confirm-delete.html'
     success_message = 'Your message has been deleted!'
-
-    # success_url = reverse_lazy('conv1')
 
     def get_success_url(self):
         conversation = self.object.conversation
@@ -1903,8 +1842,6 @@ class Conversation2DeleteView(DeleteView):
 
     model = Conversation
     template_name = 'mentor/conversation-confirm-delete.html'
-
-    # success_url = reverse_lazy('conv1')
 
     def get_success_url(self):
         return reverse_lazy('conv1')
@@ -2087,11 +2024,11 @@ def mark_as_done(request, query_id):
 def send_forget_password_email(email, token):
     try:
         subject = 'Reset Your Password'
-        reset_link = f'http://127.0.0.1:8000/change-pass/{token}/'
+        reset_link = f'https://mentorconnect.apsit.edu.in/change-pass/{token}/'
         message = f"""
-        Hi,
+        Hey,
 
-        You requested a password reset. Click the link below to reset your password:
+        You requested a password reset for your MentorConnect account. Click the link below to reset your password:
 
         {reset_link}
 

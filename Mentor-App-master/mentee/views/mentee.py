@@ -401,11 +401,11 @@ def verify_register_otp(request):
 def send_forget_password_email(email, token):
     try:
         subject = 'Reset Your Password'
-        reset_link = f'http://127.0.0.1:8000/change-password/{token}/'
+        reset_link = f'https://mentorconnect.apsit.edu.in/change-password/{token}/'
         message = f"""
-        Hi,
+        Hey,
 
-        You requested a password reset. Click the link below to reset your password:
+        You requested a password reset for your MentorConnect account. Click the link below to reset your password:
 
         {reset_link}
 
@@ -598,34 +598,6 @@ def profile(request):
 
     return render(request, 'menti/profile.html', {'form': form, "is_mentor_view": False,})
 #---------------------Profile page logic ends--------------------
-
-
-@method_decorator(login_required, name="dispatch")
-class MessageCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Creates new message"""
-
-    fields = ('receipient', 'msg_content')
-    model = Msg
-    template_name = 'menti/messagecreate.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('list')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # 👇 Add flag here
-        context['is_mentor_view'] = False
-
-        return context
 
 #--------------------Internship page logic starts------------------------
 @login_required
@@ -1682,62 +1654,6 @@ def credits_view(request):
 #--------------------Messages page logic starts------------------------
 #--------------------Inbox requests and chatting logic-----------------------
 @method_decorator(login_required, name="dispatch")
-class MessageListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """Views lists of messages you have sent to other users"""
-
-    model = Conversation
-    template_name = 'menti/listmessages.html'
-    context_object_name = 'conversation1'
-    paginate_by = 10
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_queryset(self):
-        return self.model.objects.filter(sender=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_mentor_view'] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
-class SentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """details the message sent"""
-
-    model = Msg
-    context_object_name = 'messo'
-    template_name = 'menti/sent.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_queryset(self):
-        return self.model.objects.filter(sender=self.request.user)
-
-
-@method_decorator(login_required, name="dispatch")
-class InboxView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """Views lists of inbox messages received"""
-
-    model = Msg
-    context_object_name = 'inbox'
-    template_name = 'menti/inbox.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_queryset(self):
-        return self.model.objects.filter(receipient=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_mentor_view'] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
 class InboxDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Inbox Detailed view"""
 
@@ -1777,32 +1693,6 @@ class MessageView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_queryset(self):
         return self.model.objects.filter(receipient=self.request.user)
-
-
-def messege_view(request):
-    """Views the Message Module"""
-
-    if not request.user.is_mentee:
-        return redirect('home')
-
-    return render(request, 'menti/messages-module.html', {"is_mentor_view": False,})
-
-
-@method_decorator(login_required, name="dispatch")
-class SentMessageDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """Deletes Sent Messages"""
-
-    model = models.Msg
-    success_url = reverse_lazy("list")
-    template_name = 'menti/sentmessage_delete.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_mentor_view'] = False
-        return context
 
 
 @method_decorator(login_required, name="dispatch")
@@ -1855,7 +1745,7 @@ class CreateMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageM
         return context
 
 
-@method_decorator(login_required, name="dispatch")
+@method_decorator(login_required, name="dispatch")                     #
 class ProfileDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """view details of a user in the profile"""
     model = User
@@ -2082,156 +1972,6 @@ def delete_reply(request, pk):
     })
 
     return JsonResponse({"status": "ok"})
-
-
-@method_decorator(login_required, name="dispatch")
-class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Replies by a user"""
-    fields = ('reply',)
-    model = Reply
-    template_name = 'menti/conversation.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-        form.instance.conversation = Conversation.objects.get(pk=self.kwargs['pk'])
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        conversation = self.object.conversation
-        return reverse_lazy('conv1-reply', kwargs={'pk': self.object.conversation_id})
-
-    def get_queryset(self):
-        return self.model.objects.filter(receipient=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["is_mentor_view"] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
-class ConversationDeleteView(DeleteView):
-    """delete view Chat"""
-    model = Reply
-    template_name = 'menti/chat-confirm-delete.html'
-
-    # success_url = reverse_lazy('conv1')
-
-    def get_success_url(self):
-        conversation = self.object.conversation
-        return reverse_lazy('conv1-reply', kwargs={'pk': self.object.conversation_id})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["is_mentor_view"] = False
-        return context
-
-
-def search(request):
-    """Search For Users"""
-
-    if not request.user.is_mentee:
-        return redirect('home')
-
-    queryset = User.objects.all()
-
-    query = request.GET.get('q')
-
-    if query:
-        queryset = queryset.filter(
-
-            Q(username__icontains=query) |
-            Q(first_name__icontains=query)
-
-        ).distinct()
-
-    context = {
-        'is_mentor_view': False,
-        'queryset': queryset
-    }
-
-    return render(request, 'menti/search_results.html', context)
-
-
-@method_decorator(login_required, name="dispatch")
-class CreateIndividualMessageView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
-    """create new message for a specific user from search query"""
-    fields = ('conversation',)
-    model = Conversation
-    template_name = 'menti/messagecreate2.html'
-    success_message = 'Your Conversation Has been Created!'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-        form.instance.receipient = User.objects.get(pk=self.kwargs['pk'])
-
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('list')
-
-
-@method_decorator(login_required, name="dispatch")
-class Profile2DetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """view details of a user search in the profile"""
-    model = User
-    context_object_name = 'user'
-    template_name = 'menti/profile_detail1.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["is_mentor_view"] = False
-        return context
-
-
-@method_decorator(login_required, name="dispatch")
-class Reply1CreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Replies by a user"""
-    fields = ('reply',)
-    model = Reply
-    template_name = 'menti/conversation3.html'
-
-    def test_func(self):
-        return self.request.user.is_mentee
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-        form.instance.conversation = Conversation.objects.get(pk=self.kwargs['pk'])
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        conversation = self.object.conversation
-        return reverse_lazy('conv3-reply', kwargs={'pk': self.object.conversation_id})
-
-    def get_queryset(self):
-        return self.model.objects.filter(receipient=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["is_mentor_view"] = False
-        return context
-
-
-def con1(request, pk):
-    """View individual conversation"""
-
-    conv = get_object_or_404(Conversation, pk=pk)
-
-    context = {
-        'is_mentor_view': False,
-        'conv': conv,
-    }
-
-    return render(request, 'menti/conversation4.html', context)
 #--------------------Messages page logic ends----------------------
 
 

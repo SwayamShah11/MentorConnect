@@ -71,7 +71,6 @@ def _build_hod_dashboard_data():
 
             mentor_progress_sum += progress_percent
 
-            # determine simple readiness label for UI filters
             if completed == 0:
                 readiness = "not_started"
             elif completed == total:
@@ -171,6 +170,7 @@ def hod_remind_mentee(request, mentee_id):
         f"This is a reminder from the HoD to upload your pending documents in MentorConnect.\n"
         f"Your current progress: {completed}/{total} categories completed.\n\n"
         f"Please complete the remaining uploads at the earliest.\n\n"
+        f"Log in to https://mentorconnect.apsit.edu.in/ to complete your pending uploads.\n\n"
         f"Regards,\n"
         f"HOD\n\n\n"
         f"*This is a system generated mail, do not reply.*"

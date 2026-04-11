@@ -209,6 +209,7 @@
                 {% endif %}
             </div>
             {% endif %}
+            {% endif %}
             {% if existing_swot %}
             <div class="card shadow-lg mt-4 border-success p-0">
                 <div class="card-header bg-success text-white d-flex justify-content-between">
@@ -298,6 +299,7 @@
                 </div>
             </div>
             {% endif %}
+            {% if is_mentor_view == False %}
             <div class="alert alert-dark mt-3">
                 You can update your SWOT anytime below.
             </div>

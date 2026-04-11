@@ -20,30 +20,6 @@
               <!-- Cards layout -->
               <div class="row row-cols-1 row-cols-md-3 g-4">
 
-                <!-- Create New Message -->
-<!--                <div class="col">-->
-<!--                  <div class="card h-100 shadow-sm text-center bg-black p-3">-->
-<!--                    <div class="card-body">-->
-<!--                      <i class="bi bi-pencil-square fs-1 text-primary"></i>-->
-<!--                      <h5 class="card-title text-light mt-2">Create Message</h5>-->
-<!--                      <p class="card-text text-secondary">Write and send a new message.</p>-->
-<!--                      <a href="{% url 'Message1' %}" class="btn btn-outline-primary">Open</a>-->
-<!--                    </div>-->
-<!--                  </div>-->
-<!--                </div>-->
-
-<!--                &lt;!&ndash; Sent Messages &ndash;&gt;-->
-<!--                <div class="col">-->
-<!--                  <div class="card h-100 shadow-sm text-center p-3">-->
-<!--                    <div class="card-body">-->
-<!--                      <i class="bi bi-send fs-1 text-secondary"></i>-->
-<!--                      <h5 class="card-title mt-2">Sent Messages</h5>-->
-<!--                      <p class="card-text">View all messages you have sent.</p>-->
-<!--                      <a href="{% url 'list1' %}" class="btn btn-outline-secondary">Open</a>-->
-<!--                    </div>-->
-<!--                  </div>-->
-<!--                </div>-->
-
                 <!-- Unapproved Requests -->
                 <div class="col">
                   <div class="card h-100 shadow-sm text-center bg-black p-3">
@@ -132,25 +108,4 @@
         max-height: 800px; /* set bigger than your form height */
     }
 </style>
-
-<!--   <main role="main" class="container">-->
-<!--      <div class="row">-->
-
-<!--        <div class="col-md-4">-->
-<!--          <div class="content-section">-->
-<!--            <h3>Message Corner</h3>-->
-<!--              <p class='text-muted'>Message Corner</p>-->
-<!--              <ul class="list-group">-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'Message1' %}">Create New Message</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'list1' %} ">Sent Messages</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'inbox2' %}">Requests ({{ count }})</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'approved1' %}">Approved Requests ({{ count1 }})</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'conv1' %}">Conversations ({{ count2 }})</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'vc1' %} ">My Meetings</a></li>-->
-<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'mentor_queries' %} ">Queries</a></li>&lt;!&ndash;zaru&ndash;&gt;-->
-<!--              </ul>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </main>-->
 {% endblock %}
