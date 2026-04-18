@@ -81,10 +81,8 @@ DIVISION = [
 ]
 
 VERIFICATION_STATUS_CHOICES = [
-        ("pending", "Pending"),
         ("verified", "Verified"),
-        ("unverified", "Unverified"),
-        ("verify your document manually", "verify your document manually"),
+        ("verify_physically", "Verify Physically"),
 ]
 
 BATCH_CHOICES = [
@@ -238,6 +236,13 @@ class InternshipPBL(models.Model):
     end_date = models.DateField(blank=True, null=True)
     no_of_days = models.IntegerField(blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/internships/", blank=True, null=True)
+    verification_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="verify_physically", null=True, blank=True)
+    verification_notes = models.TextField(blank=True, null=True)
+    verification_checked_at = models.DateTimeField(blank=True, null=True)
+    qr_detected = models.BooleanField(default=False)
+    qr_payload = models.TextField(blank=True, null=True)
+    qr_url_checked = models.BooleanField(default=False)
+    qr_url_accessible = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -370,7 +375,7 @@ class CertificationCourse(models.Model):
     level = models.CharField(max_length=20, blank=True, null=True)
     amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/courses/", blank=True, null=True)
-    verification_status = models.CharField(max_length=50, choices=VERIFICATION_STATUS_CHOICES, default="pending")
+    verification_status = models.CharField(max_length=50, choices=VERIFICATION_STATUS_CHOICES, default="verify_physically", null=True, blank=True)
     verification_notes = models.TextField(blank=True, null=True)
     verification_checked_at = models.DateTimeField(blank=True, null=True)
     qr_detected = models.BooleanField(default=False)

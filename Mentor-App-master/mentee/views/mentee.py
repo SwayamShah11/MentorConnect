@@ -23,7 +23,7 @@ from ..auth_otp import (
     mask_email,
     verify_login_otp as verify_login_otp_code,
 )
-from ..certificate_verification import apply_course_certificate_verification
+from ..certificate_verification import apply_course_certificate_verification, apply_internship_certificate_verification
 
 from django.contrib.auth import get_user_model
 import logging
@@ -583,6 +583,7 @@ def profile(request):
     user = request.user
 
     if request.method == 'POST':
+        old_student_name = (profile.student_name or "").strip()
         form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             profile = form.save(commit=False)
@@ -590,6 +591,40 @@ def profile(request):
             user.email = form.cleaned_data['email']
             user.save()
             profile.save()
+
+            new_student_name = (profile.student_name or "").strip()
+            old_norm = " ".join(old_student_name.lower().split())
+            new_norm = " ".join(new_student_name.lower().split())
+            if old_norm and new_norm and old_norm != new_norm:
+                verified_certs = CertificationCourse.objects.filter(user=request.user, verification_status="verified")
+                invalidated_count = 0
+                reason = "Name is edited after verifying this certificate"
+                for cert in verified_certs:
+                    prior_notes = (cert.verification_notes or "").strip()
+                    if reason not in prior_notes:
+                        cert.verification_notes = f"{prior_notes} | {reason}" if prior_notes else reason
+                    cert.verification_status = "verify_physically"
+                    cert.verification_checked_at = timezone.now()
+                    cert.save(update_fields=["verification_status", "verification_notes", "verification_checked_at"])
+                    invalidated_count += 1
+
+                verified_internships = InternshipPBL.objects.filter(user=request.user, verification_status="verified")
+                for internship_item in verified_internships:
+                    prior_notes = (internship_item.verification_notes or "").strip()
+                    if reason not in prior_notes:
+                        internship_item.verification_notes = f"{prior_notes} | {reason}" if prior_notes else reason
+                    internship_item.verification_status = "verify_physically"
+                    internship_item.verification_checked_at = timezone.now()
+                    internship_item.save(
+                        update_fields=["verification_status", "verification_notes", "verification_checked_at"])
+                    invalidated_count += 1
+
+                if invalidated_count:
+                    messages.warning(
+                        request,
+                        f"{invalidated_count} verified document(s) moved to Verify Physically because student name was changed.",
+                    )
+
             messages.success(request, 'Profile updated successfully.')
             return redirect('profile')
     else:
@@ -614,6 +649,31 @@ def internship_pbl_list(request, pk=None):
     if request.method == "POST":
         form = InternshipPBLForm(request.POST, request.FILES, instance=internship)
         if form.is_valid():
+            uploaded_new_certificate = bool(request.FILES.get("certificate"))
+            profile = getattr(request.user, "profile", None)
+            profile_name = (getattr(profile, "student_name", "") or "").strip()
+            profile_moodle_id = (getattr(profile, "moodle_id", "") or "").strip()
+            missing_profile_fields = []
+            if not profile_name:
+                missing_profile_fields.append("Student Name")
+            if not profile_moodle_id:
+                missing_profile_fields.append("Moodle ID")
+
+            if uploaded_new_certificate and missing_profile_fields:
+                missing_text = ", ".join(missing_profile_fields)
+                messages.error(
+                    request,
+                    f"Please complete your profile before uploading certificate. Missing: {missing_text}.",
+                )
+                messages.info(request, "Open Profile and fill Student Name and Moodle ID, then upload again.")
+                return render(request, "menti/internship_pbl_list.html", {
+                    "internships": internships,
+                    "form": form,
+                    "editing": editing,
+                    "edit_id": internship.pk if internship else None,
+                    "is_mentor_view": False,
+                })
+
             internship = form.save(commit=False)
             internship.user = request.user
 
@@ -621,6 +681,18 @@ def internship_pbl_list(request, pk=None):
                 internship.no_of_days = (internship.end_date - internship.start_date).days + 1
 
             internship.save()
+
+            if uploaded_new_certificate or internship.verification_status != "verified":
+                apply_internship_certificate_verification(internship, save=True)
+                if internship.verification_status == "verified":
+                    messages.success(request, "Internship certificate verification completed: Verified")
+                else:
+                    reason = (internship.verification_notes or "").replace(" | ", "; ").strip()
+                    if reason:
+                        messages.error(request,
+                                         f"Internship certificate verification completed: Verify Physically. Reason: {reason}")
+                    else:
+                        messages.warning(request, "Internship certificate verification completed: Verify Physically.")
 
             if editing:
                 messages.success(request, "Internship record updated successfully.")
@@ -1030,16 +1102,45 @@ def certification_list(request, pk=None):
 
         if form.is_valid():
             uploaded_new_certificate = bool(request.FILES.get("certificate"))
+            profile = getattr(request.user, "profile", None)
+            profile_name = (getattr(profile, "student_name", "") or "").strip()
+            profile_moodle_id = (getattr(profile, "moodle_id", "") or "").strip()
+            missing_profile_fields = []
+            if not profile_name:
+                missing_profile_fields.append("Student Name")
+            if not profile_moodle_id:
+                missing_profile_fields.append("Moodle ID")
+
+            if uploaded_new_certificate and missing_profile_fields:
+                missing_text = ", ".join(missing_profile_fields)
+                messages.error(
+                    request,
+                    f"Please complete your profile before uploading certificate. Missing: {missing_text}.",
+                )
+                messages.info(request, "Open Profile and fill Student Name and Moodle ID, then upload again.")
+                return render(request, "menti/certifications.html", {
+                    "certifications": certifications,
+                    "form": form,
+                    "editing": editing,
+                    "edit_id": edit_id,
+                    "is_mentor_view": False,
+                })
+
             new_cert = form.save(commit=False)
             new_cert.user = request.user
             new_cert.save()
 
-            if uploaded_new_certificate or new_cert.verification_status == "pending":
+            if uploaded_new_certificate or new_cert.verification_status != "verified":
                 apply_course_certificate_verification(new_cert, save=True)
                 if new_cert.verification_status == "verified":
                     messages.success(request, "Certificate verification completed: Verified")
                 else:
-                    messages.error(request, "Certificate verification completed: Unverified. Please check QR/data.")
+                    reason = (new_cert.verification_notes or "").replace(" | ", "; ").strip()
+                    if reason:
+                        messages.warning(request,
+                                         f"Certificate verification completed: Verify Physically. Reason: {reason}")
+                    else:
+                        messages.warning(request, "Certificate verification completed: Verify Physically.")
 
             return redirect("certifications")
 

@@ -8,7 +8,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .certificate_verification import apply_course_certificate_verification
+from .certificate_verification import apply_course_certificate_verification, apply_internship_certificate_verification
 from django.db import connection
 
 # Generic reusable admin action
@@ -27,11 +27,35 @@ def delete_all_and_reset_id(modeladmin, request, queryset):
 
 @admin.register(InternshipPBL)
 class InternshipPBLAdmin(admin.ModelAdmin):
-    list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days", "uploaded_at")
-    search_fields = ("title", "company_name", "user__username")  # 🔍 search filter
-    list_filter = ("user", "academic_year", "semester", "type")  # ✅ dropdown filters
-    readonly_fields = ("no_of_days",)  # prevent editing
-    actions = [delete_all_and_reset_id]
+    list_display = (
+        "user", "title", "company_name", "verification_status",
+        "qr_detected", "qr_url_accessible", "academic_year", "semester", "start_date", "end_date", "no_of_days",
+        "uploaded_at"
+    )
+    search_fields = ("title", "company_name", "user__username")
+    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester", "type")
+    ordering = ("-start_date",)
+    readonly_fields = ("no_of_days", "qr_payload", "verification_notes", "verification_checked_at")
+    actions = ("mark_verified", "mark_verify_physically", "rerun_qr_verification", delete_all_and_reset_id)
+
+    @admin.action(description="Mark selected as manually verified")
+    def mark_verified(self, request, queryset):
+        updated = queryset.update(verification_status="verified", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} internship certificate(s) marked verified.")
+
+    @admin.action(description="Mark selected for physical verification")
+    def mark_verify_physically(self, request, queryset):
+        updated = queryset.update(verification_status="verify_physically", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} internship certificate(s) marked as verify physically.")
+
+    @admin.action(description="Re-run automatic QR verification")
+    def rerun_qr_verification(self, request, queryset):
+        count = 0
+        for item in queryset:
+            if item.certificate:
+                apply_internship_certificate_verification(item, save=True)
+                count += 1
+        self.message_user(request, f"Automatic verification re-run for {count} internship certificate(s).")
 
 
 @admin.register(Project)
@@ -72,7 +96,7 @@ class CertificationCourseAdmin(admin.ModelAdmin):
     list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
     readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
     ordering = ("-uploaded_at",)
-    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", delete_all_and_reset_id)
+    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", "delete_all_and_reset_id")
 
     @admin.action(description="Mark selected as manually verified")
     def mark_verified(self, request, queryset):
@@ -92,6 +116,8 @@ class CertificationCourseAdmin(admin.ModelAdmin):
                 apply_course_certificate_verification(item, save=True)
                 count += 1
         self.message_user(request, f"Automatic verification re-run for {count} certificate(s).")
+
+
 @admin.register(LongTermGoal)
 class LongTermGoalAdmin(admin.ModelAdmin):
     list_display = ("user", "plan", "reason", "created_at")
