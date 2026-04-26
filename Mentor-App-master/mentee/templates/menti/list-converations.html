@@ -20,19 +20,28 @@
                     </thead>
                 <tbody>
                 {% if conversation %}
-                <ol>
-                {% for conv in conversation %}
-                    <tr>
-                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                        <td>{{ conv.sender }}</td>
-                        <td>{{ conv.conversation }}</td>
-                        <td>{{ conv.sent_at|naturaltime }}</td>
-                        <td> <a class="btn btn-primary btn-sm" href="{% url 'conv2-reply' pk=conv.pk %}">View Chat</a></td>
-                    </tr>
-                {% endfor %}
-                </ol>
+                  {% for conv in conversation %}
+                  <tr>
+                    <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                    <td>{{ conv.sender }}</td>
+                    <td class="text-truncate" style="max-width: 200px;">
+                        {{ conv.conversation }}
+                    </td>
+                    <td>{{ conv.sent_at|naturaltime }}</td>
+                    <td>
+                      <a class="btn btn-primary btn-sm"
+                         href="{% url 'conv2-reply' pk=conv.pk %}">
+                         View Chat
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
                 {% else %}
-                <p>There Are no Chats Available</p>
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-3">
+                      No chats available.
+                    </td>
+                  </tr>
                 {% endif %}
                 </tbody>
                 </table>
@@ -64,5 +73,79 @@
        class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
         <i class="bi bi-arrow-left-circle"></i> Back
     </a>
-</div>
+</div><br>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 600px; /* enable scroll */
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    border-radius: 10px;
+  }
+}
+
+    td.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+    @media (max-width: 768px) {
+
+  h2 {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  .content-section {
+    padding: 15px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  .btn-outline-info,
+  .btn-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 3px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

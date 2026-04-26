@@ -2,40 +2,44 @@
 {% load static %}
 {% block title %} Change Password {% endblock %}
 {% block content %}
-<div class="container mt-5" style="max-width: 500px;">
-    <form method="post" class="form shadow p-4 bg-light rounded" id="form">
-        {% csrf_token %}
-        <h4 class="mb-4 text-center">Change Password</h4>
+<div class="container mt-4 px-3">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-5">
+            <form method="post" class="form shadow p-4 bg-light rounded" id="form">
+                {% csrf_token %}
+                <h4 class="mb-4 text-center">Change Password</h4>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-info">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
 
-        <div class="form-group mb-3 position-relative">
-            <label for="new_password">New Password</label>
-            <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter new password" required>
+                <div class="form-group mb-3 position-relative">
+                    <label for="new_password">New Password</label>
+                    <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter new password" required>
 
-            <i class="fa fa-eye position-absolute toggle-icon" data-target="new_password"
-               style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
+                    <i class="fa fa-eye position-absolute toggle-icon" data-target="new_password"
+                       style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
+                </div>
+
+                <div class="form-group mb-3 position-relative">
+                    <label for="reconfirm_password">Re-enter New Password</label>
+                    <input type="password" name="reconfirm_password" id="reconfirm_password" class="form-control" placeholder="Confirm new password" required>
+
+                    <i class="fa fa-eye position-absolute toggle-icon" data-target="reconfirm_password"
+                       style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
+                </div>
+
+
+                <input type="hidden" name="user_id" value="{{ user_id }}">
+
+                <div class="text-center">
+                    <button class="btn btn-primary w-100" type="submit">Update Password</button>
+                </div>
+            </form>
         </div>
-
-        <div class="form-group mb-3 position-relative">
-            <label for="reconfirm_password">Re-enter New Password</label>
-            <input type="password" name="reconfirm_password" id="reconfirm_password" class="form-control" placeholder="Confirm new password" required>
-
-            <i class="fa fa-eye position-absolute toggle-icon" data-target="reconfirm_password"
-               style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
-        </div>
-
-
-        <input type="hidden" name="user_id" value="{{ user_id }}">
-
-        <div class="text-center">
-            <button class="btn btn-primary w-100" type="submit">Update Password</button>
-        </div>
-    </form>
+    </div>
 </div>
 
 <script>
@@ -56,4 +60,50 @@
     });
 });
 </script>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .container {
+        margin-top: 40px !important;
+      }
+
+      .form {
+        padding: 20px 15px !important;
+      }
+
+      h4 {
+        font-size: 1.3rem;
+      }
+
+      label {
+        font-size: 0.9rem;
+      }
+
+      .form-control {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+
+      /* FIX EYE ICON POSITION */
+      .toggle-icon {
+        top: 50% !important;
+        transform: translateY(-50%);
+        right: 12px !important;
+        font-size: 0.9rem;
+      }
+
+      .btn {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

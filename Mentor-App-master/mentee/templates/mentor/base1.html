@@ -26,6 +26,31 @@
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <title>APSIT Diary | {% block title %}{% endblock %}</title>
+      <style>
+          /* --------------------- */
+          /* MOBILE RESPONSIVENESS */
+          /* --------------------- */
+          @media (max-width: 768px) {
+
+          .navbar-nav.mx-5 {
+            margin: 0 !important;
+            text-align: center;
+          }
+
+          .navbar-nav .nav-link {
+            padding: 8px 0;
+          }
+
+          .navbar-brand {
+            font-size: 1rem;
+          }
+
+          .navbar img {
+            width: 50px !important;
+            height: 45px !important;
+          }
+        }
+      </style>
   </head>
   <body>
 
@@ -33,7 +58,7 @@
       <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
           <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
         <div class="container">
-          <a class="navbar-brand mr-4" href="">MentorConnect</a>
+          <a class="navbar-brand mr-4" href="#">MentorConnect</a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
           </button>
@@ -70,7 +95,7 @@
                       </ul>
                     </li>
                     </ul>
-                    {% elif request.user.not_authenticated %}
+                    {% else %}
                     <a class="nav-item nav-link" href="{% url 'home' %}">Home</a>
                     <a class="nav-item nav-link" href="{% url 'login1' %}">Login</a>
                     <a class="nav-item nav-link" href="{% url 'register1' %}">Register</a>

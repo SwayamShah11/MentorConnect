@@ -116,7 +116,7 @@
                                 {% endif %}
                                 <form method="post" enctype="multipart/form-data">
                                     {% csrf_token %}
-                                    <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
+                                    <small class="note-text fw-semibold">
                                         Note: '*' asterisk denotes that the fields are required.
                                     </small>
                                     <div class="row g-3">
@@ -159,7 +159,7 @@
                                             {% if editing %}Update{% else %}Submit{% endif %}
                                         </button>
                                         {% if editing %}
-                                            <a href="{% url 'projects-list' %}" class="btn btn-secondary btn-lg">Cancel</a>
+                                            <a href="{% url 'projects-list' %}" class="btn btn-secondary btn-lg w-100 w-md-50">Cancel</a>
                                         {% endif %}
                                     </div><br>
                                 </form>
@@ -236,6 +236,130 @@ a[aria-expanded="true"] .toggle-icon {
 
 #projectFormWrapper.open {
   max-height: 1000px; /* large enough to fit your form */
+}
+
+.note-text {
+  color: #ff0000 !important;
+}
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.75rem;
+    min-width: 900px; /* force horizontal scroll */
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    padding: 6px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-white {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div,
+  .col-md-6,
+  .col-md-3 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #showFormBtn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #projectFormWrapper.open {
+    max-height: 2000px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+}
+
+    body {
+  overflow-x: hidden;
 }
 </style>
 {% endblock %}

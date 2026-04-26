@@ -34,6 +34,7 @@
           background: linear-gradient(135deg, #020617, #0f172a);
           font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
           color: #e5e7eb;
+          overflow-x: hidden;
         }
 
         /* ------------------------------
@@ -71,6 +72,7 @@
           text-align: center;
           font-weight: 700;
           line-height: 1.3;
+          word-break: break-word;
         }
 
         /* ------------------------------
@@ -215,6 +217,75 @@
           text-shadow: 0 0 6px rgba(91, 124, 250, 0.8);
         }
 
+        /* --------------------- */
+        /* MOBILE RESPONSIVENESS */
+        /* --------------------- */
+        @media (max-width: 768px) {
+
+          .navbar-custom {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            gap: 8px;
+          }
+
+          .navbar-center {
+            font-size: 0.85rem;
+            line-height: 1.2;
+          }
+
+          .navbar-left img {
+            height: 40px;
+          }
+
+          .navbar-right {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+
+          .navbar-right a {
+            font-size: 11px;
+            padding: 6px 10px;
+          }
+        }
+
+        @media (max-width: 768px) {
+
+          .content-section {
+            padding: 20px 15px;
+            border-radius: 16px;
+          }
+
+          legend {
+            font-size: 1.2rem;
+            text-align: center;
+          }
+        }
+
+        @media (max-width: 768px) {
+
+          .form-control,
+          .form-select {
+            font-size: 0.95rem;
+            padding: 10px 12px;
+          }
+
+          label {
+            font-size: 0.9rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+
+          .btn-outline-info {
+            width: 100%;
+            padding: 12px;
+            font-size: 0.95rem;
+          }
+        }
     </style>
 </head>
 <body>
@@ -236,23 +307,25 @@
         <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home <i class="bi bi-house-fill"></i></a>
       </div>
 </div>
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <div class="content-section">
-            <form method="POST">
-                {% csrf_token %}
-                <fieldset class="form-group">
-                    <legend class="border-bottom mb-4">Join Today to be a Mentor</legend>
-                    {{ form1|crispy }}
-                </fieldset>
-                <div class="form-group">
-                    <button class="btn btn-outline-info" type="submit">Sign Up <i class="bi bi-arrow-right"></i></button>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="content-section">
+                <form method="POST">
+                    {% csrf_token %}
+                    <fieldset class="form-group">
+                        <legend class="border-bottom mb-4">Join Today to be a Mentor</legend>
+                        {{ form1|crispy }}
+                    </fieldset>
+                    <div class="form-group">
+                        <button class="btn btn-outline-info" type="submit">Sign Up <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </form>
+                <div class="border-top pt-3">
+                    <small class="text-muted">
+                        Already have an Account? <a class="ml-2" href="{% url 'login1' %}">Sign In</a>
+                    </small>
                 </div>
-            </form>
-            <div class="border-top pt-3">
-                <small class="text-muted">
-                    Already have an Account? <a class="ml-2" href="{% url 'login1' %}">Sign In</a>
-                </small>
             </div>
         </div>
     </div>

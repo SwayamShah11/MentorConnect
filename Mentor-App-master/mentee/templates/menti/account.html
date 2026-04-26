@@ -22,7 +22,7 @@
               {% with user=item.user meeting=item.meeting can_join=item.can_join %}
               <li class="list-group-item border-0 bg-transparent mb-3 p-0">
                 <div class="card shadow-sm bg-black text-light">
-                  <div class="card-body d-flex align-items-center">
+                  <div class="card-body d-flex flex-column flex-md-row align-items-center">
                     {% if mentor.image %}
                       <img src="{{ mentor.image.url }}"
                            class="rounded-circle shadow-sm border border-3 border-light"
@@ -379,4 +379,129 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  #sidebar {
+    width: 100%;
+    position: relative;
+    transform: none !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-body {
+    flex-direction: column !important;
+    text-align: center;
+  }
+
+  .card-body img {
+    width: 80px !important;
+    height: 80px !important;
+    margin-bottom: 10px;
+  }
+
+  .card-body h4,
+  .card-body p {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-group {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+    margin: 5px 0 !important;
+  }
+
+  .btn-group .btn {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.75rem;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  td {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Make table scroll nicely */
+  .table-responsive {
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .col-lg-8,
+  .col-lg-4 {
+    width: 100%;
+  }
+
+  .card {
+    margin-bottom: 15px;
+  }
+}
+
+    .progress-bar {
+  font-size: 0.75rem;
+}
+
+    @media (max-width: 768px) {
+
+  #attendanceChart {
+    height: 200px !important;
+  }
+}
+
+    h2 {
+  font-size: 1.8rem;
+}
+
+p.text-muted {
+  font-size: 0.95rem;
+}
+
+    body {
+  overflow-x: hidden;
+}
+
+    .btn-sm {
+  font-size: 0.8rem;
+  padding: 8px;
+}
+</style>
 {% endblock %}

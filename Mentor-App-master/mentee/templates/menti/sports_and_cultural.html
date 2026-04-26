@@ -256,8 +256,139 @@ a[aria-expanded="true"] .toggle-icon {
   max-height: 1500px;
 }
 
-    p.text-muted {
-        color: #ff0000 !important;
-    }
+.note-text {
+  color: #ff0000 !important;
+}
+
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.75rem;
+    min-width: 900px; /* force horizontal scroll */
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-white {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div,
+  .col-md-6,
+  .col-md-3 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #internshipForm.show {
+    max-height: 2500px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg,
+  .btn-success,
+  .btn-danger {
+    width: 100%;
+  }
+
+  #showFormBtn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .card-header .btn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
 </style>
 {% endblock %}

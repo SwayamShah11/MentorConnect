@@ -113,6 +113,76 @@
 <style>
 .chartBox {
   max-height: 100% !important;
+  width: 100% !important;
+}
+
+/* --------------------- */
+/* MOBILE RESPONSIVENESS */
+/* --------------------- */
+@media (max-width: 768px) {
+
+  .content {
+    padding: 15px !important;
+  }
+
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* HEADER */
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+  }
+
+  /* CARD */
+  .card {
+    padding: 15px !important;
+  }
+
+  /* BUTTONS */
+  .btn {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+
+  /* GRAPH BUTTONS */
+  #graphButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  #graphButtons .btn {
+    flex: 1 1 40%;
+  }
+
+  /* CHART FIX */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* EXPORT BUTTONS */
+  #exportBtnBox {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #exportBtnBox .btn {
+    width: 100%;
+  }
+}
+
+/* PREVENT HORIZONTAL SCROLL */
+body {
+  overflow-x: hidden;
 }
 </style>
 

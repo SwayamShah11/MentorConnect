@@ -301,6 +301,103 @@
       border: 1px solid rgba(255, 0, 0, 0.8);
       transition: all 0.4s ease;
     }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+        @media (max-width: 768px) {
+
+  .navbar-custom {
+    flex-direction: column;
+    text-align: center;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .navbar-center {
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+
+  .navbar-left img {
+    width: 55px;
+    height: 45px;
+  }
+
+  .navbar-right {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .navbar-right a {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+        @media (max-width: 768px) {
+
+  .row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .col-md-5,
+  .col-md-4 {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+        @media (max-width: 768px) {
+
+  .col-md-5 > div {
+    padding: 15px !important;
+    margin-bottom: 15px;
+  }
+
+  .col-md-5 h4 {
+    font-size: 1.1rem;
+  }
+
+  .col-md-5 ol {
+    font-size: 0.9rem;
+  }
+}
+
+        @media (max-width: 768px) {
+
+  .card-body {
+    padding: 20px 15px;
+  }
+
+  h4 {
+    font-size: 1.2rem;
+  }
+}
+
+        #togglePassword {
+  top: 30% !important;
+  transform: translateY(-50%);
+}
+
+        @media (max-width: 768px) {
+
+  .form-control {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  button.btn {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+}
+
+        body {
+  overflow-x: hidden;
+}
     </style>
 
 </head>
@@ -375,7 +472,11 @@
                             <div class="mb-3 position-relative">
                                 <input id="password" type="password" name="password" class="form-control" placeholder="Password" required>
                                 <i class="fa fa-eye position-absolute" id="togglePassword" style="right: 15px; top: 30%; transform: translateY(-50%); cursor: pointer;"></i>
-                                <small><a style="margin-right:200px;" class="text-danger" href="{% url 'forget_password'%}">Forgot Password?</a></small>
+                                <div class="text-end mt-1">
+                                  <a class="text-danger" href="{% url 'forget_password'%}">
+                                    Forgot Password?
+                                  </a>
+                                </div>
                             </div>
                             <!-- Submit -->
                             <button id="loginBtn" type="submit" class="btn w-100" style="background-color:#3f5cbf; color:white;">

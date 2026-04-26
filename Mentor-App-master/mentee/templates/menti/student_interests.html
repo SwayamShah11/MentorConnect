@@ -23,6 +23,23 @@
                     Student Interests
                 </h2>
             </div>
+              {% if is_mentor_view == False %}
+                <div class="card mb-3 shadow-sm bg-black text-light border-0 p-0">
+                  <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center">
+
+                    <div>
+                      <h6 class="mb-1 fw-bold">Career Planning Form</h6>
+                      <small class="text-muted" style="color: #fff !important;">Download and fill this form for career selection</small>
+                    </div>
+
+                    <a href="/media/CareerPlannings.pdf"
+                       class="btn btn-warning mt-2 mt-md-0"
+                       download>
+                       <i class="bi bi-download"></i> Download
+                    </a>
+                  </div>
+                </div>
+              {% endif %}
             <hr>
             <h4>Saved Interests</h4>
             <ul>
@@ -707,6 +724,130 @@ a[aria-expanded="true"] .toggle-icon {
 
 .slide-toggle.show {
     max-height: 800px; /* set bigger than your form height */
+}
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .interest-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .interest-left,
+  .interest-desc {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .interest-left {
+    align-items: flex-start;
+  }
+
+  .interest-left label {
+    font-size: 0.95rem;
+  }
+
+  input[type="checkbox"] {
+    transform: scale(1.2);
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .interest-desc {
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .section-header {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .actions {
+    justify-content: center !important;
+  }
+
+  .btn-submit {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .interest-desc .btn {
+    width: 100%;
+    margin-top: 5px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .muted {
+    text-align: center;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .btn-success {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  .d-flex.justify-content-end {
+    justify-content: center !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
 }
 </style>
 {% endblock %}

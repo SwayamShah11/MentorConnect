@@ -5,23 +5,18 @@
 {% block content %}
 {% include "menti/mentee_sidebar.html" %}
    <main role="main" class="container">
-       <div class="d-flex">
-          <div class="row">
-            <div class="col-12">
-              <div class="content shifted flex-grow-1 p-4">
-                <div class="container">
-                  <div class="content-section">
-                    <h3>
-                        <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2"><i id="sidebarIcon" class="bi bi-list"></i></a> |
-                        Message Corner
-                    </h3>
-                    <p class='text-muted' style="color: #fff !important;">Manage your messages, queries and requests.</p>
-                    <!-- Cards layout -->
-                    <div class="row row-cols-1 row-cols-md-2 g-4">
-
-                      <!-- Unapproved Requests -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
+       <div class="content shifted p-4">
+           <div class="content-section">
+               <h3>
+                   <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2"><i id="sidebarIcon" class="bi bi-list"></i></a> |
+                   Message Corner
+               </h3>
+               <p class='text-muted' style="color: #fff !important;">Manage your messages, queries and requests.</p>
+               <!-- Cards layout -->
+               <div class="row row-cols-1 row-cols-md-2 g-4">
+                   <!-- Unapproved Requests -->
+                   <div class="col">
+                       <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-camera-video fs-1 text-secondary"></i>
                             <h5 class="card-title mt-2 text-light">My Meetings</h5>
@@ -29,49 +24,114 @@
                             <a href="{% url 'mentee_meetings' %}" class="btn btn-outline-secondary">Open</a>
                           </div>
                         </div>
-                      </div>
+                   </div>
 
-                      <!-- Approved Requests -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
+                   <!-- Approved Requests -->
+                   <div class="col">
+                       <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
-                            <i class="bi bi-check-circle fs-1 text-success"></i>
-                            <h5 class="card-title mt-2 text-light">Approved Requests</h5>
-                            <p class="card-text text-secondary">Approved requests ({{ count1 }}).</p>
-                            <a href="{% url 'approved' %}" class="btn btn-outline-success">Open</a>
+                              <i class="bi bi-check-circle fs-1 text-success"></i>
+                              <h5 class="card-title mt-2 text-light">Approved Requests</h5>
+                              <p class="card-text text-secondary">Approved requests ({{ count1 }}).</p>
+                              <a href="{% url 'approved' %}" class="btn btn-outline-success">Open</a>
                           </div>
-                        </div>
-                      </div>
+                       </div>
+                   </div>
 
-                      <!-- Conversations -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
+                   <!-- Conversations -->
+                   <div class="col">
+                       <div class="card h-100 shadow-sm text-center p-3 bg-black">
                           <div class="card-body">
                             <i class="bi bi-chat-dots fs-1 text-info"></i>
                             <h5 class="card-title mt-2 text-light">Conversations</h5>
                             <p class="card-text text-secondary">Ongoing conversations ({{ count3 }}).</p>
                             <a href="{% url 'conv' %}" class="btn btn-outline-info">Open</a>
                           </div>
-                        </div>
-                      </div>
+                       </div>
+                   </div>
 
-                      <!-- My Queries -->
-                      <div class="col">
-                        <div class="card h-100 shadow-sm text-center p-3 bg-black">
-                          <div class="card-body">
-                            <i class="bi bi-question-circle fs-1 text-danger"></i>
-                            <h5 class="card-title mt-2 text-light">My Queries</h5>
-                            <p class="card-text text-secondary">Check & track your submitted queries.</p>
-                            <a href="{% url 'mentee_queries' %}" class="btn btn-outline-danger">Open</a>
-                          </div>
-                        </div>
-                      </div>
-                    </div> <!-- row end -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                   <!-- My Queries -->
+                   <div class="col">
+                       <div class="card h-100 shadow-sm text-center p-3 bg-black">
+                           <div class="card-body">
+                               <i class="bi bi-question-circle fs-1 text-danger"></i>
+                               <h5 class="card-title mt-2 text-light">My Queries</h5>
+                               <p class="card-text text-secondary">Check & track your submitted queries.</p>
+                               <a href="{% url 'mentee_queries' %}" class="btn btn-outline-danger">Open</a>
+                           </div>
+                       </div>
+                   </div>
+               </div> <!-- row end -->
+           </div>
        </div>
    </main>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card {
+    padding: 15px !important;
+  }
+
+  .card-body i {
+    font-size: 2rem !important;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .card-text {
+    font-size: 0.9rem;
+  }
+
+  .card .btn {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row-cols-md-2 {
+    row-gap: 15px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h3 {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

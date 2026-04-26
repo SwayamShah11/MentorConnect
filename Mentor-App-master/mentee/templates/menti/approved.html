@@ -20,7 +20,6 @@
                     </thead>
                     <tbody>
                     {% if messo %}
-                  <ol>
                  {% for approved in messo %}
                     <tr>
                         <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
@@ -32,9 +31,12 @@
                         {% endif %}
                     </tr>
                 {% endfor %}
-                       </ol>
                 {% else %}
-                <p>There Are no Approved Messages</p>
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-3">
+                    No approved messages found.
+                  </td>
+                </tr>
                 {% endif %}
                  </tbody>
                   </table>
@@ -68,4 +70,85 @@
         <i class="bi bi-arrow-left-circle"></i> Back
     </a>
 </div>
+<br>
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+  }
+
+  th, td {
+    padding: 8px !important;
+    white-space: nowrap;
+  }
+
+  td {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Make table scroll nicely */
+  .table-responsive {
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-light {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+
+  .content-section {
+    padding: 15px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  .btn-lg {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  /* Pagination wrap */
+  .pagination,
+  .btn-outline-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+    .badge {
+  font-size: 0.7rem;
+  padding: 6px 8px;
+}
+</style>
 {% endblock %}

@@ -1,7 +1,6 @@
 {% extends "mentor/base1.html" %}
 {% load static %}
 {% block title %} Agenda {% endblock %}
-
 {% block content %}
 <div class="container py-4">
 
@@ -112,7 +111,7 @@
 {% endif %}
   <!-- Table -->
   <div class="card p-0 bg-black">
-    <div class="card-header d-flex justify-content-between align-items-center bg-dark text-light">Uploaded Agendas
+    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-dark text-light gap-2">Uploaded Agendas
         {% if user.is_staff %}
           <form method="post" action="{% url 'weekly-agenda' %}"
                 onsubmit="return confirm('This will delete ALL agenda entries permanently. Continue?');"
@@ -186,4 +185,76 @@
     </div>
   </div>
 </div>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      /* STACK FORM FIELDS */
+      .card-body form .col-md-3,
+      .card-body form .col-md-2,
+      .card-body form .col-md-4,
+      .card-body form .col-md-6 {
+        width: 100% !important;
+      }
+
+      /* FILE INPUT */
+      input[type="file"] {
+        font-size: 0.9rem;
+      }
+
+      /* BUTTON */
+      .card-body form .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      table {
+        font-size: 0.75rem;
+        min-width: 750px;
+      }
+
+      .table-responsive {
+        overflow-x: auto;
+      }
+
+      th, td {
+        padding: 6px !important;
+        white-space: nowrap;
+      }
+
+      /* ACTION BUTTONS STACK */
+      td .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+
+      td .btn {
+        width: 100%;
+        margin-bottom: 4px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      h3 {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+
+      small {
+        font-size: 0.85rem;
+        text-align: center;
+        display: block;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

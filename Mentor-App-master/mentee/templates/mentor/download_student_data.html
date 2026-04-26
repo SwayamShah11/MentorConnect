@@ -331,5 +331,131 @@
     canvas {
     height: 300px !important;
 }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .row.g-3 > div,
+      .col-md-4 {
+        width: 100% !important;
+      }
+
+      select.form-select {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .text-center .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .d-flex.justify-content-between {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+      }
+
+      .d-flex.justify-content-between form button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .d-flex.justify-content-between > div {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .d-flex.justify-content-between {
+        flex-direction: column !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      table {
+        font-size: 0.75rem;
+        min-width: 600px;
+      }
+
+      .table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      th, td {
+        white-space: nowrap;
+        padding: 6px !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .row.text-center > div {
+        width: 100% !important;
+        margin-bottom: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      canvas {
+        height: 220px !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .d-flex > .col-md-6 {
+        width: 100% !important;
+      }
+
+      .d-flex {
+        flex-direction: column !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      h2, h4, h5 {
+        text-align: center;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+
+      h4 {
+        font-size: 1.2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .toast-container {
+        width: 100%;
+        padding: 10px;
+      }
+
+      .toast {
+        width: 100%;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
 </style>
 {% endblock %}

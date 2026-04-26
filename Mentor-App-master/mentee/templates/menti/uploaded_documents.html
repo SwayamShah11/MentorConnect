@@ -70,5 +70,115 @@
             </a>
         </div>
     </div>
-</div>
+</div><br>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+
+  .card-header .btn {
+    width: 100%;
+  }
+
+  .badge {
+    text-align: center;
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+    font-size: 0.8rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-white {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .card-body {
+    padding: 15px;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

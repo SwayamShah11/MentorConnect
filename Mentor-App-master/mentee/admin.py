@@ -1,10 +1,8 @@
 from django.contrib import admin
-from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
-                     OtherEvent, CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, SelfAssessment,
-                     StudentInterest, SemesterResult, MentorMenteeInteraction, ActivityLog, WeeklyAgenda, SWOTAnalysis)
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import Group
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import (Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
+                     CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MentorMentee, SelfAssessment, Query,
+                     StudentInterest, SemesterResult, MentorMenteeInteraction, ActivityLog, WeeklyAgenda, SWOTAnalysis,
+                     PaperPublication)
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -85,7 +83,6 @@ class OtherEventAdmin(admin.ModelAdmin):
     actions = [delete_all_and_reset_id]
 
 
-
 @admin.register(CertificationCourse)
 class CertificationCourseAdmin(admin.ModelAdmin):
     list_display = (
@@ -96,7 +93,7 @@ class CertificationCourseAdmin(admin.ModelAdmin):
     list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
     readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
     ordering = ("-uploaded_at",)
-    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", "delete_all_and_reset_id")
+    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", delete_all_and_reset_id)
 
     @admin.action(description="Mark selected as manually verified")
     def mark_verified(self, request, queryset):
@@ -127,6 +124,8 @@ class LongTermGoalAdmin(admin.ModelAdmin):
 @admin.register(EducationalDetail)
 class EducationalDetailAdmin(admin.ModelAdmin):
     list_display = ("user", "examination", "percentage", "university_board", "year_of_passing")
+    list_filter = ("examination", "university_board", "year_of_passing")
+    search_fields = ['user__username']
     actions = [delete_all_and_reset_id]
 
 
@@ -143,8 +142,25 @@ class StudentInterestAdmin(admin.ModelAdmin):
 @admin.register(SemesterResult)
 class SemesterResultAdmin(admin.ModelAdmin):
     list_display = ("user", "academic_year", "semester", "pointer", "no_of_kt", "created_at")
+    list_filter = ("academic_year", "semester", "pointer", "no_of_kt")
+    search_fields = ['user__username']
     actions = [delete_all_and_reset_id]
 
+
+@admin.register(MentorMentee)
+class MentorMenteeMappingAdmin(admin.ModelAdmin):
+    list_display = ("mentor", "mentee", "created_at")
+    search_fields = ('mentor__user__username', 'mentee__user__username')
+    list_filter = ['mentor__name']
+    actions = [delete_all_and_reset_id]
+
+
+@admin.register(PaperPublication)
+class PaperPublicationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'academic_year', 'semester', 'year', 'type', 'conf_name', 'level', 'amount_reimbursed', 'authors')
+    search_fields = ('user__username', 'title', 'academic_year', 'semester', 'year', 'type', 'authors')
+    list_filter = ['academic_year', 'semester', 'year', 'type', 'authors']
+    actions = [delete_all_and_reset_id]
 
 class ConversationAdmin(admin.ModelAdmin):
     search_fields = ("conversation",)
@@ -178,11 +194,9 @@ class UserAdmin(admin.ModelAdmin):
 
 admin.site.register(Reply)
 
-admin.site.register(Mentee)
+# admin.site.register(Mentee)
 
 admin.site.register(Mentor, MentorAdmin)
-
-#admin.site.register(User, UserAdmin)
 
 admin.site.register(Profile)
 
@@ -204,21 +218,13 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 
-admin.site.unregister(Group)
 
-
-from .models import MentorAdmin
-@admin.register(MentorAdmin)
-class MentoAdmin(admin.ModelAdmin):
-    list_display = ['user', 'specialization', 'availability_start', 'availability_end']
-    search_fields = ['user_username', 'user_first_name']
-    list_filter = ['specialization']
-
-
-@admin.register(MenteeAdmin)
-class MenteeAdmin(admin.ModelAdmin):
-    list_display = ['user']
-    search_fields = ['user_username', 'user_first_name']
+# from .models import MentorAdmin
+# @admin.register(MentorAdmin)
+# class MentorAdmin(admin.ModelAdmin):
+#     list_display = ['user', 'specialization', 'availability_start', 'availability_end']
+#     search_fields = ['user_username', 'user_first_name']
+#     list_filter = ['specialization']
 
 
 @admin.register(Meeting)
@@ -251,7 +257,7 @@ class MeetingAdmin(admin.ModelAdmin):
 @admin.register(MentorMenteeInteraction)
 class MentorMenteeInteractionAdmin(admin.ModelAdmin):
     list_display = [
-        'mentor',     # Shows mentor username automatically
+        'mentor',
         'mentee_list',
         'date',
         'semester',
@@ -260,17 +266,17 @@ class MentorMenteeInteractionAdmin(admin.ModelAdmin):
         'created_at',
     ]
 
+    list_filter = [
+        'semester',
+        'class_year',
+    ]
+
     search_fields = [
-        'mentor__username',  # search by mentor username
-        'mentor__first_name',
-        'mentor__last_name',
-        'mentees__username',  # search by mentee username
-        'mentees__first_name',
-        'mentees__last_name',
+        'mentor__username',
+        'mentees__username',
     ]
     actions = [delete_all_and_reset_id]
 
-    # Optional: make admin faster by prefetching M2M
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("mentees")
@@ -294,11 +300,23 @@ class WeeklyAgendaAdmin(admin.ModelAdmin):
 
 @admin.register(SWOTAnalysis)
 class SWOTAnalysisAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'mentor_name', 'moodle_id', 'year', 'division', 'batch', 'career_option', 'other_career')
+    list_filter = ('name', 'mentor_name', 'year', 'division', 'batch', 'career_option')
+    search_fields = ('name', 'mentor_name', 'year', 'division', 'batch', 'career_option')
     actions = [delete_all_and_reset_id]
 
 
 @admin.register(SelfAssessment)
 class SelfAssessmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'year', 'goals', 'reason', 'created_at')
+    list_filter = ['user__username', 'year']
+    search_fields = ['user__username', 'year']
+    actions = [delete_all_and_reset_id]
+
+
+@admin.register(Query)
+class QueryAdmin(admin.ModelAdmin):
+    list_display = ('mentor', 'mentee', 'text', 'severity', 'status', 'created_at')
+    list_filter = ['mentor__name', 'severity', 'status', 'mentee__user']
+    search_fields = ['mentor__name', 'mentee__user__username', 'severity']
     actions = [delete_all_and_reset_id]

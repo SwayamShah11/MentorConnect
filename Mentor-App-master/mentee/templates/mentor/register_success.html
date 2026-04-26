@@ -1,22 +1,61 @@
 {% extends "mentor/base1.html" %}
 {% load static %}
-
 {% block title %}Registration Successful{% endblock %}
-
 {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0 p-0">
+<div class="container mt-5 px-3">
+  <div class="row justify-content-center w-100">
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="card shadow border-0 text-center p-0">
         <div class="card-header bg-dark text-white">
           <h4 class="mb-0">Account Created</h4>
         </div>
         <div class="card-body">
-          <p class="mb-3">Your account has been created successfully. Please log in to continue.</p>
+          <p class="mb-4">Your account has been created successfully.<br> Please log in to continue.</p>
           <a href="{{ login_url }}" class="btn btn-primary">Go to Login</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .container {
+        margin-top: 60px !important;
+      }
+
+      .card {
+        border-radius: 15px;
+      }
+
+      .card-body {
+        padding: 20px 15px;
+        text-align: center;
+      }
+
+      .card-header h4 {
+        font-size: 1.2rem;
+        text-align: center;
+      }
+
+      .card-body p {
+        font-size: 0.95rem;
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 10px;
+        font-size: 0.95rem;
+      }
+    }
+
+    /* PREVENT OVERFLOW */
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

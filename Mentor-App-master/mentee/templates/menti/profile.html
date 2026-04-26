@@ -251,5 +251,97 @@ h5.fw-bold {
 .btn:hover {
   transform: translateY(-2px);
 }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div {
+    width: 100% !important;
+  }
+
+  .col-md-6,
+  .col-md-4,
+  .col-md-3 {
+    width: 100% !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .header-dark {
+    position: relative !important;
+  }
+
+  .card-body {
+    padding-top: 20px !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h5.fw-bold {
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
 </style>
 {% endblock %}

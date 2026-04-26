@@ -296,4 +296,135 @@
     </div>
   </div>
 </div>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row > .col-md-8,
+  .row > .col-md-4 {
+    width: 100% !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .progress {
+    height: 18px;
+  }
+
+  .btn-success,
+  .btn-outline-primary {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-body.d-flex {
+    flex-direction: column !important;
+    text-align: center;
+  }
+
+  .card-body img {
+    width: 90px !important;
+    height: 90px !important;
+    margin-bottom: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 500px;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  th, td {
+    white-space: nowrap;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-body {
+    padding: 15px;
+  }
+
+  .card-header h5 {
+    font-size: 1.1rem;
+    text-align: center;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2 {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .form-control,
+  textarea {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .btn-success {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  details summary {
+    text-align: center;
+    font-size: 0.9rem;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

@@ -238,6 +238,117 @@
             font-size: 1.4rem;
         }
     }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .card-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+      }
+
+      .card-header > div:last-child {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100%;
+      }
+
+      .card-header .btn,
+      .card-header .form-check,
+      .card-header .badge,
+      .card-header .input-group {
+        width: 100%;
+      }
+
+      .badge {
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      #moodle-ids-select {
+        height: auto;
+        max-height: 150px;
+        font-size: 0.9rem;
+      }
+
+      label.form-label {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      #search-btn {
+        width: 100%;
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      table {
+        font-size: 0.75rem;
+        min-width: 700px;
+      }
+
+      .table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      th, td {
+        padding: 6px !important;
+        white-space: nowrap;
+      }
+
+      /* Allow document name to wrap */
+      td:nth-child(5) {
+        white-space: normal !important;
+        max-width: 200px;
+        word-break: break-word;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      td .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 4px;
+        font-size: 0.75rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .input-group {
+        width: 100% !important;
+      }
+
+      .dropdown-menu {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      h2 {
+        font-size: 1.3rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
 </style>
 
 <script>

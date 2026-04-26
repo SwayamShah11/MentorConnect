@@ -12,7 +12,7 @@
     </div>
 </div><hr>
 <div class="container">
-	<h1 class="text-light">Review the Request </h1>
+	<h2 class="text-light">Review the Request </h2>
 	<form method="post" class="text-light">
 		{% csrf_token %}
 		{{ form|crispy }}
@@ -29,6 +29,5 @@
     .form-label {
         color: #ffffff !important;
     }
-
 </style>
 {% endblock %}

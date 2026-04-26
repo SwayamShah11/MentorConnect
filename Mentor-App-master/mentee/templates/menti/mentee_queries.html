@@ -100,5 +100,82 @@
        class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
         <i class="bi bi-arrow-left-circle"></i> Back
     </a>
-</div>
+</div><br>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 600px; /* enable horizontal scroll */
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  /* Allow query text to wrap properly */
+  td:nth-child(2) {
+    white-space: normal !important;
+    max-width: 200px;
+    word-break: break-word;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    border-radius: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h1.text-light {
+    font-size: 1.4rem;
+    text-align: center;
+  }
+
+  .content-section {
+    padding: 15px;
+  }
+}
+
+    .badge {
+  font-size: 0.7rem;
+  padding: 6px 8px;
+}
+
+    @media (max-width: 768px) {
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .page-link {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

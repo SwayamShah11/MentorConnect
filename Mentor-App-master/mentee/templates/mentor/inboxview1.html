@@ -1,10 +1,65 @@
 {% extends 'mentor/base1.html' %}
 {% load crispy_forms_tags %}
+
 {% block content %}
-<p><b>Message Content</b></p>
-<p>From: {{ messo.sender }} </p>
-<p>Message:  {{ messo.msg_content }}</p>
-<div class="container">
-    <p><a class="btn btn-warning" href="{% url 'comment' pk=messo.pk %}">Approve</a></p>
+
+<div class="container mt-4 px-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+
+      <div class="card shadow-sm p-3">
+
+        <h5 class="text-center mb-3">Message Details</h5>
+
+        <p><strong>From:</strong> {{ messo.sender }}</p>
+
+        <p><strong>Message:</strong></p>
+        <div class="border rounded p-2 mb-3 bg-light text-dark">
+          {{ messo.msg_content }}
+        </div>
+
+        <a class="btn btn-warning w-100"
+           href="{% url 'comment' pk=messo.pk %}">
+          Approve
+        </a>
+
+      </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+            <a href="{% url 'inbox2' %}"
+               class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-0">
+                <i class="bi bi-arrow-left-circle"></i> Back
+            </a>
+        </div>
+    </div>
+  </div>
 </div>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .card {
+        border-radius: 12px;
+      }
+
+      h5 {
+        font-size: 1.2rem;
+      }
+
+      p {
+        font-size: 0.95rem;
+      }
+
+      .btn {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

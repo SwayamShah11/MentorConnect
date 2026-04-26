@@ -82,6 +82,85 @@ height: 400px;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .card-body.d-flex {
+    flex-direction: column !important;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .card-body img {
+    width: 70px !important;
+    height: 70px !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #calendar {
+    height: 350px !important;
+  }
+
+  .fc {
+    font-size: 0.75rem;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-body {
+    padding: 15px !important;
+  }
+
+  h4, h5 {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #selected-slot {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-success {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

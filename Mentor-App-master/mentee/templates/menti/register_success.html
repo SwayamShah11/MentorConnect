@@ -4,7 +4,7 @@
 {% block title %}Registration Successful{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 120px;">
+<div class="container mt-5 px-3">
   <div class="row justify-content-center">
     <div class="col-lg-6">
       <div class="card shadow-sm border-0 p-0">
@@ -13,10 +13,51 @@
         </div>
         <div class="card-body">
           <p class="mb-3">Your account has been created successfully. Please log in to continue.</p>
-          <a href="{{ login_url }}" class="btn btn-primary">Go to Login</a>
+          <a href="{{ login_url }}" class="btn btn-primary w-100 mt-2">Go to Login</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+@media (max-width: 768px) {
+
+  .container {
+    margin-top: 60px !important;
+  }
+
+  .card {
+    border-radius: 15px;
+  }
+
+  .card-body {
+    padding: 20px 15px;
+    text-align: center;
+  }
+
+  .card-header h4 {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  .card-body p {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+}
+
+/* PREVENT OVERFLOW */
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

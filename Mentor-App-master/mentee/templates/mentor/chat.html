@@ -1,94 +1,109 @@
 {% extends 'mentor/base1.html' %}
-
 {% load crispy_forms_tags %}
-
 {% load humanize %}
-
 {% block content %}
-
-
-
-
-<div class="row">
-        <div class="col-md-8">
- <div class="content-section">
-
-
-
-
-
-
-	<h1>Start Your Chart</h1>
-	<form method="post">
-		{% csrf_token %}
-
-		{{ form|crispy }}
-
-
-        <button type="submit" class="btn btn-info btn-sm">Send Message</button>
-	</form>
-
-
-
-	 </div>
+<div class="container mt-4 px-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="content-section">
+            <h2 class="text-center mb-3">Start Your Chat</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-info w-100 mt-2">Send Message</button>
+            </form>
         </div>
+    </div>
+  </div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+        <a href="{% url 'approved1' %}"
+           class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+            <i class="bi bi-arrow-left-circle"></i> Back
+        </a>
+    </div>
 </div>
 
-
 <style>
-/* Chat containers */
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+/* CHAT CONTAINER */
 .container1 {
-  border: 2px solid #dedede;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #ddd;
   background-color: #f1f1f1;
-  border-radius: 5px;
+  border-radius: 10px;
   padding: 10px;
   margin-top: 10px;
 }
 
-/* Darker chat container */
+/* DARK VERSION */
 .darker {
-  border-color: #ccc;
   background-color: #ddd;
 }
 
-/* Clear floats */
-.container1::after {
-  content: "";
-  clear: both;
-  display: table;
-}
-
-/* Style images */
+/* PROFILE IMAGE */
 .container1 img {
-  float: left;
-  max-width: 60px;
-  width: 100%;
-  margin-right: 20px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
-/* Style the right image */
-.container1 img.right {
-  float: right;
-  margin-left: 20px;
-  margin-right:0;
+/* MESSAGE CONTENT */
+.container1 .message {
+  flex: 1;
+  font-size: 0.9rem;
 }
 
-/* Style time text */
-.time-right {
-  float: right;
-  color: #aaa;
-}
-
-/* Style time text */
+/* TIME */
+.time-right,
 .time-left {
-  float: left;
-  color: #999;
+  font-size: 0.7rem;
+  color: #888;
 }
 
+/* MOBILE FIX */
+@media (max-width: 768px) {
+
+  .container1 {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .container1 img {
+    width: 35px;
+    height: 35px;
+  }
+
+  .container1 .message {
+    width: 100%;
+  }
+
+  .time-right,
+  .time-left {
+    display: block;
+    margin-top: 5px;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  .btn {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+}
+
+.form-label {
+  color: #fff;
+}
+
+body {
+  overflow-x: hidden;
+}
 </style>
-
-
-
-
 {% endblock %}

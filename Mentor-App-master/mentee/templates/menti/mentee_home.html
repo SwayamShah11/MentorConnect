@@ -24,6 +24,90 @@
     p.text-muted {
         color: #fff !important;
     }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .container.d-flex {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 15px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .profile-card {
+    padding: 20px !important;
+    width: 100%;
+  }
+
+  .profile-card img {
+    width: 110px !important;
+    height: 110px !important;
+  }
+
+  .profile-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .profile-card p {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .container[style*="max-width: 650px"] {
+    padding: 0 10px;
+  }
+
+  .list-group-item {
+    font-size: 0.9rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .alert {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  .alert .btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    float: none !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .alert-danger .btn {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
 </style>
 <br>
 {% if notifications %}

@@ -36,7 +36,7 @@
                     </select>
                 </div>
 
-                <div class="col-md-3 d-flex gap-2">
+                <div class="col-md-3 d-flex flex-column flex-md-row gap-2">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-funnel"></i> Filter
                     </button>
@@ -177,4 +177,110 @@
         <i class="bi bi-arrow-left-circle"></i> Back
     </a>
 </div><br>
+
+<style>
+/* --------------------- */
+/* MOBILE RESPONSIVENESS */
+/* --------------------- */
+@media (max-width: 768px) {
+
+  /* FILTER FORM */
+  .row.g-2 > div,
+  .col-md-3 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .col-md-3 .btn {
+    width: 100%;
+  }
+
+  /* MARK ALL BUTTON */
+  form.text-end {
+    text-align: center !important;
+  }
+
+  form.text-end .btn {
+    width: 100%;
+  }
+
+  /* TABLE */
+  table {
+    font-size: 0.75rem;
+    min-width: 750px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  /* QUERY TEXT WRAP */
+  td:nth-child(4) {
+    white-space: normal !important;
+    max-width: 220px;
+    word-break: break-word;
+  }
+
+  /* ACTION BUTTONS STACK */
+  td .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  td .btn {
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+  }
+
+  /* HEADER */
+  h2 {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+
+  .content-section {
+    padding: 15px;
+  }
+
+  /* PAGINATION */
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .pagination .btn {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  /* BACK BUTTON */
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+/* PREVENT OVERFLOW */
+body {
+  overflow-x: hidden;
+}
+</style>
 {% endblock %}

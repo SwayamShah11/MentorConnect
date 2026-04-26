@@ -23,8 +23,6 @@
                     <tbody>
 
                     {% if messo %}
-                  <ol>
-
                  {% for approved in messo %}
                     <tr>
                         <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
@@ -44,9 +42,12 @@
                         <td> <a class="btn btn-primary btn-sm" href="{% url 'start-chat1' pk=approved.sender.pk %}">Start Chat</a></td>
                     </tr>
                 {% endfor %}
-                       </ol>
                 {% else %}
-                <p>There Are no Approved Messages</p>
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-3">
+                    No approved messages found.
+                  </td>
+                </tr>
                 {% endif %}
                  </tbody>
                   </table>
@@ -80,4 +81,98 @@
         <i class="bi bi-arrow-left-circle"></i> Back
     </a>
 </div><br>
+
+<style>
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      table {
+        font-size: 0.75rem;
+        min-width: 700px; /* force horizontal scroll */
+      }
+
+      .table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      th, td {
+        padding: 6px !important;
+        white-space: nowrap;
+      }
+
+      /* Allow comment column to wrap */
+      td:nth-child(4) {
+        white-space: normal !important;
+        max-width: 200px;
+        word-break: break-word;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      td .btn {
+        display: block;
+        width: 100%;
+        font-size: 0.75rem;
+        margin-top: 5px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      h2 {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+
+      .content-section {
+        padding: 15px;
+      }
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 6px 8px;
+    }
+
+    @media (max-width: 768px) {
+
+      .btn-outline-info,
+      .btn-info {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+      }
+
+      .mb-4 {
+        margin-bottom: 8px !important;
+      }
+
+      /* Wrap pagination */
+      .btn-outline-info,
+      .btn-info {
+        display: inline-block;
+        margin: 3px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .btn-warning {
+        width: 100%;
+        margin: 0 !important;
+      }
+
+      .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+</style>
 {% endblock %}

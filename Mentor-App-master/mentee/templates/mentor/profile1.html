@@ -3,7 +3,7 @@
 {% load static %}
 {% block title %} Profile {% endblock %}
 {% block content %}
-<div class="d-flex">
+<div>
   <!-- Sidebar -->
   <!-- Main Content -->
   <div class="content flex-grow-1 p-4">
@@ -57,7 +57,7 @@
             </div>
           </div>
 
-          <div class="d-flex justify-content-center mt-4">
+          <div class="mt-4">
             <button type="submit" class="btn btn-success btn-lg">Save Changes</button>
           </div>
         </form>
@@ -122,6 +122,67 @@ h5.fw-bold { color: #000; font-size: 1.1rem; }
 
     .slide-toggle.show {
         max-height: 800px; /* set bigger than your form height */
+    }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      /* FORM GRID → STACK */
+      .row.g-3 > div,
+      .col-md-6 {
+        width: 100% !important;
+      }
+
+      /* CONTAINER */
+      .container {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .content {
+        padding: 15px !important;
+      }
+
+      /* HEADER FIX */
+      .header-dark {
+        position: relative !important;
+      }
+
+      .card-body {
+        padding-top: 20px !important;
+      }
+
+      /* TITLE */
+      h4 {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+
+      /* INPUTS */
+      .form-control,
+      .form-select {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+
+      /* BUTTON */
+      .btn-success {
+        width: 100%;
+        font-size: 1rem;
+        padding: 10px;
+      }
+
+      /* PROFILE IMAGE INPUT */
+      input[type="file"] {
+        font-size: 0.9rem;
+      }
+    }
+
+    /* PREVENT OVERFLOW */
+    body {
+      overflow-x: hidden;
     }
 </style>
 {% endblock %}

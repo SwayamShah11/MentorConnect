@@ -108,7 +108,7 @@
                                       action="{% if editing %}{% url 'edit_semester' edit_id %}{% else %}{% url 'semester_results' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                        <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
+                                        <small class="note-text fw-semibold">
                                             Note: '*' asterisk denotes that the fields are required.
                                         </small>
 
@@ -143,7 +143,7 @@
                                                 </div>
                                             {% endif %}
                                         </div>
-                                        <p class="text-muted">Upload PDF file only (Max size: 1MB)</p>
+                                        <p class="note-text">Upload PDF file only (Max size: 1MB)</p>
                                     </div>
 
                                     <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
@@ -202,8 +202,137 @@ document.getElementById("showFormBtn").addEventListener("click", function(){
 #semesterForm.show {
   max-height: 800px;
 }
-p.text-muted {
-    color: #ff0000 !important;
+.note-text {
+  color: #ff0000 !important;
+}
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 650px;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-white {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div,
+  .col-md-4 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #semesterForm.show {
+    max-height: 2000px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg,
+  .btn-success,
+  .btn-danger {
+    width: 100%;
+  }
+
+  #showFormBtn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .card-header .btn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
 }
 </style>
 {% endblock %}

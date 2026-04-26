@@ -92,7 +92,7 @@
                                       action="{% if editing %}{% url 'edit_assessment' edit_id %}{% else %}{% url 'self_assessment' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                        <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
+                                        <small class="note-text fw-semibold">
                                             Note: '*' asterisk denotes that the fields are required.
                                         </small>
 
@@ -522,6 +522,128 @@ a[aria-expanded="true"] .toggle-icon {
 }
 #internshipForm.show {
   max-height: 800px;
+}
+
+.note-text {
+  color: #ff0000 !important;
+}
+
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.8rem;
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div,
+  .col-md-6,
+  .col-md-4,
+  .col-md-3 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #internshipForm.show {
+    max-height: 3000px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.text-center > div {
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg,
+  .btn-success,
+  .btn-danger {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  #showFormBtn {
+    width: 100%;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2.text-white {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  #toggleSidebarBtn {
+    font-size: 0.9rem;
+    padding: 5px 8px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+    body {
+  overflow-x: hidden;
 }
 </style>
 {% endblock %}

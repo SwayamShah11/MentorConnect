@@ -3,7 +3,6 @@
 {% block title %} Message Corner {% endblock %}
 {% block content %}
 <main role="main" class="container">
-  <div class="d-flex">
     <div class="row">
       <div class="col-12">
         <div class="content flex-grow-1 p-4">
@@ -18,7 +17,7 @@
               <p class="text-muted" style="color: #fff !important;">Manage your messages, queries and meetings.</p>
 
               <!-- Cards layout -->
-              <div class="row row-cols-1 row-cols-md-3 g-4">
+              <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
 
                 <!-- Unapproved Requests -->
                 <div class="col">
@@ -86,7 +85,6 @@
         </div>
       </div>
     </div>
-  </div>
 </main>
 
 <style>
@@ -106,6 +104,117 @@
 
     .slide-toggle.show {
         max-height: 800px; /* set bigger than your form height */
+    }
+
+    .card {
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* GLOW ON HOVER */
+    .card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow:
+        0 20px 40px rgba(0,0,0,0.7),
+        0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* ICON GLOW */
+    .card i {
+      transition: all 0.3s ease;
+    }
+
+    .card:hover i {
+      transform: scale(1.2);
+      text-shadow: 0 0 10px currentColor;
+    }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      /* CONTAINER */
+      main.container {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .content {
+        padding: 15px !important;
+      }
+
+      /* HEADER */
+      h3 {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+
+      #toggleSidebarBtn {
+        display: inline-block;
+        margin-bottom: 10px;
+      }
+
+      /* CARDS */
+      .card {
+        padding: 15px !important;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+      }
+
+      /* GLOW ON HOVER */
+    .card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow:
+        0 20px 40px rgba(0,0,0,0.7),
+        0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* ICON GLOW */
+    .card i {
+      transition: all 0.3s ease;
+    }
+
+    .card:hover i {
+      transform: scale(1.2);
+      text-shadow: 0 0 10px currentColor;
+    }
+
+      .card-body {
+        padding: 10px;
+      }
+
+      .card-title {
+        font-size: 1.1rem;
+      }
+
+      .card-text {
+        font-size: 0.9rem;
+      }
+
+      /* ICON SIZE */
+      .card i {
+        font-size: 2rem !important;
+      }
+
+      /* BUTTON */
+      .card .btn {
+        width: 100%;
+        font-size: 0.9rem;
+        padding: 8px;
+      }
+
+      /* GRID GAP */
+      .row.g-4 {
+        gap: 10px;
+      }
+    }
+
+    /* PREVENT OVERFLOW */
+    body {
+      overflow-x: hidden;
     }
 </style>
 {% endblock %}

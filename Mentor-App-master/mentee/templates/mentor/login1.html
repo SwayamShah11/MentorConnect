@@ -293,6 +293,94 @@
       border: 1px solid rgba(0, 255, 140, 0.8);
       transition: all 0.4s ease;
     }
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+      .navbar-custom {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .navbar-left img {
+        width: 55px;
+        height: 50px;
+      }
+
+      .navbar-center {
+        font-size: 0.9rem;
+      }
+
+      .navbar-right {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .navbar-right a {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .row.justify-content-center {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .col-md-5,
+      .col-md-4 {
+        width: 100% !important;
+        max-width: 400px;
+      }
+
+      .col-md-5 {
+        margin-bottom: 15px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .card-body {
+        padding: 20px !important;
+      }
+
+      h4 {
+        font-size: 1.2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .form-control {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+
+      button.btn {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      h2 {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
     </style>
 </head>
 <body>
@@ -363,7 +451,7 @@
                             <div class="mb-3 position-relative">
                                 <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
                                 <i class="fa fa-eye position-absolute" id="togglePassword" style="right: 15px; top: 30%; transform: translateY(-50%); cursor: pointer;"></i>
-                                <small><a style="margin-right:200px;" class="text-danger" href="{% url 'forget_pass'%}">Forgot Password?</a></small>
+                                <small class="d-block text-end mt-1"><a class="text-danger" href="{% url 'forget_pass'%}">Forgot Password?</a></small>
                             </div>
                             <!-- Submit -->
                             <button id="loginBtn" type="submit" class="btn w-100" style="background-color:#3f5cbf; color:white;">

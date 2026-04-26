@@ -1746,31 +1746,6 @@ class ConversationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
 
 @method_decorator(login_required, name='dispatch')
-class ReplyCreateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
-    """Replies by a user"""
-
-    fields = ('reply',)
-    model = Reply
-    template_name = 'mentor/conversation.html'
-    success_message = 'You have replied!'
-
-    def test_func(self):
-        return self.request.user.is_mentor
-
-    def form_valid(self, form):
-        form.instance.sender = self.request.user
-        form.instance.conversation = Conversation.objects.get(pk=self.kwargs['pk'])
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        conversation = self.object.conversation
-        return reverse_lazy('conv-reply', kwargs={'pk': self.object.conversation_id})
-
-    def get_queryset(self):
-        return self.model.objects.filter(sender=self.request.user)
-
-
-@method_decorator(login_required, name='dispatch')
 class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Conversation
     template_name = 'mentor/conversation1.html'
@@ -1821,19 +1796,6 @@ class ConversationDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context = self.get_context_data(object=self.object)
         context['form'] = form
         return self.render_to_response(context)
-
-
-@method_decorator(login_required, name='dispatch')
-class ConversationDeleteView(SuccessMessageMixin, DeleteView):
-    """delete view Chat"""
-
-    model = Reply
-    template_name = 'mentor/chat-confirm-delete.html'
-    success_message = 'Your message has been deleted!'
-
-    def get_success_url(self):
-        conversation = self.object.conversation
-        return reverse_lazy('conv-reply', kwargs={'pk': self.object.conversation_id})
 
 
 @method_decorator(login_required, name='dispatch')
@@ -3616,10 +3578,10 @@ def export_progress_excel(request):
         user = rel.mentee.user
         profile = getattr(user, "profile", None)
 
-        student_name = profile.student_name if profile else user.username
+        student_name = (getattr(profile, "student_name", None) or user.username or "Student")
         branch = profile.branch if profile else "N/A"
 
-        sheet = wb.create_sheet(student_name[:31])
+        sheet = wb.create_sheet(student_name[:100])
 
         # ---------- TITLE ----------
         sheet["A1"] = f"{student_name} ({branch})"

@@ -472,6 +472,166 @@
   background-color: #0d6efd !important;
   color: #fff !important;
 }
+
+/* --------------------- */
+/* MOBILE RESPONSIVENESS */
+/* --------------------- */
+@media (max-width: 768px) {
+
+  .d-flex.justify-content-between {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+
+  .d-flex.justify-content-between button {
+    width: 100%;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .mb-3.d-flex {
+    flex-direction: column !important;
+  }
+
+  .mb-3.d-flex .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .row.g-2 > div,
+  .col-md-3 {
+    width: 100% !important;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .col-md-3 .d-flex {
+    flex-direction: column !important;
+  }
+
+  .col-md-3 .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+
+  table {
+    font-size: 0.75rem;
+    min-width: 750px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  /* Agenda column wrap */
+  td:nth-child(4) {
+    white-space: normal !important;
+    max-width: 250px;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .table-responsive.table-bordered {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  canvas {
+    height: 220px !important;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-link {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .modal-dialog {
+    margin: 10px;
+  }
+
+  .modal-body {
+    max-height: 60vh;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .form-check-inline {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .position-fixed {
+    width: 100%;
+    right: 0;
+  }
+
+  .toast {
+    width: 100%;
+  }
+}
+
+body {
+  overflow-x: hidden;
+}
 </style>
 
 <script>
@@ -774,9 +934,6 @@ function undoAISummary(id) {
     }
   });
 }
-
-
-
 
 // ✅ Spinner Loader on Save Interaction
 document.addEventListener("DOMContentLoaded", function () {

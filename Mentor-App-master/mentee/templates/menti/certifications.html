@@ -137,7 +137,7 @@
                                       action="{% if editing %}{% url 'edit_certification' edit_id %}{% else %}{% url 'certifications' %}{% endif %}">
                                     {% csrf_token %}
                                     <div class="row g-3">
-                                    <small class="text-muted fw-semibold" style="color:#ff0000 !important;">
+                                    <small class="note-text fw-semibold">
                                         Note: '*' asterisk denotes that the fields are required.</small>
                                         <div class="col-md-6">
                                             <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
@@ -328,8 +328,126 @@ a[aria-expanded="true"] .toggle-icon {
   max-height: 1500px;
 }
 
-    p.text-muted {
-        color: #ff0000 !important;
-    }
+.note-text {
+  color: #ff0000 !important;
+}
+
+    /* --------------------- */
+    /* MOBILE RESPONSIVENESS */
+    /* --------------------- */
+    @media (max-width: 768px) {
+
+  .d-flex {
+    flex-direction: column !important;
+  }
+
+  .content {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .shifted {
+    margin-left: 0 !important;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  table {
+    font-size: 0.7rem;
+    min-width: 900px; /* force scroll instead of breaking */
+  }
+
+  th, td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    border-radius: 12px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  h2 {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 10px !important;
+  }
+
+  .card-header {
+    text-align: center;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    padding: 6px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .row.g-3 > div {
+    width: 100% !important;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  #showFormBtn {
+    width: 100%;
+  }
+
+  #internshipForm.show {
+    max-height: 2000px; /* allow full expansion */
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-lg {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+}
+
+    @media (max-width: 768px) {
+
+  .btn-warning {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+}
+
+    body {
+  overflow-x: hidden;
+}
 </style>
 {% endblock %}
