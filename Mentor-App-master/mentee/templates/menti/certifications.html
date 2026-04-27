@@ -85,10 +85,13 @@
                                 <td class="text-center">
                                     {% if item.verification_status == "verified" or item.verification_status == "manual_verified" %}
                                         <span class="badge bg-success">Verified</span>
-                                    {% elif item.verification_status == "unverified" %}
-                                        <span class="badge bg-danger">Unverified</span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="badge bg-danger">Verify Physically</span>
+                                        {% if item.verification_notes %}
+                                            <div class="small text-danger mt-1" title="{{ item.verification_notes }}">
+                                                {{ item.verification_notes|truncatechars:85 }}
+                                            </div>
+                                        {% endif %}
                                     {% endif %}
                                 </td>
                                 <td class="text-center">

@@ -87,8 +87,19 @@
     </div>
 
     <div class="col-md-2">
-        <label class="text-light fw-semibold">Domain</label>
-        <input name="domain" class="form-control" value="{{ request.GET.domain }}" placeholder="Domain">
+      <label class="text-light fw-semibold">Domain</label>
+
+      <select name="domain" class="form-select">
+        <option value="">All Domains</option>
+
+        {% for d in domain_list %}
+          <option value="{{ d }}"
+            {% if request.GET.domain == d %}selected{% endif %}>
+            {{ d }}
+          </option>
+        {% endfor %}
+
+      </select>
     </div>
     <div class="col-md-10">
         <label class="text-light fw-semibold">Actions</label>

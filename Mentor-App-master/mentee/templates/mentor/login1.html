@@ -381,6 +381,46 @@
     body {
       overflow-x: hidden;
     }
+
+        /* FOOTER */
+        .footer {
+          background: linear-gradient(135deg, #020617, #1e293b);
+          border-top: 1px solid rgba(99, 102, 241, 0.3);
+          color: #cbd5f5;
+          font-size: 0.9rem;
+          margin-top: auto;
+        }
+
+        .footer p {
+          margin-bottom: 4px;
+          font-weight: 500;
+        }
+
+        .footer small {
+          color: #94a3b8;
+        }
+
+        /* STICK FOOTER TO BOTTOM */
+        html, body {
+          height: 100%;
+        }
+
+        body {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .container {
+          flex: 1;
+        }
+
+        /* FOOTER MOBILE */
+        @media (max-width: 768px) {
+          .footer {
+            font-size: 0.8rem;
+            padding: 10px 0;
+          }
+        }
     </style>
 </head>
 <body>
@@ -506,5 +546,15 @@
       }
     });
     </script>
+    <footer class="footer mt-5">
+        <div class="container text-center py-3">
+            <p class="mb-1">
+              © 2026 MentorConnect. All Rights Reserved.
+            </p>
+            <small>
+              Developed by APSIT IT Department
+            </small>
+        </div>
+    </footer>
 </body>
 </html>

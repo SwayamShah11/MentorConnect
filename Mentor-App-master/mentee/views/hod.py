@@ -26,6 +26,7 @@ from django.db.models import Count, F
 from collections import Counter
 from io import BytesIO
 from django.http import FileResponse
+from itertools import chain
 
 
 def _build_hod_dashboard_data():
@@ -526,6 +527,17 @@ class HODDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         context["top_students"] = top_students
         context["max_uploads"] = top_students[0]["total"] if top_students else 1
+
+        internship_domains = InternshipPBL.objects.exclude(domain__isnull=True).exclude(domain="").values_list("domain", flat=True)
+        cert_domains = CertificationCourse.objects.exclude(domain__isnull=True).exclude(domain="").values_list("domain", flat=True)
+
+        all_domains = set(
+            d.strip().title()
+            for d in chain(internship_domains, cert_domains)
+            if d
+        )
+
+        context["domain_list"] = sorted(all_domains)
 
         return context
 

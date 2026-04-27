@@ -26,12 +26,12 @@ def delete_all_and_reset_id(modeladmin, request, queryset):
 @admin.register(InternshipPBL)
 class InternshipPBLAdmin(admin.ModelAdmin):
     list_display = (
-        "user", "title", "company_name", "verification_status",
+        "user", "title", "company_name", "verification_status", "domain",
         "qr_detected", "qr_url_accessible", "academic_year", "semester", "start_date", "end_date", "no_of_days",
         "uploaded_at"
     )
     search_fields = ("title", "company_name", "user__username")
-    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester", "type")
+    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "domain", "academic_year", "semester", "type")
     ordering = ("-start_date",)
     readonly_fields = ("no_of_days", "qr_payload", "verification_notes", "verification_checked_at")
     actions = ("mark_verified", "mark_verify_physically", "rerun_qr_verification", delete_all_and_reset_id)
@@ -86,11 +86,11 @@ class OtherEventAdmin(admin.ModelAdmin):
 @admin.register(CertificationCourse)
 class CertificationCourseAdmin(admin.ModelAdmin):
     list_display = (
-        "user", "title", "certifying_authority", "verification_status",
+        "user", "title", "certifying_authority", "domain", "verification_status", "semester", "academic_year",
         "qr_detected", "qr_url_accessible", "verification_checked_at", "uploaded_at"
     )
     search_fields = ("title", "certifying_authority", "user__username")
-    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
+    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "domain", "academic_year", "semester")
     readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
     ordering = ("-uploaded_at",)
     actions = ("mark_verified", "mark_unverified", "rerun_qr_verification", delete_all_and_reset_id)
