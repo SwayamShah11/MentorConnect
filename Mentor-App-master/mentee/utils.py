@@ -5,6 +5,9 @@ from zoneinfo import ZoneInfo
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
+from collections import defaultdict
+from django.db.models import Count
+from itertools import chain
 
 def compute_profile_completeness(user):
     """
@@ -231,3 +234,75 @@ def calculate_swot_analytics(swot_queryset):
         analytics["avg_score"] = round(total_score / count, 2)
 
     return analytics
+
+
+def get_global_performance_data():
+    internships = InternshipPBL.objects.all()
+    certs = CertificationCourse.objects.all()
+
+    upload_user_ids = (
+        list(internships.values_list("user_id", flat=True)) +
+        list(certs.values_list("user_id", flat=True))
+    )
+
+    upload_profiles = Profile.objects.filter(user_id__in=upload_user_ids)
+
+    # ===============================
+    # BEST DIVISION
+    # ===============================
+    best_div = (
+        upload_profiles.values("div", "branch", "year")
+        .annotate(student_count=Count("user_id", distinct=True))
+        .order_by("-student_count")
+        .first()
+    )
+
+    if best_div:
+        div = best_div["div"]
+        branch = best_div["branch"]
+        year = best_div["year"]
+
+        div_users = upload_profiles.filter(div=div, branch=branch, year=year)\
+                                   .values_list("user_id", flat=True)
+
+        div_internships = internships.filter(user_id__in=div_users).count()
+        div_certs = certs.filter(user_id__in=div_users).count()
+
+        best_div["uploads"] = div_internships + div_certs
+    else:
+        best_div = {"div": "", "branch": "", "student_count": 0, "uploads": 0}
+
+    # ===============================
+    # TOP STUDENTS
+    # ===============================
+    student_map = defaultdict(int)
+
+    for row in internships.values("user_id").annotate(c=Count("id")):
+        student_map[row["user_id"]] += row["c"]
+
+    for row in certs.values("user_id").annotate(c=Count("id")):
+        student_map[row["user_id"]] += row["c"]
+
+    top_user_ids = sorted(student_map, key=lambda k: student_map[k], reverse=True)[:5]
+
+    profiles_top = Profile.objects.filter(user_id__in=top_user_ids)
+
+    top_students = []
+
+    for p in profiles_top:
+        top_students.append({
+            "moodle_id": p.moodle_id,
+            "student_name": p.student_name,
+            "branch": p.branch,
+            "year": p.year,
+            "div": p.div,
+            "total": student_map.get(p.user_id, 0)
+        })
+
+    top_students = sorted(top_students, key=lambda x: x["total"], reverse=True)
+
+    return {
+        "best_division": best_div,
+        "top_students": top_students,
+        "max_uploads": top_students[0]["total"] if top_students else 1
+    }

@@ -26,10 +26,11 @@ from django.views.generic import TemplateView
 from ..models import (Profile, Msg, Conversation, Reply, Meeting, Mentor, Mentee, MentorMentee, Query, InternshipPBL,
                       PaperPublication, SemesterResult, SportsCulturalEvent, CertificationCourse, OtherEvent, Project,
                       MentorMenteeInteraction, Notification, ReminderLog, WeeklyAgenda, SWOTAnalysis)
-from ..utils import get_document_progress, mentor_required, mentor_or_staff_required, calculate_swot_analytics, get_student_risk
+from ..utils import (get_document_progress, mentor_required, mentor_or_staff_required, calculate_swot_analytics,
+                     get_student_risk, get_global_performance_data)
 from django.views.decorators.csrf import csrf_exempt
 from mentee.ai_utils import generate_ai_summary
-from datetime import datetime, timedelta
+from reportlab.lib.pagesizes import landscape
 from django.utils import timezone
 from django.urls import reverse_lazy
 from ..forms import ReplyForm
@@ -121,6 +122,18 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
         ]
         pending_meetings_count = len(pending_meetings)
 
+        pending_certificates = CertificationCourse.objects.filter(
+            user__mentee__assigned_mentor__mentor=mentor,
+            verification_status="verify_physically"
+        ).count()
+
+        pending_internships = InternshipPBL.objects.filter(
+            user__mentee__assigned_mentor__mentor=mentor,
+            verification_status="verify_physically"
+        ).count()
+
+        pending_verifications = pending_certificates + pending_internships
+
         form = MoodleIdForm()
         mentor = get_object_or_404(Mentor, user=request.user)
 
@@ -153,6 +166,9 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
             if completed_count < 4:
                 no_document_mentees.append(mentee_data)
         pending_reminder_count = len(no_document_mentees)
+
+        global_data = get_global_performance_data()
+
         return render(request, "mentor/account1.html", {
             "form": form,
             "mentees": mentees,
@@ -161,6 +177,10 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
             "unapproved_messages": unapproved_messages,
             "pending_queries": pending_queries,
             "pending_meetings": pending_meetings_count,
+            "pending_verifications": pending_verifications,
+            "best_division": global_data["best_division"],
+            "top_students": global_data["top_students"],
+            "max_uploads": global_data["max_uploads"],
         })
 
     def post(self, request):
@@ -191,6 +211,67 @@ class AccountView(LoginRequiredMixin, UserPassesTestMixin, View):
             messages.success(request, f"{moodle_id}-{profile.student_name} added as your mentee!")
 
         return redirect("account1")
+
+
+@login_required
+def verify_certificate_physically(request, type, pk):
+    if not hasattr(request.user, "mentor"):
+        return redirect("home")
+
+    if type == "course":
+        obj = get_object_or_404(CertificationCourse, pk=pk)
+    elif type == "internship":
+        obj = get_object_or_404(InternshipPBL, pk=pk)
+    else:
+        return redirect("home")
+
+    obj.verification_status = "verified_physically"
+    obj.verification_notes = "Verified manually by mentor"
+    obj.save()
+
+    messages.success(request, "Certificate verified physically.")
+    return redirect(request.META.get("HTTP_REFERER", "account1"))
+
+
+@login_required
+def bulk_verify_certificates(request):
+    if request.method != "POST":
+        return redirect("account1")
+
+    if not hasattr(request.user, "mentor"):
+        return redirect("home")
+
+    mentor = request.user.mentor
+
+    ids = request.POST.getlist("selected_items")
+    item_type = request.POST.get("type")
+
+    if not ids:
+        messages.warning(request, "No items selected.")
+        return redirect(request.META.get("HTTP_REFERER", "account1"))
+
+    if item_type == "course":
+        queryset = CertificationCourse.objects.filter(pk__in=ids)
+    elif item_type == "internship":
+        queryset = InternshipPBL.objects.filter(pk__in=ids)
+    else:
+        return redirect("home")
+
+    count = 0
+
+    for obj in queryset:
+        # 🔒 SECURITY: only assigned mentees
+        if MentorMentee.objects.filter(
+            mentor=mentor,
+            mentee__user=obj.user
+        ).exists():
+            obj.verification_status = "verified_physically"
+            obj.verification_notes = "Bulk verified by mentor"
+            obj.save()
+            count += 1
+
+    messages.success(request, f"{count} certificates verified physically.")
+    return redirect(request.META.get("HTTP_REFERER", "account1"))
 
 
 @login_required
@@ -1018,7 +1099,7 @@ def download_student_data(request):
             ("courses", "Courses / Certifications"),
             ("publications", "Paper Publications"),
         ],
-        "years": [f"{y}-{str(y+1)[-2:]}" for y in range(2017, 2027)],
+        "years": [f"{y}-{str(y+1)[-2:]}" for y in range(2023, 2028)],
         "branches": ["ALL", "IT", "CSE", "AIML", "DS", "MECH", "CIVIL"],
     }
 
@@ -1039,6 +1120,62 @@ def download_student_data(request):
     profile_map = {p.user_id: p for p in profiles_qs}
     def profile_for_user(user):
         return profile_map.get(user.pk)
+
+    EXPORT_FIELDS = {
+        "InternshipPBL": [
+            "title", "academic_year", "semester", "year",
+            "type", "domain", "company_name",
+            "start_date", "end_date", "no_of_days"
+        ],
+        "Project": [
+            "title", "academic_year", "semester", "year",
+            "project_type", "guide_name", "link"
+        ],
+        "SportsCulturalEvent": [
+            "name_of_event", "academic_year", "semester", "year",
+            "type", "level", "prize_won"
+        ],
+        "OtherEvent": [
+            "name_of_event", "academic_year", "semester", "year",
+            "level", "prize_won", "amount_won"
+        ],
+        "CertificationCourse": [
+            "title", "certifying_authority", "academic_year",
+            "semester", "year", "domain", "level"
+        ],
+        "PaperPublication": [
+            "title", "academic_year", "semester", "year",
+            "type", "conf_name", "level", "authors"
+        ]
+    }
+
+    DISPLAY_FIELDS = {
+        "InternshipPBL": [
+            "title", "type", "domain", "company_name",
+            "academic_year", "semester", "year",
+            "start_date", "end_date", "no_of_days"
+        ],
+        "Project": [
+            "title", "project_type", "guide_name",
+            "academic_year", "semester", "year", "link"
+        ],
+        "SportsCulturalEvent": [
+            "name_of_event", "type", "level", "prize_won",
+            "academic_year", "semester", "year"
+        ],
+        "OtherEvent": [
+            "name_of_event", "level", "prize_won",
+            "academic_year", "semester", "year"
+        ],
+        "CertificationCourse": [
+            "title", "certifying_authority", "domain", "level",
+            "academic_year", "semester", "year"
+        ],
+        "PaperPublication": [
+            "title", "type", "conf_name", "level", "authors",
+            "academic_year", "semester", "year"
+        ]
+    }
 
     # --- Collect rows for a model safely ---
     def collect_entries(model):
@@ -1067,40 +1204,19 @@ def download_student_data(request):
             }
 
             # iterate model fields and capture values (exclude id,user)
-            for f in model._meta.fields:
-                if f.name in ("id", "user", "certificate", "certificates"):
-                    continue
-                val = getattr(obj, f.name)
+            model_name = model.__name__
+            allowed_fields = EXPORT_FIELDS.get(model_name, [])
 
-                # datetime tz fix
-                if hasattr(val, "tzinfo") and val.tzinfo:
+            for field in allowed_fields:
+                val = getattr(obj, field, "")
+
+                if hasattr(val, "tzinfo") and val and val.tzinfo:
                     val = val.replace(tzinfo=None)
 
-                # FileField -> output URL (if present) else file name
-                from django.db.models.fields.files import FieldFile
-                if isinstance(val, FieldFile):
-                    if val and getattr(val, "name", ""):
-                        try:
-                            # prefer absolute url if available
-                            url = val.url
-                            full_url = request.build_absolute_uri(url)
-                            val = full_url
-                        except Exception:
-                            val = val.name or ""
-                    else:
-                        val = ""
-
-                # coerce to string for safe storage in collected rows
-                if isinstance(val, (list, dict)):
-                    # JSON-serialize complex types
-                    try:
-                        val = json.dumps(val, default=str)
-                    except:
-                        val = str(val)
-                elif val is None:
+                if val is None:
                     val = ""
 
-                base[f.name] = val
+                base[field] = val
             base.pop("certificate", None)
             base.pop("certificates", None)
             rows.append(base)
@@ -1277,9 +1393,35 @@ def download_student_data(request):
         # Left text (mentor)
         canvas.drawString(1.5 * cm, y, mentor_text)
 
+    MAX_COLS = 8
+
+    def group_by_student(collected):
+        student_data = {}
+
+        for category, rows in collected.items():
+            for r in rows:
+                student = r.get("student_name", "Unknown")
+
+                if student not in student_data:
+                    student_data[student] = {
+                        "info": {
+                            "email": r.get("email"),
+                            "branch": r.get("branch"),
+                            "moodle_id": r.get("moodle_id"),
+                        },
+                        "categories": {}
+                    }
+
+                if category not in student_data[student]["categories"]:
+                    student_data[student]["categories"][category] = []
+
+                student_data[student]["categories"][category].append(r)
+
+        return student_data
     def build_pdf_bytes():
+        student_grouped = group_by_student(collected)
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.5 * cm, rightMargin=1.5 * cm)
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=1.5 * cm, rightMargin=1.5 * cm)
         # inject request for footer
         doc._request = request
         story = []
@@ -1308,45 +1450,62 @@ def download_student_data(request):
         story.append(Spacer(1, 12))
 
         # each category
-        small_para_style = ParagraphStyle('small', fontSize=8, leading=10)
-        for key, rows in collected.items():
-            title = key.replace("_", " ").title()
-            story.append(Paragraph(f"<b>{title}</b>", styles["Heading2"]))
-            story.append(Spacer(1, 6))
-            if not rows:
-                story.append(Paragraph("<i>No records found.</i>", styles["BodyText"]))
-                story.append(PageBreak())
-                continue
+        small_para_style = ParagraphStyle('small', fontSize=7, leading=8)
+        for student, data in student_grouped.items():
 
-            # columns
-            first = rows[0]
-            cols = [c for c in first.keys() if not c.startswith("_")]
-            data = [cols]
-            for rdict in rows:
-                data.append([str(rdict.get(c, "") or "") for c in cols])
+            # 🧑 Student Header
+            story.append(Paragraph(f"<b>Student: {student}</b>", styles["Heading2"]))
+            story.append(Paragraph(
+                f"Email: {data['info']['email']} | Branch: {data['info']['branch']} | Moodle ID: {data['info']['moodle_id']}",
+                styles["Normal"]
+            ))
+            story.append(Spacer(1, 10))
 
-            # convert to Paragraphs so cell text wraps
-            wrapped = []
-            for row in data:
-                wrapped_row = [Paragraph(cell.replace("\n", "<br/>"), small_para_style) for cell in row]
-                wrapped.append(wrapped_row)
+            # 📂 Categories per student
+            for key, rows in data["categories"].items():
 
-            page_width = A4[0] - (doc.leftMargin + doc.rightMargin)
-            col_count = max(1, len(cols))
-            col_width = page_width / col_count
-            col_widths = [col_width] * col_count
+                story.append(Paragraph(f"<b>{key.title()}</b>", styles["Heading3"]))
+                story.append(Spacer(1, 6))
 
-            tbl = RLTable(wrapped, colWidths=col_widths, repeatRows=1)
-            tbl.setStyle(RLTableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3f5cbf")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.black),
-            ]))
-            story.append(tbl)
+                if not rows:
+                    story.append(Paragraph("No records", styles["Normal"]))
+                    continue
+
+                model_name = rows[0].get("_model")
+                cols = DISPLAY_FIELDS.get(model_name, [])
+
+                if not cols:
+                    continue
+
+                # 🔥 table (reuse your fixed logic)
+                for i in range(0, len(cols), MAX_COLS):
+                    chunk_cols = cols[i:i + MAX_COLS]
+
+                    data_table = [chunk_cols]
+
+                    for rdict in rows:
+                        data_table.append([str(rdict.get(c, "") or "") for c in chunk_cols])
+
+                    wrapped = [
+                        [Paragraph(str(cell), small_para_style) for cell in row]
+                        for row in data_table
+                    ]
+
+                    page_width = doc.pagesize[0] - (doc.leftMargin + doc.rightMargin)
+                    col_width = page_width / len(chunk_cols)
+
+                    tbl = RLTable(wrapped, colWidths=[col_width] * len(chunk_cols), repeatRows=1)
+
+                    tbl.setStyle(RLTableStyle([
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3f5cbf")),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                    ]))
+
+                    story.append(tbl)
+                    story.append(Spacer(1, 10))
+
+            # 🔥 page break after each student
             story.append(PageBreak())
 
         doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)

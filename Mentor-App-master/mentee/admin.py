@@ -320,3 +320,8 @@ class QueryAdmin(admin.ModelAdmin):
     list_filter = ['mentor__name', 'severity', 'status', 'mentee__user']
     search_fields = ['mentor__name', 'mentee__user__username', 'severity']
     actions = [delete_all_and_reset_id]
+
+
+admin.site.site_header = "MentorConnect Application"
+admin.site.site_title = "MentorConnect Application"
+admin.site.index_title = "MentorConnect Application"

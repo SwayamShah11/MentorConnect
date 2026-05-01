@@ -14,7 +14,7 @@ from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
                       MentorMenteeInteraction, MentorMentee, StudentProfileOverview, Notification, SWOTAnalysis)
-from ..utils import compute_profile_completeness, mentee_required
+from ..utils import compute_profile_completeness, mentee_required, get_global_performance_data
 from ..auth_otp import (
     REG_MENTEE_OTP_SESSION_KEY,
     OTP_DIGITS,
@@ -73,7 +73,8 @@ class MenteeOnlyView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 def home(request):
     """Home landing page"""
-    return render(request, 'home.html')
+    context = get_global_performance_data()
+    return render(request, 'home.html', context)
 
 #-------------------Mentor-Mentee interaction page logic starts-----------------------
 @method_decorator(login_required, name="dispatch")
@@ -692,7 +693,7 @@ def internship_pbl_list(request, pk=None):
                         messages.error(request,
                                          f"Internship certificate verification completed: Verify Physically. Reason: {reason}")
                     else:
-                        messages.warning(request, "Internship certificate verification completed: Verify Physically.")
+                        messages.error(request, "Internship certificate verification completed: Verify Physically.")
 
             if editing:
                 messages.success(request, "Internship record updated successfully.")
@@ -1137,10 +1138,10 @@ def certification_list(request, pk=None):
                 else:
                     reason = (new_cert.verification_notes or "").replace(" | ", "; ").strip()
                     if reason:
-                        messages.warning(request,
+                        messages.error(request,
                                          f"Certificate verification completed: Verify Physically. Reason: {reason}")
                     else:
-                        messages.warning(request, "Certificate verification completed: Verify Physically.")
+                        messages.error(request, "Certificate verification completed: Verify Physically.")
 
             return redirect("certifications")
 

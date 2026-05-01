@@ -2,7 +2,133 @@
 {% load static %}
 {% block content %}
 <br><br><br>
-<div class="jumbotron">
+<div class="row mb-4">
+    <!-- LEFT SIDE -->
+    <div class="col-lg-4">
+        <div class="container mt-5">
+            <div class="card best-division-card mb-3 p-4 shadow">
+
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-dark text-warning px-3 py-2">
+                  🏆 Top Division
+                </span>
+              </div>
+
+              <div class="best-title">
+                {{ best_division.year }} {{ best_division.branch }}
+              </div>
+
+              <div class="best-subtitle">
+                Division {{ best_division.div }}
+              </div>
+
+              <div class="best-stats mt-3">
+                <div>
+                  <span class="stat-number">{{ best_division.student_count }}</span>
+                  <span class="stat-label">Students</span>
+                </div>
+
+                <div>
+                  <span class="stat-number">{{ best_division.uploads }}</span>
+                  <span class="stat-label">Uploads</span>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <!-- RIGHT SIDE -->
+    <div class="col-lg-8">
+    <!-- TOP STUDENTS -->
+        <div class="card top-students-card mt-4 shadow p-0" style="background: linear-gradient(135deg, #1f2937, #111827); border-radius: 12px;">
+
+          <div class="p-3 text-white" style="font-size: 22px; font-weight: 600;">
+            Top Performing Students
+          </div>
+
+          <div class="table-responsive">
+            <table class="table text-center mb-0" style="color: #e5e7eb;">
+              <thead style="background: rgba(255,255,255,0.05);">
+                <tr>
+                  <th>#</th>
+                  <th>Moodle ID</th>
+                  <th>Name</th>
+                  <th>Branch</th>
+                  <th>Class</th>
+                  <th>Div</th>
+                  <th>Uploads</th>
+                  <th>Performance</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for s in top_students %}
+                <tr style="background-color: {% if forloop.first %}rgba(255,255,255,0.05){% else %}transparent{% endif %};">
+
+                  <!-- RANK -->
+                  <td>
+                    {% if forloop.counter == 1 %}
+                      🥇
+                    {% elif forloop.counter == 2 %}
+                      🥈
+                    {% elif forloop.counter == 3 %}
+                      🥉
+                    {% else %}
+                      {{ forloop.counter }}
+                    {% endif %}
+                  </td>
+
+                  <td>{{ s.moodle_id }}</td>
+                  <td>{{ s.student_name }}</td>
+                  <td>{{ s.branch }}</td>
+                  <td>{{ s.year }}</td>
+                  <td>{{ s.div }}</td>
+
+                  <!-- UPLOAD BADGE -->
+                  <td>
+                    <span class="badge rounded-pill px-3 py-2"
+                          style="background: #2563eb; font-size: 14px;">
+                      {{ s.total }}
+                    </span>
+                  </td>
+
+                  <!-- PERFORMANCE BAR -->
+                  <td style="min-width:180px;">
+                    <div style="height:10px; background:#374151; border-radius:10px; overflow:hidden;">
+                      <div style="
+                        height:100%;
+                        width: {% widthratio s.total max_uploads 100 %}%;
+                        background:
+                          {% if forloop.counter == 1 %}
+                            linear-gradient(90deg, #facc15, #f59e0b)
+                          {% elif forloop.counter == 2 %}
+                            linear-gradient(90deg, #9ca3af, #6b7280)
+                          {% elif forloop.counter == 3 %}
+                            linear-gradient(90deg, #b45309, #78350f)
+                          {% else %}
+                            linear-gradient(90deg, #3b82f6, #7c3aed)
+                          {% endif %};
+                        border-radius:10px;
+                      ">
+                      </div>
+                    </div>
+                  </td>
+
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+    </div>
+</div>
+<div class="scroll-indicator text-center">
+    <a href="#register-section" class="scroll-indicator text-center">
+      <span>Scroll Down to Register/Login</span>
+      <div class="arrow"></div>
+    </a>
+</div>
+
+<div class="jumbotron" id="register-section">
   <h1 class="display-4">Welcome To MentorConnect</h1>
   <p class="lead">A platform that connects ambitious students with successful and experienced mentors. The initiative encourages idea and knowledge sharing among APSIT's most promising students, inspiring a collaborative approach to career shaping and growth.</p>
   <hr class="my-4">
@@ -15,4 +141,302 @@
     <p><b>Admin Login</b></p>
     <a class="btn btn-primary btn-lg" href="{% url 'admin:login' %}" role="button">Click Here <i class="bi bi-arrow-right"></i></a>
 </div>
+
+<style>
+/* MAIN CARD */
+.best-division-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  transition: all 0.35s ease;
+}
+
+/* 🔥 Animated gradient border */
+.best-division-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #a78bfa, #3b82f6, #22c55e, #a78bfa);
+  background-size: 300% 300%;
+  animation: borderMove 6s linear infinite;
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+@keyframes borderMove {
+  0% { background-position: 0% }
+  100% { background-position: 300% }
+}
+
+/* ✨ Glow layer */
+.best-division-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(167,139,250,0.25), transparent 60%);
+  pointer-events: none;
+}
+
+/* HOVER */
+.best-division-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+}
+
+/* TYPOGRAPHY */
+.best-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.best-subtitle {
+  font-size: 18px;
+  color: #cbd5f5;
+  margin-top: 5px;
+}
+
+/* STATS */
+.best-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  display: block;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* BADGE */
+.best-division-card .badge {
+  background: rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(6px);
+}
+
+.top-students-card {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Subtle glow */
+.top-students-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(59,130,246,0.15), transparent 60%);
+  pointer-events: none;
+}
+
+/* Hover effect */
+.top-students-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+table tbody tr {
+  transition: all 0.25s ease;
+}
+
+table tbody tr:hover {
+  background: rgba(59,130,246,0.1);
+  transform: scale(1.01);
+}
+
+/* Top 3 highlight */
+table tbody tr:nth-child(1) {
+  background: rgba(250,204,21,0.08);
+}
+
+table tbody tr:nth-child(2) {
+  background: rgba(156,163,175,0.08);
+}
+
+table tbody tr:nth-child(3) {
+  background: rgba(180,83,9,0.08);
+}
+
+@keyframes growBar {
+  from { width: 0; }
+}
+
+td div div {
+  animation: growBar 1s ease-out;
+}
+
+.top-students-card .p-3 {
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(59,130,246,0.6);
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  margin-top: 10px;
+  color: #9ca3af;
+  font-size: 14px;
+  opacity: 0.8;
+  animation: fadeIn 1.5s ease-in-out;
+}
+
+.scroll-indicator .arrow {
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #9ca3af;
+  border-bottom: 2px solid #9ca3af;
+  transform: rotate(45deg);
+  margin: 8px auto;
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: rotate(45deg) translateY(0); }
+  50% { transform: rotate(45deg) translateY(6px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 0.8; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+
+  .best-division-card {
+    margin-top: 10px;
+    padding: 20px;
+  }
+
+  .best-title {
+    font-size: 22px;
+  }
+
+  .best-subtitle {
+    font-size: 16px;
+  }
+
+  .best-stats {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .top-students-card {
+    margin-top: 15px;
+  }
+
+  .scroll-indicator {
+  display: block;
+  margin-top: 20px;
+  text-decoration: none;
+  color: #e5e7eb;
+  font-size: 14px;
+  font-weight: 1000;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.scroll-indicator:hover {
+  color: #60a5fa;
+  transform: translateY(3px);
+}
+
+/* Glow effect */
+.scroll-indicator span {
+  text-shadow: 0 0 8px rgba(96,165,250,0.7);
+}
+
+/* Bigger arrow */
+.scroll-indicator .arrow {
+  width: 32px;
+  height: 32px;
+  border-right: 3px solid #60a5fa;
+  border-bottom: 3px solid #60a5fa;
+  transform: rotate(45deg);
+  margin: 10px auto;
+  animation: bounce 1.2s infinite;
+}
+
+/* Stronger bounce */
+@keyframes bounce {
+  0%, 100% { transform: rotate(45deg) translateY(0); }
+  50% { transform: rotate(45deg) translateY(10px); }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 750px;
+    font-size: 12px;
+  }
+
+  th, td {
+    white-space: nowrap;
+    padding: 6px !important;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .best-division-card {
+    margin-top: 10px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .best-title {
+    font-size: 20px;
+  }
+
+  .best-subtitle {
+    font-size: 14px;
+  }
+
+  .best-stats {
+    justify-content: space-around;
+    margin-top: 10px;
+  }
+
+  .stat-number {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .top-students-card {
+    margin-top: 12px;
+    padding: 0;
+  }
+
+  .top-students-card .p-3 {
+    font-size: 16px;
+    text-align: center;
+  }
+}
+</style>
 {% endblock %}

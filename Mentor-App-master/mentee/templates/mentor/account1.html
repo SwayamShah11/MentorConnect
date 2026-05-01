@@ -8,48 +8,169 @@
       <strong>Name:</strong> {{ request.user.mentor.name }} <br>
       <strong>Department:</strong> {{ request.user.mentor.department }}
   </h5>
-  <!-- 🔔 DASHBOARD REMINDERS -->
-    <div class="row justify-content-center mb-3">
-      <div class="col-md-5">
-        <div class="card shadow-sm border-warning bg-dark bg-opacity-75">
-          <div class="card-header text-warning fw-bold">
-            <i class="bi bi-bell-fill"></i> Pending Notifications
+
+    <div class="row mb-4">
+        <!-- LEFT SIDE -->
+        <div class="col-lg-4"><br>
+            <div class="card best-division-card mb-3 p-4 shadow">
+
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-dark text-warning px-3 py-2">
+                  🏆 Top Division
+                </span>
+              </div>
+
+              <div class="best-title">
+                {{ best_division.year }} {{ best_division.branch }}
+              </div>
+
+              <div class="best-subtitle">
+                Division {{ best_division.div }}
+              </div>
+
+              <div class="best-stats mt-3">
+                <div>
+                  <span class="stat-number">{{ best_division.student_count }}</span>
+                  <span class="stat-label">Students</span>
+                </div>
+
+                <div>
+                  <span class="stat-number">{{ best_division.uploads }}</span>
+                  <span class="stat-label">Uploads</span>
+                </div>
+              </div>
+            </div>
+            <div class="card flex-grow shadow-sm border-warning bg-dark bg-opacity-75">
+              <div class="card-header text-warning fw-bold">
+                <i class="bi bi-bell-fill"></i> Pending Notifications
+              </div>
+              <div class="card-body text-white">
+
+                {% if unapproved_messages > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>📩 New Requests</span>
+                  <a href="{% url 'inbox2' %}" class="badge bg-danger">
+                    {{ unapproved_messages }} {% if unapproved_messages == 1 %}Request{% else %}Requests{% endif %} <i class="bi bi-arrow-right"></i>
+                  </a>
+                </div>
+                {% endif %}
+
+                {% if pending_queries > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>❓ Pending Queries</span>
+                  <a href="{% url 'mentor_queries' %}" class="badge bg-warning text-dark">
+                    {{ pending_queries }} {% if pending_queries == 1 %}Query{% else %}Queries{% endif %} <i class="bi bi-arrow-right"></i>
+                  </a>
+                </div>
+                {% endif %}
+
+                {% if pending_meetings > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>📅 Scheduled Meetings</span>
+                  <a href="{% url 'vc1' %}" class="badge bg-info">
+                    {{ pending_meetings }} {% if pending_meetings == 1 %}Meeting{% else %}Meetings{% endif %} <i class="bi bi-arrow-right"></i>
+                  </a>
+                </div>
+                {% endif %}
+
+                {% if pending_verifications > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>📄 Certificates to Verify</span>
+                  <span class="badge bg-danger">
+                    {{ pending_verifications }} Pending
+                  </span>
+                </div>
+                {% endif %}
+
+                {% if unapproved_messages == 0 and pending_queries == 0 and pending_meetings == 0 and pending_verifications == 0 %}
+                <div class="text-success text-center fw-bold">
+                  ✅ No pending notifications
+                </div>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+        <!-- RIGHT SIDE -->
+        <div class="col-lg-8">
+          <!-- TOP STUDENTS -->
+          <div class="card top-students-card mt-4 shadow p-0" style="background: linear-gradient(135deg, #1f2937, #111827); border-radius: 12px;">
+
+          <div class="p-3 text-white" style="font-size: 22px; font-weight: 600;">
+            Top Performing Students
           </div>
-          <div class="card-body text-white">
 
-            {% if unapproved_messages > 0 %}
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>📩 New Requests</span>
-              <a href="{% url 'inbox2' %}" class="badge bg-danger">
-                {{ unapproved_messages }} {% if unapproved_messages == 1 %}Request{% else %}Requests{% endif %} <i class="bi bi-arrow-right"></i>
-              </a>
-            </div>
-            {% endif %}
+          <div class="table-responsive">
+            <table class="table text-center mb-0" style="color: #e5e7eb;">
+              <thead style="background: rgba(255,255,255,0.05);">
+                <tr>
+                  <th>#</th>
+                  <th>Moodle ID</th>
+                  <th>Name</th>
+                  <th>Branch</th>
+                  <th>Class</th>
+                  <th>Div</th>
+                  <th>Uploads</th>
+                  <th>Performance</th>
+                </tr>
+              </thead>
 
-            {% if pending_queries > 0 %}
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>❓ Pending Queries</span>
-              <a href="{% url 'mentor_queries' %}" class="badge bg-warning text-dark">
-                {{ pending_queries }} {% if pending_queries == 1 %}Query{% else %}Queries{% endif %} <i class="bi bi-arrow-right"></i>
-              </a>
-            </div>
-            {% endif %}
+              <tbody>
+                {% for s in top_students %}
+                <tr style="background-color: {% if forloop.first %}rgba(255,255,255,0.05){% else %}transparent{% endif %};">
 
-            {% if pending_meetings > 0 %}
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>📅 Scheduled Meetings</span>
-              <a href="{% url 'vc1' %}" class="badge bg-info">
-                {{ pending_meetings }} {% if pending_meetings == 1 %}Meeting{% else %}Meetings{% endif %} <i class="bi bi-arrow-right"></i>
-              </a>
-            </div>
-            {% endif %}
+                  <!-- RANK -->
+                  <td>
+                    {% if forloop.counter == 1 %}
+                      🥇
+                    {% elif forloop.counter == 2 %}
+                      🥈
+                    {% elif forloop.counter == 3 %}
+                      🥉
+                    {% else %}
+                      {{ forloop.counter }}
+                    {% endif %}
+                  </td>
 
-            {% if unapproved_messages == 0 and pending_queries == 0 and pending_meetings == 0 %}
-            <div class="text-success text-center fw-bold">
-              ✅ No pending notifications
-            </div>
-            {% endif %}
+                  <td>{{ s.moodle_id }}</td>
+                  <td>{{ s.student_name }}</td>
+                  <td>{{ s.branch }}</td>
+                  <td>{{ s.year }}</td>
+                  <td>{{ s.div }}</td>
 
+                  <!-- UPLOAD BADGE -->
+                  <td>
+                    <span class="badge rounded-pill px-3 py-2"
+                          style="background: #2563eb; font-size: 14px;">
+                      {{ s.total }}
+                    </span>
+                  </td>
+
+                  <!-- PERFORMANCE BAR -->
+                  <td style="min-width:180px;">
+                    <div style="height:10px; background:#374151; border-radius:10px; overflow:hidden;">
+                      <div style="
+                        height:100%;
+                        width: {% widthratio s.total max_uploads 100 %}%;
+                        background:
+                          {% if forloop.counter == 1 %}
+                            linear-gradient(90deg, #facc15, #f59e0b)
+                          {% elif forloop.counter == 2 %}
+                            linear-gradient(90deg, #9ca3af, #6b7280)
+                          {% elif forloop.counter == 3 %}
+                            linear-gradient(90deg, #b45309, #78350f)
+                          {% else %}
+                            linear-gradient(90deg, #3b82f6, #7c3aed)
+                          {% endif %};
+                        border-radius:10px;
+                      ">
+                      </div>
+                    </div>
+                  </td>
+
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -66,7 +187,7 @@
 
     <!-- Hidden Form -->
     <div id="add-form" class="card p-3 mb-4 bg-primary bg-opacity-50">
-      <form method="post" class="d-flex justify-content-center align-items-center gap-2">
+      <form method="post" class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-2">
         {% csrf_token %}
         <label class="fw-bold text-white">Moodle Id</label>
         {{ form.moodle_id }}
@@ -341,5 +462,147 @@ h5{
     body {
       overflow-x: hidden;
     }
+
+/* MAIN CARD */
+.best-division-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  transition: all 0.35s ease;
+}
+
+/* 🔥 Animated gradient border */
+.best-division-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #a78bfa, #3b82f6, #22c55e, #a78bfa);
+  background-size: 300% 300%;
+  animation: borderMove 6s linear infinite;
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+@keyframes borderMove {
+  0% { background-position: 0% }
+  100% { background-position: 300% }
+}
+
+/* ✨ Glow layer */
+.best-division-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(167,139,250,0.25), transparent 60%);
+  pointer-events: none;
+}
+
+/* HOVER */
+.best-division-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+}
+
+/* TYPOGRAPHY */
+.best-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.best-subtitle {
+  font-size: 18px;
+  color: #cbd5f5;
+  margin-top: 5px;
+}
+
+/* STATS */
+.best-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  display: block;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* BADGE */
+.best-division-card .badge {
+  background: rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(6px);
+}
+
+.top-students-card {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Subtle glow */
+.top-students-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(59,130,246,0.15), transparent 60%);
+  pointer-events: none;
+}
+
+/* Hover effect */
+.top-students-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+table tbody tr {
+  transition: all 0.25s ease;
+}
+
+table tbody tr:hover {
+  background: rgba(59,130,246,0.1);
+  transform: scale(1.01);
+}
+
+/* Top 3 highlight */
+table tbody tr:nth-child(1) {
+  background: rgba(250,204,21,0.08);
+}
+
+table tbody tr:nth-child(2) {
+  background: rgba(156,163,175,0.08);
+}
+
+table tbody tr:nth-child(3) {
+  background: rgba(180,83,9,0.08);
+}
+
+@keyframes growBar {
+  from { width: 0; }
+}
+
+td div div {
+  animation: growBar 1s ease-out;
+}
+
+.top-students-card .p-3 {
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(59,130,246,0.6);
+}
 </style>
 {% endblock %}

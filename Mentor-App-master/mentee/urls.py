@@ -97,6 +97,8 @@ urlpatterns = [
 
     #mentor urls
     path('account1/', mentor.AccountView.as_view(), name="account1"),
+    path("verify-physically/<str:type>/<int:pk>/", mentor.verify_certificate_physically, name="verify_certificate_physically",),
+    path("bulk-verify/", mentor.bulk_verify_certificates, name="bulk_verify_certificates"),
     path("account1/remove/<int:mentee_id>/", mentor.remove_mentee, name="remove_mentee"),
     path("account1/view/<int:mentee_id>/", mentor.view_mentee, name="view_mentee"),
     path('register1/', mentor.register1, name="register1"),

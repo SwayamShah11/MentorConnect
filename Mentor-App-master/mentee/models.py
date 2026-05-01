@@ -78,6 +78,7 @@ DIVISION = [
 VERIFICATION_STATUS_CHOICES = [
         ("verified", "Verified"),
         ("verify_physically", "Verify Physically"),
+        ("verified_physically", "Verified Physically"),
 ]
 
 BATCH_CHOICES = [

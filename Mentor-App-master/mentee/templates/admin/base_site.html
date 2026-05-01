@@ -1,5 +1,14 @@
 {% extends "admin/base.html" %}
 {% load static %}
+{% block title %} MentorConnect Admin Panel {% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
+        MentorConnect Application</a>
+</h1>
+{% endblock %}
 
 {% block content %}
 {{ block.super }}

@@ -100,7 +100,7 @@
         {% include "menti/profile_readonly.html" with profile=profile only %}
     </div>
     <div class="tab-pane fade" id="internships">
-        {% include "menti/internship_pbl_list.html" with internships=internships only %}
+        {% include "menti/internship_pbl_list.html" with internships=internships is_mentor_view=is_mentor_view %}
     </div>
     <div class="tab-pane fade" id="projects">
         {% include "menti/projects_list.html" with projects=projects only %}
@@ -112,7 +112,7 @@
         {% include "menti/other_events.html" with events=other_event only %}
     </div>
     <div class="tab-pane fade" id="certifications">
-        {% include "menti/certifications.html" with certifications=certifications only %}
+        {% include "menti/certifications.html" with certifications=certifications is_mentor_view=is_mentor_view %}
     </div>
     <div class="tab-pane fade" id="publications">
         {% include "menti/publications.html" with publications=publications only %}

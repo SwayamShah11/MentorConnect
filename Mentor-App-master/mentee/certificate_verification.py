@@ -3,7 +3,7 @@ import os
 import re
 import socket
 from urllib.parse import urlparse
-
+import numpy as np
 import requests
 from django.utils import timezone
 
@@ -171,6 +171,13 @@ def _extract_qr_payloads_from_pdf(file_path: str, max_pages: int = 3):
                 img = bmp.to_numpy()
                 if img is None:
                     continue
+                # 🔥 ADD ROTATION HANDLING
+                for angle in [0, 90, 180, 270]:
+                    rotated = np.rot90(img, k=angle // 90)
+
+                    decoded_items = _decode_from_image(rotated)
+                    if decoded_items:
+                        payloads.extend(decoded_items)
 
                 if len(img.shape) == 3 and img.shape[2] == 4:
                     img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
@@ -246,8 +253,18 @@ def _validate_qr_payload(payload: str, expected_name: str, expected_title: str, 
             token in path_and_query for token in ("verify", "cert", "certificate", "credential", "token", "id=")
         )
         trusted_host_hint = any(
-            token in host for token in ("eduskillsfoundation.org", "cognitiveclass.ai", "coursera.org", "udemy.com")
-        )
+            token in host for token in ("eduskillsfoundation.org",
+                                        "cognitiveclass.ai",
+                                        "coursera.org",
+                                        "udemy.com",
+                                        "aws.amazon.com",
+                                        "credly.com",
+                                        "skillbuilder.aws",
+                                        "verify.aws",
+                                        "nptel.ac.in",
+                                        "aicte-india.org"
+                                        )
+                                    )
 
         looks_valid = (
             name_ratio >= 0.45
@@ -273,7 +290,11 @@ def _validate_qr_payload(payload: str, expected_name: str, expected_title: str, 
 
 
 def _extract_urls_from_text(text: str):
-    return re.findall(r"https?://[^\s)\]>]+", text or "", flags=re.IGNORECASE)
+    return list(set(re.findall(
+        r"https?://[a-zA-Z0-9./?=_\-#%&]+",
+        text or "",
+        flags=re.IGNORECASE
+    )))
 def _verify_certificate_file(user, certificate_file, title: str, authority: str, title_label: str, authority_label: str):
     result = {
         "verification_status": "verify_physically",
@@ -386,16 +407,16 @@ def _verify_certificate_file(user, certificate_file, title: str, authority: str,
         result["verification_status"] = "verify_physically"
         if not has_verification_reference:
             notes.append("No QR or URL found for verification")
-        # if not profile_name:
-        #     notes.append("Profile student name is missing")
-        # if not profile_moodle_id:
-        #     notes.append("Profile Moodle ID is missing")
-        # if name_required and not name_ok:
-        #     notes.append("Student name on certificate does not match your profile name")
-        # if not title_ok:
-        #     notes.append(f"{title_label} on certificate does not match entered {title_label.lower()}")
-        # if not authority_ok:
-        #     notes.append(f"{authority_label} on certificate does not match entered {authority_label.lower()}")
+        if not profile_name:
+            notes.append("Profile student name is missing")
+        if not profile_moodle_id:
+            notes.append("Profile Moodle ID is missing")
+        if name_required and not name_ok:
+            notes.append("Student name on certificate does not match your profile name")
+        if not title_ok:
+            notes.append(f"{title_label} on certificate does not match entered {title_label.lower()}")
+        if not authority_ok:
+            notes.append(f"{authority_label} on certificate does not match entered {authority_label.lower()}")
         if not qr_valid:
             notes.append("QR/verification URL could not be validated automatically")
         if not notes and diagnostics:

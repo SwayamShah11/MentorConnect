@@ -46,76 +46,108 @@
                     </div>
                 </div>
                 <!-- Table -->
-                <table class="table table-bordered table-hover align-middle shadow-sm rounded">
-                    <thead class="table-dark">
-                        <tr>
-                            <th class="text-center">Sr. No</th>
-                            <th class="text-center">Title</th>
-                            <th class="text-center">Certifying Authority</th>
-                            <th class="text-center">AY</th>
-                            <th class="text-center">Sem</th>
-                            <th class="text-center">Class</th>
-                            <th class="text-center">Start Date</th>
-                            <th class="text-center">End Date</th>
-                            <th class="text-center">No. of Days</th>
-                            <th class="text-center">Valid Upto</th>
-                            <th class="text-center">Domain</th>
-                            <th class="text-center">Level</th>
-                            <th class="text-center">Amount Reimbursed (in Rs.)</th>
-                            <th class="text-center">Verification</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in certifications %}
-                            <tr>
-                                <td class="text-center">{{ forloop.counter }}</td>
-                                <td class="text-center">{{ item.title }}</td>
-                                <td class="text-center">{{ item.certifying_authority }}</td>
-                                <td class="text-center">{{ item.academic_year }}</td>
-                                <td class="text-center">{{ item.semester }}</td>
-                                <td class="text-center">{{ item.year }}</td>
-                                <td class="text-center">{{ item.start_date }}</td>
-                                <td class="text-center">{{ item.end_date }}</td>
-                                <td class="text-center">{{ item.no_of_days }}</td>
-                                <td class="text-center">{{ item.valid_upto }}</td>
-                                <td class="text-center">{{ item.domain }}</td>
-                                <td class="text-center">{{ item.level }}</td>
-                                <td class="text-center">{{ item.amount_reimbursed }}</td>
-                                <td class="text-center">
-                                    {% if item.verification_status == "verified" or item.verification_status == "manual_verified" %}
-                                        <span class="badge bg-success">Verified</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Verify Physically</span>
-                                        {% if item.verification_notes %}
-                                            <div class="small text-danger mt-1" title="{{ item.verification_notes }}">
-                                                {{ item.verification_notes|truncatechars:85 }}
-                                            </div>
-                                        {% endif %}
+                <div class="table-responsive">
+                    <form method="post" action="{% url 'bulk_verify_certificates' %}" onsubmit="return validateSelection()">
+                        {% csrf_token %}
+                        <input type="hidden" name="type" value="course">
+                            {% if is_mentor_view %}
+                            <div class="d-flex justify-content-end mb-2 mx-2">
+                                <button type="submit" class="btn btn-success btn-sm mb-2">
+                                    ✔ Verify Selected
+                                </button>
+                            </div>
+                            {% endif %}
+                        <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center">Sr. No</th>
+                                    <th class="text-center">Title</th>
+                                    <th class="text-center">Certifying Authority</th>
+                                    <th class="text-center">AY</th>
+                                    <th class="text-center">Sem</th>
+                                    <th class="text-center">Class</th>
+                                    <th class="text-center">Start Date</th>
+                                    <th class="text-center">End Date</th>
+                                    <th class="text-center">No. of Days</th>
+                                    <th class="text-center">Valid Upto</th>
+                                    <th class="text-center">Domain</th>
+                                    <th class="text-center">Level</th>
+                                    <th class="text-center">Amount Reimbursed (in Rs.)</th>
+                                    <th class="text-center">Verification
+                                    {% if is_mentor_view %}
+                                        <input type="checkbox" onchange="toggleAllCheckboxes(this)">
+                                    </th>
                                     {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if is_mentor_view == False %}
-                                        {% if item.certificate %}
-                                            <a href="{% url 'open_document' 'course' item.pk %}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
-                                            <a href="{% url 'edit_certification' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
-                                            <a href="{% url 'open_document' 'course' item.pk %}?download=1" class="btn btn-success btn-sm mt-1" target="_blank"><i class="bi bi-box-arrow-down"></i></a>
-                                            <a href="{% url 'delete_certification' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
-                                        {% else %}
-                                            <a href="{% url 'edit_certification' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
-                                            <a href="{% url 'delete_certification' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
-                                        {% endif %}
-                                    {% else %}
-                                            <a href="{% url 'open_document' 'course' item.pk %}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
-                                            <a href="{% url 'open_document' 'course' item.pk %}?download=1" class="btn btn-success btn-sm mt-1" target="_blank"><i class="bi bi-box-arrow-down"></i></a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="15" class="text-center">No records yet</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in certifications %}
+                                    <tr>
+                                        <td class="text-center">{{ forloop.counter }}</td>
+                                        <td class="text-center">{{ item.title }}</td>
+                                        <td class="text-center">{{ item.certifying_authority }}</td>
+                                        <td class="text-center">{{ item.academic_year }}</td>
+                                        <td class="text-center">{{ item.semester }}</td>
+                                        <td class="text-center">{{ item.year }}</td>
+                                        <td class="text-center">{{ item.start_date }}</td>
+                                        <td class="text-center">{{ item.end_date }}</td>
+                                        <td class="text-center">{{ item.no_of_days }}</td>
+                                        <td class="text-center">{{ item.valid_upto }}</td>
+                                        <td class="text-center">{{ item.domain }}</td>
+                                        <td class="text-center">{{ item.level }}</td>
+                                        <td class="text-center">{{ item.amount_reimbursed }}</td>
+                                        <td class="text-center">
+                                            {% if item.verification_status == "verified" %}
+                                                <span class="badge bg-success">Verified</span>
+                                            {% elif item.verification_status == "verified_physically" %}
+                                                    <span class="badge bg-warning">Verified Physically</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Verify Physically</span>
+                                                {% if item.verification_notes %}
+                                                    <div class="small text-danger mt-1" title="{{ item.verification_notes }}">
+                                                        {{ item.verification_notes|truncatechars:85 }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if is_mentor_view %}
+                                                    {% if item.verification_status == "verify_physically" %}
+                                                        <a href="{% url 'verify_certificate_physically' 'course' item.pk %}"
+                                                           class="btn btn-warning btn-sm mt-1">
+                                                            ✔ Verify
+                                                        </a>
+                                                    {% endif %}
+                                                {% endif %}
+                                                {% if is_mentor_view %}
+                                                    {% if is_mentor_view and item.verification_status == "verify_physically" %}
+                                                        <input type="checkbox" name="selected_items" value="{{ item.pk }}">
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if is_mentor_view == False %}
+                                                {% if item.certificate %}
+                                                    <a href="{% url 'open_document' 'course' item.pk %}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
+                                                    <a href="{% url 'edit_certification' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
+                                                    <a href="{% url 'open_document' 'course' item.pk %}?download=1" class="btn btn-success btn-sm mt-1" target="_blank"><i class="bi bi-box-arrow-down"></i></a>
+                                                    <a href="{% url 'delete_certification' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
+                                                {% else %}
+                                                    <a href="{% url 'edit_certification' item.pk %}" class="btn btn-dark btn-sm mt-1"><i class="bi bi-pencil-square"></i></a>
+                                                    <a href="{% url 'delete_certification' item.pk %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('Are you sure you want to delete this record?')"><i class="bi bi-trash"></i></a>
+                                                {% endif %}
+                                            {% else %}
+                                                    <a href="{% url 'open_document' 'course' item.pk %}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
+                                                    <a href="{% url 'open_document' 'course' item.pk %}?download=1" class="btn btn-success btn-sm mt-1" target="_blank"><i class="bi bi-box-arrow-down"></i></a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="15" class="text-center">No records yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
             </div>
             {% if is_mentor_view == False %}
             <!-- Add / Edit Form -->
@@ -214,7 +246,7 @@
                                                 </div>
                                             {% endif %}
                                         </div>
-                                        <p class="text-muted">Upload PDF file only (Max size: 1MB)</p>
+                                        <p class="note-text">Upload PDF file only (Max size: 1MB)</p>
                                     </div>
 
                                     <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
@@ -301,6 +333,31 @@ document.addEventListener("DOMContentLoaded", function () {
         endDateField.addEventListener("change", calculateDays);
     }
 });
+
+
+// Select all unverified entries
+function toggleAllCheckboxes(source) {
+    const table = source.closest("table");
+    if (!table) return;
+
+    const checkboxes = table.querySelectorAll('input[name="selected_items"]');
+
+    checkboxes.forEach(cb => {
+        cb.checked = source.checked;
+    });
+
+    updateSelectedCount(table);
+}
+
+
+function validateSelection() {
+    const checked = document.querySelectorAll('input[name="selected_items"]:checked').length;
+    if (checked === 0) {
+        alert("Please select at least one certificate.");
+        return false;
+    }
+    return true;
+}
 </script>
 
 <style>
