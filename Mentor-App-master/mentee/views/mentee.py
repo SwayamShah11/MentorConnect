@@ -74,6 +74,34 @@ class MenteeOnlyView(LoginRequiredMixin, UserPassesTestMixin, View):
 def home(request):
     """Home landing page"""
     context = get_global_performance_data()
+
+    # --- Stats ---
+    active_students = User.objects.filter(is_mentee=True).count()
+    total_mentors = User.objects.filter(is_mentor=True).count()
+
+    total_uploads = (
+            InternshipPBL.objects.count() +
+            CertificationCourse.objects.count() +
+            Project.objects.count() +
+            SportsCulturalEvent.objects.count() +
+            OtherEvent.objects.count() +
+            PaperPublication.objects.count()
+    )
+
+    verifiable = InternshipPBL.objects.count() + CertificationCourse.objects.count()
+    verified = (
+            InternshipPBL.objects.filter(verification_status="verified").count() + InternshipPBL.objects.filter(verification_status="verified_physically").count() +
+            CertificationCourse.objects.filter(verification_status="verified").count() + CertificationCourse.objects.filter(verification_status="verified_physically").count()
+    )
+    satisfaction = round(verified / verifiable * 100) if verifiable > 0 else 0
+
+    context.update({
+        'active_students': active_students,
+        'total_mentors': total_mentors,
+        'total_uploads': total_uploads,
+        'satisfaction': satisfaction,
+    })
+
     return render(request, 'home.html', context)
 
 #-------------------Mentor-Mentee interaction page logic starts-----------------------

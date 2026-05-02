@@ -2,441 +2,681 @@
 {% load static %}
 {% block content %}
 <br><br><br>
+
+<!-- ═══════════════════════════════════════════════════════
+     TOP ROW: Best Division + Top Students
+════════════════════════════════════════════════════════════ -->
 <div class="row mb-4">
-    <!-- LEFT SIDE -->
-    <div class="col-lg-4">
-        <div class="container mt-5">
-            <div class="card best-division-card mb-3 p-4 shadow">
 
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-dark text-warning px-3 py-2">
-                  🏆 Top Division
-                </span>
-              </div>
+  <!-- LEFT: Best Division Card -->
+  <div class="col-lg-4">
+    <div class="container mt-5">
+      <div class="mc-best-card mb-3 p-4">
 
-              <div class="best-title">
-                {{ best_division.year }} {{ best_division.branch }}
-              </div>
-
-              <div class="best-subtitle">
-                Division {{ best_division.div }}
-              </div>
-
-              <div class="best-stats mt-3">
-                <div>
-                  <span class="stat-number">{{ best_division.student_count }}</span>
-                  <span class="stat-label">Students</span>
-                </div>
-
-                <div>
-                  <span class="stat-number">{{ best_division.uploads }}</span>
-                  <span class="stat-label">Uploads</span>
-                </div>
-              </div>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="mc-trophy-badge">🏆 Top Division</span>
         </div>
-    </div>
-    <!-- RIGHT SIDE -->
-    <div class="col-lg-8">
-    <!-- TOP STUDENTS -->
-        <div class="card top-students-card mt-4 shadow p-0" style="background: linear-gradient(135deg, #1f2937, #111827); border-radius: 12px;">
 
-          <div class="p-3 text-white" style="font-size: 22px; font-weight: 600;">
-            Top Performing Students
+        <div class="mc-best-title">
+          {{ best_division.year }} {{ best_division.branch }}
+        </div>
+        <div class="mc-best-subtitle">Division {{ best_division.div }}</div>
+
+        <div class="mc-best-stats mt-3">
+          <div>
+            <span class="mc-stat-number">{{ best_division.student_count }}</span>
+            <span class="mc-stat-label">Students</span>
           </div>
-
-          <div class="table-responsive">
-            <table class="table text-center mb-0" style="color: #e5e7eb;">
-              <thead style="background: rgba(255,255,255,0.05);">
-                <tr>
-                  <th>#</th>
-                  <th>Moodle ID</th>
-                  <th>Name</th>
-                  <th>Branch</th>
-                  <th>Class</th>
-                  <th>Div</th>
-                  <th>Uploads</th>
-                  <th>Performance</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {% for s in top_students %}
-                <tr style="background-color: {% if forloop.first %}rgba(255,255,255,0.05){% else %}transparent{% endif %};">
-
-                  <!-- RANK -->
-                  <td>
-                    {% if forloop.counter == 1 %}
-                      🥇
-                    {% elif forloop.counter == 2 %}
-                      🥈
-                    {% elif forloop.counter == 3 %}
-                      🥉
-                    {% else %}
-                      {{ forloop.counter }}
-                    {% endif %}
-                  </td>
-
-                  <td>{{ s.moodle_id }}</td>
-                  <td>{{ s.student_name }}</td>
-                  <td>{{ s.branch }}</td>
-                  <td>{{ s.year }}</td>
-                  <td>{{ s.div }}</td>
-
-                  <!-- UPLOAD BADGE -->
-                  <td>
-                    <span class="badge rounded-pill px-3 py-2"
-                          style="background: #2563eb; font-size: 14px;">
-                      {{ s.total }}
-                    </span>
-                  </td>
-
-                  <!-- PERFORMANCE BAR -->
-                  <td style="min-width:180px;">
-                    <div style="height:10px; background:#374151; border-radius:10px; overflow:hidden;">
-                      <div style="
-                        height:100%;
-                        width: {% widthratio s.total max_uploads 100 %}%;
-                        background:
-                          {% if forloop.counter == 1 %}
-                            linear-gradient(90deg, #facc15, #f59e0b)
-                          {% elif forloop.counter == 2 %}
-                            linear-gradient(90deg, #9ca3af, #6b7280)
-                          {% elif forloop.counter == 3 %}
-                            linear-gradient(90deg, #b45309, #78350f)
-                          {% else %}
-                            linear-gradient(90deg, #3b82f6, #7c3aed)
-                          {% endif %};
-                        border-radius:10px;
-                      ">
-                      </div>
-                    </div>
-                  </td>
-
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div>
+            <span class="mc-stat-number">{{ best_division.uploads }}</span>
+            <span class="mc-stat-label">Uploads</span>
           </div>
         </div>
+
+      </div>
     </div>
-</div>
-<div class="scroll-indicator text-center">
-    <a href="#register-section" class="scroll-indicator text-center">
-      <span>Scroll Down to Register/Login</span>
-      <div class="arrow"></div>
-    </a>
+  </div>
+
+  <!-- RIGHT: Top Students Table -->
+  <div class="col-lg-8">
+    <div class="mc-students-card mt-4">
+
+      <div class="mc-students-header">
+        <span class="mc-students-title">Top Performing Students</span>
+        <span class="mc-live-dot-wrap"><span class="mc-live-dot"></span> Live</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="mc-table text-center mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Moodle ID</th>
+              <th>Name</th>
+              <th>Branch</th>
+              <th>Class</th>
+              <th>Div</th>
+              <th>Uploads</th>
+              <th>Performance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in top_students %}
+            <tr class="mc-tr {% if forloop.counter == 1 %}mc-tr-gold{% elif forloop.counter == 2 %}mc-tr-silver{% elif forloop.counter == 3 %}mc-tr-bronze{% endif %}">
+              <td>
+                {% if forloop.counter == 1 %}🥇
+                {% elif forloop.counter == 2 %}🥈
+                {% elif forloop.counter == 3 %}🥉
+                {% else %}{{ forloop.counter }}{% endif %}
+              </td>
+              <td>{{ s.moodle_id }}</td>
+              <td><span class="mc-name">{{ s.student_name }}</span></td>
+              <td>{{ s.branch }}</td>
+              <td>{{ s.year }}</td>
+              <td>{{ s.div }}</td>
+              <td>
+                <span class="mc-upload-badge">{{ s.total }}</span>
+              </td>
+              <td style="min-width:160px; padding: 0 16px;">
+                <div class="mc-bar-track">
+                  <div class="mc-bar-fill {% if forloop.counter == 1 %}mc-bar-gold{% elif forloop.counter == 2 %}mc-bar-silver{% elif forloop.counter == 3 %}mc-bar-bronze{% else %}mc-bar-blue{% endif %}"
+                       style="width:{% widthratio s.total max_uploads 100 %}%">
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<div class="jumbotron" id="register-section">
-  <h1 class="display-4">Welcome To MentorConnect</h1>
-  <p class="lead">A platform that connects ambitious students with successful and experienced mentors. The initiative encourages idea and knowledge sharing among APSIT's most promising students, inspiring a collaborative approach to career shaping and growth.</p>
-  <hr class="my-4">
-    <p><b>Sign Up To Be A Mentee</b></p>
-    <a class="btn btn-primary btn-lg" href="{% url 'register' %}" role="button">Click Here <i class="bi bi-arrow-right"></i></a>
-    <hr>
-    <p><b>Sign Up To Be A Mentor</b></p>
-    <a class="btn btn-primary btn-lg" href="{% url 'register1' %}" role="button">Click Here <i class="bi bi-arrow-right"></i></a>
-    <hr>
-    <p><b>Admin Login</b></p>
-    <a class="btn btn-primary btn-lg" href="{% url 'admin:login' %}" role="button">Click Here <i class="bi bi-arrow-right"></i></a>
+<!-- Scroll Indicator -->
+<div class="mc-scroll-indicator text-center">
+  <a href="#register-section" class="mc-scroll-link">
+    <span>Scroll Down to Register / Login</span>
+    <div class="mc-arrow"></div>
+  </a>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     JUMBOTRON / REGISTER SECTION
+════════════════════════════════════════════════════════════ -->
+<div class="mc-jumbotron" id="register-section">
+  <h1 class="mc-jumbotron-title">Welcome To MentorConnect</h1>
+  <p class="mc-jumbotron-lead">A platform that connects ambitious students with successful and experienced mentors. The initiative encourages idea and knowledge sharing among APSIT's most promising students, inspiring a collaborative approach to career shaping and growth.</p>
+  <hr class="mc-divider">
+
+  <div class="mc-register-grid">
+    <div class="mc-register-card" data-color="blue">
+      <div class="mc-register-icon">🎓</div>
+      <p class="mc-register-label">Sign Up To Be A Mentee</p>
+      <a class="mc-register-btn" href="{% url 'register' %}">Get Started <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="mc-register-card" data-color="purple">
+      <div class="mc-register-icon">👨‍🏫</div>
+      <p class="mc-register-label">Sign Up To Be A Mentor</p>
+      <a class="mc-register-btn" href="{% url 'register1' %}">Get Started <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="mc-register-card" data-color="teal">
+      <div class="mc-register-icon">🔐</div>
+      <p class="mc-register-label">Admin Login</p>
+      <a class="mc-register-btn" href="{% url 'admin:login' %}">Login <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SERVICES SECTION
+════════════════════════════════════════════════════════════ -->
+<div class="mc-section">
+
+  <div class="mc-section-label">Platform Features</div>
+  <div class="mc-section-title">Services We Provide</div>
+
+  <div class="mc-services-grid">
+    <div class="mc-service-card" data-i="0">
+      <div class="mc-svc-icon-wrap">🎯</div>
+      <div class="mc-svc-name">Mentor Allocation</div>
+    </div>
+    <div class="mc-service-card" data-i="1">
+      <div class="mc-svc-icon-wrap">👥</div>
+      <div class="mc-svc-name">Student Mentoring</div>
+    </div>
+    <div class="mc-service-card" data-i="2">
+      <div class="mc-svc-icon-wrap">📈</div>
+      <div class="mc-svc-name">Progress Tracking</div>
+    </div>
+    <div class="mc-service-card" data-i="3">
+      <div class="mc-svc-icon-wrap">📋</div>
+      <div class="mc-svc-name">Document Verification</div>
+    </div>
+    <div class="mc-service-card" data-i="4">
+      <div class="mc-svc-icon-wrap">💬</div>
+      <div class="mc-svc-name">Mentor Interaction</div>
+    </div>
+    <div class="mc-service-card" data-i="0">
+      <div class="mc-svc-icon-wrap">
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 640 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+            <path d="M160 64c0-35.3 28.7-64 64-64L576 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64l-239.2 0c-11.8-25.5-29.9-47.5-52.4-64l99.6 0 0-32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 32 64 0 0-288L224 64l0 49.1C205.2 102.2 183.3 96 160 96l0-32zm0 64a96 96 0 1 1 0 192 96 96 0 1 1 0-192zM133.3 352l53.3 0C260.3 352 320 411.7 320 485.3c0 14.7-11.9 26.7-26.7 26.7L26.7 512C11.9 512 0 500.1 0 485.3C0 411.7 59.7 352 133.3 352z"></path>
+        </svg>
+      </div>
+        <div class="mc-svc-name">User-friendly Interface</div>
+    </div>
+    <div class="mc-service-card" data-i="2">
+      <div class="mc-svc-icon-wrap">🖥️</div>
+      <div class="mc-svc-name">Personalized Dashboards</div>
+    </div>
+    <div class="mc-service-card" data-i="4">
+      <div class="mc-svc-icon-wrap">
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="152" cy="184" r="72"></circle>
+              <path d="M234 296c-28.16-14.3-59.24-20-82-20-44.58 0-136 27.34-136 82v42h150v-16.07c0-19 8-38.05 22-53.93 11.17-12.68 26.81-24.45 46-34z"></path><path d="M340 288c-52.07 0-156 32.16-156 96v48h312v-48c0-63.84-103.93-96-156-96z"></path>
+              <circle cx="340" cy="168" r="88"></circle>
+          </svg>
+      </div>
+      <div class="mc-svc-name">Real-Time Collaboration</div>
+    </div>
+    <div class="mc-service-card" data-i="3">
+      <div class="mc-svc-icon-wrap">🙋</div>
+      <div class="mc-svc-name">Attendance Tracking</div>
+    </div>
+    <div class="mc-service-card" data-i="1">
+      <div class="mc-svc-icon-wrap">📊</div>
+      <div class="mc-svc-name">Analytics & Reporting</div>
+    </div>
+    <div class="mc-service-card" data-i="6">
+      <div class="mc-svc-icon-wrap">📱</div>
+      <div class="mc-svc-name">Virtual Sessions</div>
+    </div>
+    <div class="mc-service-card" data-i="5">
+      <div class="mc-svc-icon-wrap">🛡️</div>
+      <div class="mc-svc-name">Secure System</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ILLUSTRATION + ACCORDION
+════════════════════════════════════════════════════════════ -->
+<div class="mc-bottom-section">
+
+  <!-- LEFT: Visual + Stats -->
+  <div class="mc-illus-panel">
+
+    <div class="mc-hero-visual">
+      <svg width="180" height="145" viewBox="0 0 160 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="80" cy="44" r="30" fill="rgba(79,155,255,0.15)" stroke="rgba(79,155,255,0.4)" stroke-width="1.5"/>
+        <circle cx="80" cy="44" r="18" fill="rgba(79,155,255,0.2)" stroke="rgba(79,155,255,0.6)" stroke-width="1"/>
+        <circle cx="80" cy="38" r="8" fill="#4f9bff" opacity="0.8"/>
+        <path d="M58 90 Q80 72 102 90" stroke="rgba(79,155,255,0.5)" stroke-width="1.5" fill="none"/>
+        <path d="M48 104 Q80 82 112 104 L112 118 Q80 106 48 118 Z" fill="rgba(79,155,255,0.1)" stroke="rgba(79,155,255,0.3)" stroke-width="1"/>
+        <circle cx="30" cy="54" r="18" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.35)" stroke-width="1"/>
+        <circle cx="30" cy="50" r="6" fill="#8b5cf6" opacity="0.7"/>
+        <path d="M18 74 Q30 64 42 74 L42 82 Q30 76 18 82 Z" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.25)" stroke-width="0.8"/>
+        <circle cx="130" cy="54" r="18" fill="rgba(20,201,149,0.12)" stroke="rgba(20,201,149,0.35)" stroke-width="1"/>
+        <circle cx="130" cy="50" r="6" fill="#14c995" opacity="0.7"/>
+        <path d="M118 74 Q130 64 142 74 L142 82 Q130 76 118 82 Z" fill="rgba(20,201,149,0.1)" stroke="rgba(20,201,149,0.25)" stroke-width="0.8"/>
+        <line x1="50" y1="56" x2="62" y2="48" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="110" y1="56" x2="98" y2="48" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+      </svg>
+
+      <div class="mc-hero-badge">
+        <span class="mc-pulse-dot"></span> Active Mentoring Network
+      </div>
+        <div class="mc-stats-row">
+          <div class="mc-stat-tile"><div class="mc-stat-num">{{ active_students }}</div><div class="mc-stat-lbl">Active Students</div></div>
+          <div class="mc-stat-tile"><div class="mc-stat-num">{{ total_mentors }}</div><div class="mc-stat-lbl">Active Mentors</div></div>
+          <div class="mc-stat-tile"><div class="mc-stat-num">{{ total_uploads }}</div><div class="mc-stat-lbl">Uploads</div></div>
+          <div class="mc-stat-tile"><div class="mc-stat-num">{{ satisfaction }}%</div><div class="mc-stat-lbl">Satisfaction</div></div>
+        </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Accordion -->
+  <div class="mc-acc-panel">
+    <div class="mc-acc-title">Unlock Your Academic Growth with MentorConnect</div>
+
+    <div class="mc-acc-item mc-acc-open" data-acc="0">
+      <div class="mc-acc-header" onclick="mcToggleAcc(this)">
+        <div class="mc-acc-icon" style="background:rgba(79,155,255,0.15)">🎯</div>
+        <div class="mc-acc-label">Smart Mentorship</div>
+        <div class="mc-acc-chevron">
+          <svg width="14" height="9" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="mc-acc-body" style="max-height:80px">
+        <div class="mc-acc-body-inner">Get guided by experienced mentors for career and academic growth. Build relationships that last beyond graduation.</div>
+      </div>
+    </div>
+
+    <div class="mc-acc-item" data-acc="1">
+      <div class="mc-acc-header" onclick="mcToggleAcc(this)">
+        <div class="mc-acc-icon" style="background:rgba(20,201,149,0.15)">📊</div>
+        <div class="mc-acc-label">Performance Monitoring</div>
+        <div class="mc-acc-chevron">
+          <svg width="14" height="9" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="mc-acc-body">
+        <div class="mc-acc-body-inner">Track student progress, achievements, and engagement in real-time with intelligent dashboards and visual insights.</div>
+      </div>
+    </div>
+
+    <div class="mc-acc-item" data-acc="2">
+      <div class="mc-acc-header" onclick="mcToggleAcc(this)">
+        <div class="mc-acc-icon" style="background:rgba(245,158,11,0.15)">🔔</div>
+        <div class="mc-acc-label">Notifications & Alerts</div>
+        <div class="mc-acc-chevron">
+          <svg width="14" height="9" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="mc-acc-body">
+        <div class="mc-acc-body-inner">Stay updated with instant approvals, meeting reminders, and task alerts — never miss an important milestone.</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+function mcToggleAcc(header) {
+  const item = header.closest('.mc-acc-item');
+  const body = item.querySelector('.mc-acc-body');
+  const isOpen = item.classList.contains('mc-acc-open');
+  document.querySelectorAll('.mc-acc-item').forEach(i => {
+    i.classList.remove('mc-acc-open');
+    i.querySelector('.mc-acc-body').style.maxHeight = '0';
+  });
+  if (!isOpen) {
+    item.classList.add('mc-acc-open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════
+     ALL CSS  —  every selector prefixed with mc- to avoid Bootstrap collisions
+════════════════════════════════════════════════════════════ -->
 <style>
-/* MAIN CARD */
-.best-division-card {
-  background: rgba(255, 255, 255, 0.05);
+
+/* ── BEST DIVISION CARD ── */
+.mc-best-card {
+  background: rgba(255,255,255,0.04);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
   position: relative;
   overflow: hidden;
   color: #fff;
-  transition: all 0.35s ease;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
-
-/* 🔥 Animated gradient border */
-.best-division-card::before {
+.mc-best-card::before {
   content: "";
   position: absolute;
-  inset: 0;
-  padding: 2px;
-  border-radius: 18px;
+  inset: -1px;
+  border-radius: 19px;
   background: linear-gradient(120deg, #a78bfa, #3b82f6, #22c55e, #a78bfa);
   background-size: 300% 300%;
-  animation: borderMove 6s linear infinite;
-
+  animation: mcBorderMove 6s linear infinite;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  padding: 1px;
 }
-
-@keyframes borderMove {
-  0% { background-position: 0% }
-  100% { background-position: 300% }
-}
-
-/* ✨ Glow layer */
-.best-division-card::after {
+@keyframes mcBorderMove { 0%{background-position:0%} 100%{background-position:300%} }
+.mc-best-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(167,139,250,0.25), transparent 60%);
+  background: radial-gradient(circle at top left, rgba(167,139,250,0.2), transparent 60%);
   pointer-events: none;
 }
-
-/* HOVER */
-.best-division-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-}
-
-/* TYPOGRAPHY */
-.best-title {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.best-subtitle {
-  font-size: 18px;
-  color: #cbd5f5;
-  margin-top: 5px;
-}
-
-/* STATS */
-.best-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-}
-
-.stat-number {
-  font-size: 22px;
-  font-weight: 700;
-  display: block;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-/* BADGE */
-.best-division-card .badge {
-  background: rgba(0,0,0,0.6) !important;
+.mc-best-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 24px 60px rgba(0,0,0,0.55); }
+.mc-trophy-badge {
+  display: inline-block;
+  background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
+  color: #fbbf24;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(251,191,36,0.25);
 }
+.mc-best-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #f0f4ff; letter-spacing: 0.3px; }
+.mc-best-subtitle { font-size: 16px; color: #a5b4fc; margin-top: 4px; }
+.mc-best-stats { display: flex; justify-content: space-between; margin-top: 18px; }
+.mc-stat-number { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; display: block; color: #fff; }
+.mc-stat-label { font-size: 12px; color: #6b7fa8; }
 
-.top-students-card {
-  background: linear-gradient(135deg, #1f2937, #111827);
+/* ── TOP STUDENTS CARD ── */
+.mc-students-card {
+  background: linear-gradient(135deg, #1a2235, #0f1623);
   border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.07);
   overflow: hidden;
-  transition: all 0.3s ease;
   position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
-/* Subtle glow */
-.top-students-card::after {
+.mc-students-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, rgba(59,130,246,0.15), transparent 60%);
+  background: radial-gradient(circle at top right, rgba(59,130,246,0.12), transparent 60%);
   pointer-events: none;
 }
-
-/* Hover effect */
-.top-students-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+.mc-students-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.mc-students-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-
-table tbody tr {
-  transition: all 0.25s ease;
+.mc-students-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e2eaff;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 20px rgba(59,130,246,0.4);
 }
-
-table tbody tr:hover {
-  background: rgba(59,130,246,0.1);
-  transform: scale(1.01);
+.mc-live-dot-wrap { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #4ade80; font-weight: 500; }
+.mc-live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
+  animation: mcPulse 2s ease-in-out infinite;
 }
+@keyframes mcPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.6)} }
 
-/* Top 3 highlight */
-table tbody tr:nth-child(1) {
-  background: rgba(250,204,21,0.08);
+.mc-table { width: 100%; border-collapse: collapse; }
+.mc-table thead tr { background: rgba(255,255,255,0.04); }
+.mc-table th { padding: 10px 12px; font-size: 11px; font-weight: 600; color: #6b7fa8; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+.mc-table td { padding: 12px; font-size: 13px; color: #c8d4f0; vertical-align: middle; border-top: 1px solid rgba(255,255,255,0.04); }
+.mc-tr { transition: background 0.2s ease; }
+.mc-tr:hover { background: rgba(59,130,246,0.08) !important; }
+.mc-tr-gold { background: rgba(250,204,21,0.06) !important; }
+.mc-tr-silver { background: rgba(156,163,175,0.06) !important; }
+.mc-tr-bronze { background: rgba(180,83,9,0.06) !important; }
+.mc-name { font-weight: 500; color: #e2eaff; }
+.mc-upload-badge {
+  display: inline-block;
+  background: rgba(37,99,235,0.25);
+  color: #93c5fd;
+  border: 1px solid rgba(37,99,235,0.4);
+  border-radius: 100px;
+  padding: 3px 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
+.mc-bar-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
+.mc-bar-fill { height: 100%; border-radius: 100px; animation: mcGrow 1.2s ease-out; }
+.mc-bar-gold   { background: linear-gradient(90deg,#facc15,#f59e0b); }
+.mc-bar-silver { background: linear-gradient(90deg,#9ca3af,#6b7280); }
+.mc-bar-bronze { background: linear-gradient(90deg,#cd7c3a,#92400e); }
+.mc-bar-blue   { background: linear-gradient(90deg,#3b82f6,#7c3aed); }
+@keyframes mcGrow { from{width:0} }
 
-table tbody tr:nth-child(2) {
-  background: rgba(156,163,175,0.08);
+/* ── SCROLL INDICATOR ── */
+.mc-scroll-indicator { margin: 20px 0; }
+.mc-scroll-link {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
+  text-decoration: none; color: #6b7fa8; font-size: 13px; font-weight: 500;
+  transition: color 0.3s ease, transform 0.3s ease;
 }
-
-table tbody tr:nth-child(3) {
-  background: rgba(180,83,9,0.08);
-}
-
-@keyframes growBar {
-  from { width: 0; }
-}
-
-td div div {
-  animation: growBar 1s ease-out;
-}
-
-.top-students-card .p-3 {
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 8px rgba(59,130,246,0.6);
-}
-
-/* Scroll indicator */
-.scroll-indicator {
-  margin-top: 10px;
-  color: #9ca3af;
-  font-size: 14px;
-  opacity: 0.8;
-  animation: fadeIn 1.5s ease-in-out;
-}
-
-.scroll-indicator .arrow {
-  width: 12px;
-  height: 12px;
-  border-right: 2px solid #9ca3af;
-  border-bottom: 2px solid #9ca3af;
+.mc-scroll-link:hover { color: #60a5fa; transform: translateY(3px); }
+.mc-arrow {
+  width: 10px; height: 10px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
-  margin: 8px auto;
-  animation: bounce 1.5s infinite;
+  animation: mcBounce 1.4s infinite;
 }
+@keyframes mcBounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(7px)} }
 
-@keyframes bounce {
-  0%, 100% { transform: rotate(45deg) translateY(0); }
-  50% { transform: rotate(45deg) translateY(6px); }
+/* ── JUMBOTRON ── */
+.mc-jumbotron {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 40px;
+  margin: 24px 0;
 }
+.mc-jumbotron-title { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: #f0f4ff; margin-bottom: 12px; }
+.mc-jumbotron-lead { font-size: 15px; color: #8a9bc4; line-height: 1.7; max-width: 680px; }
+.mc-divider { border-color: rgba(255,255,255,0.08); margin: 28px 0; }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 0.8; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-
-  .best-division-card {
-    margin-top: 10px;
-    padding: 20px;
-  }
-
-  .best-title {
-    font-size: 22px;
-  }
-
-  .best-subtitle {
-    font-size: 16px;
-  }
-
-  .best-stats {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-
-  .top-students-card {
-    margin-top: 15px;
-  }
-
-  .scroll-indicator {
-  display: block;
+.mc-register-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
   margin-top: 20px;
+}
+@media (max-width: 768px) {
+  .mc-register-grid { grid-template-columns: 1fr !important; }
+}
+.mc-register-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.mc-register-card:hover { transform: translateY(-6px); }
+.mc-register-card[data-color="blue"]:hover  { border-color: rgba(59,130,246,0.5);  box-shadow: 0 16px 40px rgba(59,130,246,0.12); }
+.mc-register-card[data-color="purple"]:hover { border-color: rgba(139,92,246,0.5); box-shadow: 0 16px 40px rgba(139,92,246,0.12); }
+.mc-register-card[data-color="teal"]:hover  { border-color: rgba(20,184,166,0.5);  box-shadow: 0 16px 40px rgba(20,184,166,0.12); }
+.mc-register-icon { font-size: 32px; margin-bottom: 10px; }
+.mc-register-label { font-size: 14px; font-weight: 600; color: #c8d4f0; margin-bottom: 16px; }
+.mc-register-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(59,130,246,0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 100px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 500;
   text-decoration: none;
-  color: #e5e7eb;
-  font-size: 14px;
-  font-weight: 1000;
-  opacity: 1;
-  transition: all 0.3s ease;
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+.mc-register-btn:hover { background: rgba(59,130,246,0.28); color: #bfdbfe; transform: scale(1.03); }
+
+/* ── SERVICES SECTION ── */
+.mc-section { padding: 40px 0 20px; }
+.mc-section-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: #4f9bff; margin-bottom: 8px;
+}
+.mc-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px; font-weight: 800;
+  color: #f0f4ff; margin-bottom: 28px;
 }
 
-.scroll-indicator:hover {
-  color: #60a5fa;
-  transform: translateY(3px);
+.mc-services-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 14px !important;
+}
+@media (max-width: 992px) { .mc-services-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (max-width: 576px) { .mc-services-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+
+.mc-service-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 22px 12px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.mc-service-card::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 18px;
+  background: var(--mc-glow);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.mc-service-card:hover { transform: translateY(-8px) scale(1.04); border-color: var(--mc-accent); box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 0 0 1px var(--mc-accent); }
+.mc-service-card:hover::before { opacity: 1; }
+.mc-service-card:hover .mc-svc-icon-wrap { transform: scale(1.18) rotate(-6deg); }
+
+.mc-service-card[data-i="0"] { --mc-accent:rgba(79,155,255,0.55);  --mc-glow:radial-gradient(circle at 50% 0%,rgba(79,155,255,0.14) 0%,transparent 70%); }
+.mc-service-card[data-i="1"] { --mc-accent:rgba(139,92,246,0.55);  --mc-glow:radial-gradient(circle at 50% 0%,rgba(139,92,246,0.14) 0%,transparent 70%); }
+.mc-service-card[data-i="2"] { --mc-accent:rgba(20,201,149,0.55);  --mc-glow:radial-gradient(circle at 50% 0%,rgba(20,201,149,0.14) 0%,transparent 70%); }
+.mc-service-card[data-i="3"] { --mc-accent:rgba(245,158,11,0.55);  --mc-glow:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.14) 0%,transparent 70%); }
+.mc-service-card[data-i="4"] { --mc-accent:rgba(236,72,153,0.55);  --mc-glow:radial-gradient(circle at 50% 0%,rgba(236,72,153,0.14) 0%,transparent 70%); }
+.mc-service-card[data-i="5"] { --mc-accent:rgba(239,68,68,0.55);   --mc-glow:radial-gradient(circle at 50% 0%,rgba(239,68,68,0.14) 0%,transparent 70%); }
+
+.mc-svc-icon-wrap {
+  width: 50px; height: 50px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 22px;
+  background: rgba(255,255,255,0.06);
+  transition: transform 0.3s ease;
+}
+.mc-service-card[data-i="0"] .mc-svc-icon-wrap { background: rgba(79,155,255,0.15); }
+.mc-service-card[data-i="1"] .mc-svc-icon-wrap { background: rgba(139,92,246,0.15); }
+.mc-service-card[data-i="2"] .mc-svc-icon-wrap { background: rgba(20,201,149,0.15); }
+.mc-service-card[data-i="3"] .mc-svc-icon-wrap { background: rgba(245,158,11,0.15); }
+.mc-service-card[data-i="4"] .mc-svc-icon-wrap { background: rgba(236,72,153,0.15); }
+.mc-service-card[data-i="5"] .mc-svc-icon-wrap { background: rgba(239,68,68,0.15); }
+
+.mc-svc-name { font-size: 12px; font-weight: 500; color: #c8d4f0; line-height: 1.35; }
+
+/* ── BOTTOM SECTION (illustration + accordion) ── */
+.mc-bottom-section {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 36px !important;
+  align-items: start;
+  padding: 20px 0 48px;
+}
+@media (max-width: 768px) { .mc-bottom-section { grid-template-columns: 1fr !important; } }
+
+.mc-illus-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.mc-hero-visual {
+  background: linear-gradient(135deg, rgba(79,155,255,0.07) 0%, rgba(139,92,246,0.07) 100%);
+  border: 1px solid rgba(79,155,255,0.15);
+  border-radius: 22px;
+  padding: 32px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.mc-hero-visual::after {
+  content: '';
+  position: absolute;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(79,155,255,0.12) 0%, transparent 70%);
+  top: -30px; right: -30px;
+  pointer-events: none;
+}
+.mc-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(79,155,255,0.1);
+  border: 1px solid rgba(79,155,255,0.22);
+  border-radius: 100px;
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 500; color: #7db9ff;
+  margin-top: 18px;
+}
+.mc-pulse-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: #4f9bff;
+  animation: mcPulse 2s ease-in-out infinite;
 }
 
-/* Glow effect */
-.scroll-indicator span {
-  text-shadow: 0 0 8px rgba(96,165,250,0.7);
+.mc-stats-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+.mc-stat-tile {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 16px;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+.mc-stat-tile:hover { background: rgba(79,155,255,0.06); border-color: rgba(79,155,255,0.2); }
+.mc-stat-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #f0f4ff; }
+.mc-stat-lbl { font-size: 11px; color: #6b7fa8; margin-top: 3px; }
+
+/* ── ACCORDION ── */
+.mc-acc-panel { display: flex; flex-direction: column; justify-content: center; }
+.mc-acc-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 800;
+  color: #f0f4ff; line-height: 1.3;
+  margin-bottom: 22px;
+}
+.mc-acc-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.mc-acc-item.mc-acc-open {
+  border-color: rgba(79,155,255,0.3);
+  box-shadow: 0 8px 28px rgba(79,155,255,0.07);
+}
+.mc-acc-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  cursor: pointer;
+  user-select: none;
+}
+.mc-acc-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+.mc-acc-item.mc-acc-open .mc-acc-icon { transform: scale(1.1); }
+.mc-acc-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 600; color: #e2eaff; flex: 1;
+}
+.mc-acc-chevron {
+  color: #4f7ab8;
+  transition: transform 0.3s ease;
+  display: flex; align-items: center;
+}
+.mc-acc-item.mc-acc-open .mc-acc-chevron { transform: rotate(180deg); }
+.mc-acc-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+.mc-acc-body-inner {
+  padding: 0 18px 16px 70px;
+  font-size: 13px; color: #8a9bc4; line-height: 1.65;
 }
 
-/* Bigger arrow */
-.scroll-indicator .arrow {
-  width: 32px;
-  height: 32px;
-  border-right: 3px solid #60a5fa;
-  border-bottom: 3px solid #60a5fa;
-  transform: rotate(45deg);
-  margin: 10px auto;
-  animation: bounce 1.2s infinite;
-}
-
-/* Stronger bounce */
-@keyframes bounce {
-  0%, 100% { transform: rotate(45deg) translateY(0); }
-  50% { transform: rotate(45deg) translateY(10px); }
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
+/* ── MOBILE ── */
 @media (max-width: 768px) {
-  .table-responsive {
-    overflow-x: auto;
-  }
-
-  table {
-    min-width: 750px;
-    font-size: 12px;
-  }
-
-  th, td {
-    white-space: nowrap;
-    padding: 6px !important;
-  }
-}
-
-@media (max-width: 768px) {
-
-  .best-division-card {
-    margin-top: 10px;
-    padding: 18px;
-    text-align: center;
-  }
-
-  .best-title {
-    font-size: 20px;
-  }
-
-  .best-subtitle {
-    font-size: 14px;
-  }
-
-  .best-stats {
-    justify-content: space-around;
-    margin-top: 10px;
-  }
-
-  .stat-number {
-    font-size: 18px;
-  }
-
-  .stat-label {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-
-  .top-students-card {
-    margin-top: 12px;
-    padding: 0;
-  }
-
-  .top-students-card .p-3 {
-    font-size: 16px;
-    text-align: center;
-  }
+  .mc-jumbotron { padding: 24px 18px; }
+  .mc-jumbotron-title { font-size: 26px; }
+  .mc-section { padding: 24px 0 10px; }
+  .mc-section-title { font-size: 22px; }
+  .mc-bottom-section { gap: 24px !important; }
+  .mc-acc-title { font-size: 18px; }
 }
 </style>
+
 {% endblock %}
