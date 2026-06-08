@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                      CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MentorMentee, SelfAssessment, Query,
                      StudentInterest, SemesterResult, MentorMenteeInteraction, ActivityLog, WeeklyAgenda, SWOTAnalysis,
-                     PaperPublication)
+                     PaperPublication, Notification)
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -319,6 +319,13 @@ class QueryAdmin(admin.ModelAdmin):
     list_display = ('mentor', 'mentee', 'text', 'severity', 'status', 'created_at')
     list_filter = ['mentor__name', 'severity', 'status', 'mentee__user']
     search_fields = ['mentor__name', 'mentee__user__username', 'severity']
+    actions = [delete_all_and_reset_id]
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'message', 'is_read', 'created_at')
+    search_fields = ['user__username']
     actions = [delete_all_and_reset_id]
 
 
